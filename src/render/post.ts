@@ -4,9 +4,12 @@
  * aberration or grain: soft is good, dirty is not.
  *
  * Quality presets decide how much of it runs:
- *   low    no composer: one direct render with the renderer's own tone mapping
- *   medium MSAA 4x + bloom + tone map + grade
+ *   low    MSAA target + tone map: no bloom, no grade, no AO
+ *   medium low + bloom + grade
  *   high   medium + half-resolution GTAO
+ *
+ * Every preset goes through the composer, so the canvas itself never needs MSAA
+ * (it cannot be switched at runtime) and F2 can change preset live.
  */
 import {
   HalfFloatType,
@@ -26,6 +29,9 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 export type Quality = 'low' | 'medium' | 'high';
 
 export const QUALITIES: readonly Quality[] = ['low', 'medium', 'high'];
+
+/** MSAA samples of the HDR target per preset; bandwidth is the iGPU's tight spot. */
+export const MSAA_SAMPLES: Readonly<Record<Quality, number>> = { low: 2, medium: 4, high: 4 };
 
 export function parseQuality(value: string | null): Quality {
   return QUALITIES.find((q) => q === value) ?? 'high';
@@ -101,8 +107,7 @@ export class PostChain {
   }
 
   render(dt: number): void {
-    if (this.composer) this.composer.render(dt);
-    else this.renderer.render(this.scene, this.camera);
+    this.composer?.render(dt);
   }
 
   dispose(): void {
@@ -114,11 +119,10 @@ export class PostChain {
     this.composer = null;
     this.bloom = null;
     this.ao = null;
-    if (this.quality === 'low') return;
 
     const target = new WebGLRenderTarget(this.size.x, this.size.y, {
       type: HalfFloatType,
-      samples: 4,
+      samples: MSAA_SAMPLES[this.quality],
     });
     const composer = new EffectComposer(this.renderer, target);
     composer.addPass(new RenderPass(this.scene, this.camera));
@@ -129,11 +133,13 @@ export class PostChain {
       composer.addPass(ao);
       this.ao = ao;
     }
-    const bloom = new UnrealBloomPass(this.size.clone(), 0.45, 0.55, 1.0);
-    composer.addPass(bloom);
-    this.bloom = bloom;
+    if (this.quality !== 'low') {
+      const bloom = new UnrealBloomPass(this.size.clone(), 0.45, 0.55, 1.0);
+      composer.addPass(bloom);
+      this.bloom = bloom;
+    }
     composer.addPass(new OutputPass());
-    composer.addPass(new ShaderPass(GRADE_SHADER));
+    if (this.quality !== 'low') composer.addPass(new ShaderPass(GRADE_SHADER));
     this.composer = composer;
     this.applySize();
   }

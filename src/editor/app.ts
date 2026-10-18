@@ -6,7 +6,7 @@
  * Flow: pointer/key -> active tool -> command -> store -> solve -> SceneSync.
  * URL params: `?hour=18.5` start hour (deterministic screenshots),
  * `?quality=low|medium|high` post-processing preset (default high),
- * `?empty` start with no parts, `?seed=name` terrain seed, `?golden` the fixed
+ * `?stress=200` a crowded benchmark base, `?empty` start with no parts, `?seed=name` terrain seed, `?golden` the fixed
  * screenshot base, `?shot` hide the HUD (screenshot sheets, see scripts/shot-sheet.js).
  */
 import {
@@ -14,7 +14,6 @@ import {
   PCFShadowMap,
   Raycaster,
   Scene,
-  Timer,
   Vector2,
   Vector3,
   WebGLRenderer,
@@ -36,6 +35,7 @@ import { generateTerrain, heightAt } from '@/world/terrain';
 import { cmd } from './commands';
 import { demoParts } from './demo-base';
 import { goldenBase } from './golden-base';
+import { stressBase } from './stress-base';
 import { Ghost } from './ghost';
 import { DocumentStore } from './store';
 import { ConnectTool } from './tools/connect';
@@ -48,8 +48,7 @@ import { Halos } from './ui/halos';
 import { ParamsPanel } from './ui/params-panel';
 import { Tray } from './ui/tray';
 
-/** Active rendering is capped at 60 fps; idle redraws at 2 fps (see the loop). */
-const ACTIVE_FRAME_MS = 1000 / 60;
+/** While nothing changes the picture is redrawn at this interval (see the frame loop). */
 const IDLE_FRAME_MS = 500;
 const MAX_PIXEL_RATIO = 1.5;
 
@@ -61,8 +60,8 @@ export function startApp(canvas: HTMLCanvasElement): void {
 
   // ---- rendering ---------------------------------------------------------------
   const quality = parseQuality(params.get('quality'));
-  // The composer resolves its own 4x MSAA target, so the canvas only needs it on the direct path.
-  const renderer = new WebGLRenderer({ canvas, antialias: quality === 'low' });
+  // Every preset renders through the composer's MSAA target, so the canvas needs none.
+  const renderer = new WebGLRenderer({ canvas, antialias: false });
   // Fill rate is the cost that grows with screen density; 1.5 is the cap (retina is 2, 4K laptops 2+).
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
   renderer.toneMapping = ACESFilmicToneMapping;
@@ -141,6 +140,11 @@ export function startApp(canvas: HTMLCanvasElement): void {
     let doc = initial;
     for (const p of g.parts) doc = cmd.addPart(p).apply(doc);
     for (const l of g.links) doc = cmd.addLink(l).apply(doc);
+    store.reset(doc);
+  } else if (params.has('stress')) {
+    let doc = initial;
+    for (const p of stressBase(Number(params.get('stress')) || 200))
+      doc = cmd.addPart(p).apply(doc);
     store.reset(doc);
   } else if (!params.has('empty')) {
     let doc = initial;
@@ -367,24 +371,24 @@ export function startApp(canvas: HTMLCanvasElement): void {
   resize();
 
   // Render on demand: draw only while something changes (input, easing, an animation, an edit,
-  // the hour), at most 60 times a second, with a slow heartbeat while idle so a missed wake-up
+  // the hour), with a slow heartbeat while idle so a missed wake-up
   // shows up as a stale frame for half a second rather than forever.
-  const timer = new Timer();
   let lastRender = -Infinity;
   let shownHour = Number.NaN;
   for (const type of ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'keydown', 'keyup']) {
-    window.addEventListener(type, () => wake(), { passive: true });
+    // Capture phase: handle and halo drags stop propagation and hold the pointer on their own elements.
+    window.addEventListener(type, () => wake(), { passive: true, capture: true });
   }
   window.addEventListener('resize', () => wake());
 
   function frame(now: number): void {
     requestAnimationFrame(frame);
-    const due = dirty ? now - lastRender >= ACTIVE_FRAME_MS - 1 : now - lastRender >= IDLE_FRAME_MS;
-    if (!due) return;
+    const gap = now - lastRender;
+    if (!dirty && gap < IDLE_FRAME_MS) return;
     lastRender = now;
 
-    timer.update();
-    const dt = Math.min(timer.getDelta(), 0.1);
+    // After an idle stretch the first frame must not jump an animation ahead by the whole gap.
+    const dt = gap > 250 ? 1 / 60 : Math.min(gap / 1000, 0.1);
     let again = rig.update(dt);
     sync.tick(dt);
     scatter.tick(dt);
