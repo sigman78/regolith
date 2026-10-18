@@ -3,6 +3,8 @@ import { allParts, getPart } from '@/grammar/registry';
 import type { ParamSchema, ParamValues } from '@/grammar/types';
 import { buildBundle } from './build';
 import {
+  DOME_COLLAR_HEIGHT,
+  DOME_RADII,
   LAUNCHER_ELEVATIONS,
   MAST_BASE_RADIUS,
   MAST_HEADS,
@@ -239,6 +241,27 @@ describe('launcher geometry', () => {
       const power = ports.find((q) => q.type === 'POWER');
       expect(power?.position[0]).toBe(-length / 2);
       expect(power?.normal).toEqual([-1, 0, 0]);
+    }
+  });
+});
+
+describe('dome geometry', () => {
+  const D = getPart('D');
+
+  it('is a collar plus a hemisphere, with PRESS ports on the collar', () => {
+    if (!D) throw new Error('D is not registered');
+    for (const radius of DOME_RADII) {
+      const p = D.resolve({ radius });
+      const { bounds } = buildBundle(D.geometry(p, { seed: 't' }));
+      expect(bounds.min[1]).toBeCloseTo(0, 5);
+      expect(bounds.max[1]).toBeCloseTo(DOME_COLLAR_HEIGHT + radius, 3);
+      const press = D.ports(p).filter((q) => q.type === 'PRESS');
+      expect(press).toHaveLength(4);
+      for (const q of press) {
+        expect(Math.hypot(q.position[0], q.position[2])).toBeCloseTo(radius, 9);
+        expect(q.position[1]).toBeLessThanOrEqual(DOME_COLLAR_HEIGHT);
+        expect(q.normal[1]).toBe(0);
+      }
     }
   });
 });

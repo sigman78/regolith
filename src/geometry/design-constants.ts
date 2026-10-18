@@ -262,3 +262,22 @@ export const LAUNCHER_POSTS = [0.35, 0.7] as const;
 export const LAUNCHER_POST_WIDTH = 0.35;
 export const LAUNCHER_POST_DEPTH = 0.9;
 export const LAUNCHER_SEGMENTS = 20;
+
+// ---- Dome (letter D, opaque only in M1) -------------------------------------
+
+export const DOME_COLLAR_HEIGHT = 1.6;
+export const DOME_SEGMENTS = 40;
+/** Steps along the quarter arc from the collar rim to the pole. */
+export const DOME_ARC_STEPS = 14;
+export const DOME_FOOTPRINT_MARGIN = 0.15;
+/** PRESS ports on the collar, height above the floor. */
+export const DOME_PORT_Y = 0.8;
+/** Four feet on the flat underside, radial distance as a fraction of the radius. */
+export const DOME_FOOT_RADIAL = 0.85;
+/** Latitude ribs, degrees of elevation above the collar rim, and their thickness. */
+export const DOME_RIB_ELEVATIONS = [30, 60] as const;
+export const DOME_RIB_THICK = 0.2;
+/** Accent stripe on the collar: centre height and half width. */
+export const DOME_STRIPE_Y = 1.25;
+export const DOME_STRIPE_HALF = 0.18;
+export const DOME_STRIPE_PROUD = 0.012;

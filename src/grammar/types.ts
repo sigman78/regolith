@@ -72,6 +72,7 @@ export type GeomOp =
   | { kind: 'mast'; height: number; head: number }
   | { kind: 'reactor'; radius: number }
   | { kind: 'launcher'; length: number; elevation: number }
+  | { kind: 'dome'; radius: number }
   /** World-space centreline, flat x,y,z, already embedded slightly into the hulls at both ends. */
   | { kind: 'tube'; points: number[] }
   /** Unit-height leg strut, base at y = 0. Render scales it in Y to the leg length. */

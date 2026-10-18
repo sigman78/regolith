@@ -5,6 +5,7 @@
 import { hashValue } from '@/core/hash';
 import type { GeometryRecipe } from '@/grammar/types';
 import { BundleBuilder, type GeometryBundle } from './bundle';
+import { buildDome } from './dome';
 import { buildHab } from './hab';
 import { buildLegFoot, buildLegStrut } from './leg';
 import { buildLauncher } from './launcher';
@@ -37,6 +38,9 @@ export function buildBundle(recipe: GeometryRecipe): GeometryBundle {
         break;
       case 'slab':
         buildSlab(out, op);
+        break;
+      case 'dome':
+        buildDome(out, op);
         break;
       case 'launcher':
         buildLauncher(out, op);
