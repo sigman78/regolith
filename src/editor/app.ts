@@ -24,9 +24,12 @@ import { allParts, getPart } from '@/grammar/registry';
 import { CameraRig } from '@/render/camera-rig';
 import { Lighting } from '@/render/lighting';
 import { parseQuality, PostChain } from '@/render/post';
+import { FIGURE_MAX_HZ } from '@/geometry/design-constants';
 import { QualityGovernor } from '@/render/quality-governor';
 import { SolClock } from '@/sim/clock';
 import { Sim } from '@/sim/sim';
+import { silhouetteSlots, slotsKey, type Slot } from '@/sim/silhouettes';
+import { CrewSilhouettes } from '@/render/crew-silhouettes';
 import { GRID } from '@/geometry/design-constants';
 import { wearOf } from '@/grammar/solver/wear';
 import { ScatterSync } from '@/render/scatter-sync';
@@ -112,6 +115,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
   const store = new DocumentStore(initial);
   const sync = new SceneSync(scene);
   const scatter = new ScatterSync(scene);
+  const silhouettes = new CrewSilhouettes(scene);
   const rocks = scatterCandidates(terrain, seed);
   const gridSize = Math.round((terrain.size * terrain.cell) / GRID);
   const ghost = new Ghost(scene, world, () => store.doc);
@@ -451,6 +455,14 @@ export function startApp(canvas: HTMLCanvasElement): void {
   // Without an explicit preset, step down by itself when the machine cannot keep up.
   const governor = new QualityGovernor(!params.has('quality'));
   let shownHour = Number.NaN;
+  // Window silhouettes: redraw only when a figure changes pane (at most FIGURE_MAX_HZ times a second).
+  let slots: Slot[] = [];
+  let slotsNow = '';
+  let slotsShown = '';
+  let slotsBase: ResolvedBase | null = null;
+  let appliedBase: ResolvedBase | null = null;
+  let slotsWake = -Infinity;
+  let slotsTick = -1;
   for (const type of ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'keydown', 'keyup']) {
     // Capture phase: handle and halo drags stop propagation and hold the pointer on their own elements.
     window.addEventListener(type, () => wake(), { passive: true, capture: true });
@@ -468,6 +480,19 @@ export function startApp(canvas: HTMLCanvasElement): void {
       Number.isNaN(simNow) || !clock.running ? 0 : ((now - simNow) / 1000) * clock.speed;
     simNow = now;
     sim.update(Math.min(simDt, 0.5), resolved.graph, store.doc.seed, clock.hour);
+    if (sim.steps.tick !== slotsTick || slotsBase !== resolved) {
+      slotsTick = sim.steps.tick;
+      slots = silhouetteSlots(sim.crew, resolved);
+      slotsNow = slotsKey(slots);
+      slotsBase = resolved;
+    }
+    if (
+      (slotsNow !== slotsShown || appliedBase !== resolved) &&
+      now - slotsWake >= 1000 / FIGURE_MAX_HZ
+    ) {
+      slotsWake = now;
+      wake();
+    }
     // A running clock asks for a frame once per sol-minute (the sun moved), nothing more.
     const sunMoved = clock.visualHour !== shownHour;
     const gap = now - lastRender;
@@ -490,6 +515,11 @@ export function startApp(canvas: HTMLCanvasElement): void {
     if (clockEl && label !== clockText) {
       clockText = label;
       clockEl.textContent = label;
+    }
+    if (slotsNow !== slotsShown || appliedBase !== resolved) {
+      silhouettes.set(slots);
+      slotsShown = slotsNow;
+      appliedBase = resolved;
     }
     lighting.apply(clock.visualHour, rig.target);
     renderer.toneMappingExposure = lighting.exposure;
@@ -521,6 +551,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
       base: () => resolved,
       clock,
       sim,
+      figures: () => silhouettes.count,
       setHour: (h: number) => {
         clock.set(h);
         wake(true);

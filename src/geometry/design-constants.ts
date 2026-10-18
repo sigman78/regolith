@@ -362,3 +362,13 @@ export const SCATTER_CENTRE_RADIUS = 18;
 export const SCATTER_FADE_RADIUS = 45;
 /** Scale-in time of a rock that appears after a commit, seconds. */
 export const SCATTER_FADE_SECONDS = 0.15;
+
+// ---- Window silhouettes ---------------------------------------------------------------
+/** A crew figure on a window pane: a flat graphite head-and-shoulders, this size, this far off the glass. */
+export const FIGURE_WIDTH = 0.26;
+export const FIGURE_HEIGHT = 0.46;
+export const FIGURE_PROUD = 0.008;
+/** Shown figures at most: one per crew member on each flank. */
+export const FIGURE_CAPACITY = CREW_MAX * 2;
+/** Silhouette redraws are coalesced to at most this many per second. */
+export const FIGURE_MAX_HZ = 4;
