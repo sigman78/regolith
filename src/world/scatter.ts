@@ -26,6 +26,7 @@ import {
 } from '@/geometry/design-constants';
 import { fbm2 } from '@/core/noise';
 import { hashInts, hashString } from '@/core/rng';
+import type { FlatField } from './flatten';
 import { heightAt, type Heightfield } from './terrain';
 
 /** Floats per instance: x, y, z, size, yaw (radians), variant, tint (0..1), id. */
@@ -46,6 +47,18 @@ function smoothstep(a: number, b: number, x: number): number {
 
 /** Round to a millimetre so hashing and comparisons do not depend on float noise. */
 const mm = (v: number): number => Math.round(v * 1000) / 1000;
+
+/** Where a rock's origin rests: its lowest foothold, sunk in by a share of its size. */
+function restingY(
+  hc: number,
+  hx0: number,
+  hx1: number,
+  hz0: number,
+  hz1: number,
+  size: number,
+): number {
+  return Math.min(hc, hx0, hx1, hz0, hz1) - ROCK_SINK * size * ROCK_FLATTEN;
+}
 
 /** Every rock the terrain allows, before the base is considered. */
 export function scatterCandidates(hf: Heightfield, seed: string): ScatterSet {
@@ -92,7 +105,7 @@ export function scatterCandidates(hf: Heightfield, seed: string): ScatterSet {
       }
       if (out.length / SCATTER_STRIDE >= ROCK_CAP) continue;
 
-      const rest = Math.min(hc, hx0, hx1, hz0, hz1) - ROCK_SINK * size * ROCK_FLATTEN;
+      const rest = restingY(hc, hx0, hx1, hz0, hz1, size);
       out.push(
         x,
         rest,
@@ -109,7 +122,12 @@ export function scatterCandidates(hf: Heightfield, seed: string): ScatterSet {
 }
 
 /** Drop the rocks that touch a keep-out cell (`mask` is `size * size`, 1 m cells, see keepout.ts). */
-export function cullScatter(set: ScatterSet, mask: Uint8Array, size: number): ScatterSet {
+export function cullScatter(
+  set: ScatterSet,
+  mask: Uint8Array,
+  size: number,
+  field: FlatField | null = null,
+): ScatterSet {
   const origin = size / 2;
   const kept: number[] = [];
   const blocked = (x: number, z: number): boolean => {
@@ -132,6 +150,19 @@ export function cullScatter(set: ScatterSet, mask: Uint8Array, size: number): Sc
       continue;
     }
     for (let k = 0; k < SCATTER_STRIDE; k++) kept.push(set.data[o + k] ?? 0);
+    // A rock on or beside levelled ground settles onto it instead of floating or sinking.
+    if (field?.touches(x, z, r + 0.3)) {
+      const q = Math.max(0.3, r);
+      const h = field.heightAt;
+      kept[kept.length - SCATTER_STRIDE + 1] = restingY(
+        h(x, z),
+        h(x - q, z),
+        h(x + q, z),
+        h(x, z - q),
+        h(x, z + q),
+        r * 2,
+      );
+    }
   }
   return { count: kept.length / SCATTER_STRIDE, data: Float32Array.from(kept) };
 }

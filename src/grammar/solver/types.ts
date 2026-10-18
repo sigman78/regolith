@@ -3,6 +3,7 @@
  * drafts into a `ResolvedBase`, the only thing render/ and sim/ ever read.
  */
 import type { Pose, Vec3 } from '@/core/math';
+import type { FlatField } from '@/world/flatten';
 import type { Link, PartId, PartInstance, PortRef } from '@/world/document';
 import type {
   Footprint,
@@ -112,6 +113,11 @@ export interface ResolvedBase {
    * parts including slab hosts, and tube corridors.
    */
   keepOut: Uint8Array;
+  /**
+   * The terrain levelled under the parts (heights the legs and tubes were grounded on), or null
+   * when nothing is levelled. Anything that draws or samples the ground reads this, not the raw terrain.
+   */
+  terrain: FlatField | null;
   /** Never shown to the player as errors; used by tests and the ghost preview. */
   diagnostics: Diagnostic[];
 }

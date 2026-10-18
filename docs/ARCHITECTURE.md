@@ -165,11 +165,13 @@ Letters in the registry: H, N, D (opaque dome), V (tower), P (slab), M (mast), E
 
 **Editor additions.** The parameter picker (`editor/ui/params-panel.ts`) edits the selected part, or the Place tool's remembered params per letter, from the `ParamSpec` schema (labels, units); a change is one undo step. Suggested connections (`grammar/suggest.ts`, shown by `editor/ui/suggestions.ts`) are derived on demand for the focus part (just placed, or selected) from trial solves of candidate links and are never stored. The ghost solves only when the snapped pose, letter, params or document changes, and shows a snap arrow (`render/snap-arrow.ts`) when the solver moved it more than 0.25 m.
 
+**Ground.** The `flatten` stage (after `overlap`, before `ground`) builds `world/flatten.ts`'s field from the committed slabs and hands the levelled `heightAt` to `ground`, `dock`, `tubes` and `diagnose`; `ResolvedBase.terrain` carries it out for the terrain mesh (`levelTerrainMesh`, redone only when the field's key changes), picking and rock resettling. A dragged or previewed part is skipped, so it floats on the natural terrain and the ground settles on commit. Cost: about 1.5 ms for six slabs per solve, 0 with none, and 2.4 ms to re-seat the 9,409 mesh vertices.
+
 **Hosts.** A part whose `ground()` has `hostTop` (the slab) is grounded on bare terrain first. Every other part, and the dock and tube stages, then see a `surface`: the terrain, or a host's top wherever one is underfoot. Hosts only resolve overlap against other hosts and do not block tube routing; tubes and their legs clear a slab top instead.
 
 Known limits:
 
-- A slab is a raised deck on short pylons, not a levelled apron: terrain flattening needs terrain edits flowing back into the mesh (M4).
+- Slabs level the ground under them (a derived field, never stored); parts on legs keep the natural terrain and get a wear ring (`world/wear.ts`, a 2-channel texture the regolith shader reads; channel G is for M4's paths). Painted terrain edits still wait for M4.
 - Handles cover the range and choice params that are a length (H length and radius, C length, P width and depth, V floors, M height, D, E and N radius). Toggles, the mast head and the launcher's elevation are edited through the picker only.
 - `POWER` ports exist (M, E, C) but nothing connects to them until the power stage; beacons, dish tracking and fin glow are static.
 - `aluminium` is unused until the sky environment map lands (M2).

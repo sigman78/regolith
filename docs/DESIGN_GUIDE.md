@@ -184,7 +184,7 @@ Alphabet is **frozen per milestone**; see PLAN.md for which letters ship when.
 | Z-fighting | No coplanar faces. Stripes, decals and stencils are offset 4–12 mm along the normal and use `polygonOffset(-1,-1)`. Terrain under pads is cut (vertices pulled down 5 cm), not covered. |
 | Shadow acne / peter-panning | `normalBias 0.03`, `bias -0.0005`, shadow frustum fitted to the visible build area, all casters double-sided for the shadow pass only. Re-verify at 06:00 and 18:30 every milestone (low sun is the acid test). |
 | Popping | LOD transitions via screen-door dither over 200 ms. Decorators fade in with scale 0 → 1 over 150 ms. Tubes extend, never appear. |
-| Terrain conformity | Legs are generated per `STRUCT` port against the bilinear height, with a 5 cm footpad sunk into terrain. Pads flatten terrain under them with a 1 m blended skirt. |
+| Terrain conformity | Legs are generated per `STRUCT` port against the bilinear height, with a 5 cm footpad sunk into terrain. Pads (slabs) flatten terrain under them to the mean natural height, flat to 1 cm across the footprint and a 1.4 m fringe, then blend back to the natural ground over 2 m. Parts on legs never reshape the ground. |
 | Normal seams | Lathe and sweep generators share one profile library with explicit hard/soft edge flags; normals are computed by the generator, never by `computeVertexNormals` on merged geometry. |
 | Scale drift | Every generator takes metres and the design constants from a single `design-constants.ts` (bevel, flange ratio, rib spacing). No magic numbers in part files. |
 | Determinism | Every generator is a pure function of (params, seed). Geometry cache keyed by hash. Same base, same bytes. |
