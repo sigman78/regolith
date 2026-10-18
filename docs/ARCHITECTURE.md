@@ -156,23 +156,29 @@ Each stage is a pure function `(ResolvedBase, Document) → ResolvedBase` in its
 
 ### 4.3 State of the solver (M1) and known limits
 
-Implemented: place, overlap, ground, dock, tubes (with node insertion and a wider-clearance retry that rolls back cleanly). Not yet: power, paths, decorators, beacon, diagnose. The `Diagnostic` kinds in use are `unknown-letter`, `moved`, `unplaceable`, `link-skipped`, `tube-unroutable`, `tube-too-long`; a failed route falls back to a tight tube plus a diagnostic, never an error (P1).
+Implemented: place, overlap, ground, dock, tubes (with node insertion and a wider-clearance retry that rolls back cleanly) and diagnose. Not yet: power, paths, decorators, beacon. The `Diagnostic` kinds in use are `unknown-letter`, `moved`, `unplaceable`, `link-skipped`, `tube-unroutable`, `tube-too-long` and `invariant`; a failed route falls back to a tight tube plus a diagnostic, never an error (P1).
 
-Letters in the registry: H, N, V (tower), P (slab), M (mast), E (power plant), C (launcher).
+Letters in the registry: H, N, D (opaque dome), V (tower), P (slab), M (mast), E (power plant), C (launcher).
+
+**Diagnose** (`solver/diagnose.ts`) is opt-in (`SolveOptions.diagnose`), never on the hot path. It checks the DESIGN_GUIDE §8.4 list that a resolved base can answer: every leg ends on terrain or a slab top (`stands-on-something`), serials are unique, solid hulls never overlap by exact footprint gap (`hull-gap`), a tube starts and ends at a real, used, tube-capable port (`tube-free-end`, `halo-usable`), and a routed tube never passes through a hull it is not attached to (`tube-crosses-hull`, sampled every 0.25 m; links already flagged `tube-unroutable`/`tube-too-long` are exempt). Property tests run it on random mixed bases with links over flat and rough terrain and while dragging; mutation tests prove each rule fires. Mesh rules (watertight, outward normals, 6 cm bevel) stay in `geometry/validate`. It found two router bugs: a port facing a hull within reach walked its lead out through that hull (now `tube-unroutable`), and a node could be placed on an earlier tube.
+
+**Editor additions.** The parameter picker (`editor/ui/params-panel.ts`) edits the selected part, or the Place tool's remembered params per letter, from the `ParamSpec` schema (labels, units); a change is one undo step. The ghost solves only when the snapped pose, letter, params or document changes, and shows a snap arrow (`render/snap-arrow.ts`) when the solver moved it more than 0.25 m.
 
 **Hosts.** A part whose `ground()` has `hostTop` (the slab) is grounded on bare terrain first. Every other part, and the dock and tube stages, then see a `surface`: the terrain, or a host's top wherever one is underfoot. Hosts only resolve overlap against other hosts and do not block tube routing; tubes and their legs clear a slab top instead.
 
 Known limits:
 
 - A slab is a raised deck on short pylons, not a levelled apron: terrain flattening needs terrain edits flowing back into the mesh (M4).
-- Only H has grow handles; the other letters take their parameters from the schema defaults (the Place tool does not offer a parameter picker yet).
+- Only H has grow handles; every letter's parameters are edited through the picker.
 - `POWER` ports exist (M, E, C) but nothing connects to them until the power stage; beacons, dish tracking and fin glow are static.
 - `aluminium` is unused until the sky environment map lands (M2).
 
 - Tubes leave horizontal-normal PRESS ports only; the node's `top` port cannot take a tube yet.
 - Growing a hab on a 45° yaw can drift the fixed end by a grid step (poses snap to 1 m).
 - The terrain edge is visible when zoomed out far.
-- Solving 200 parts takes ~13–16 ms against the 2 ms target; it needs incremental solving (`docs/PERF.md`).
+- Solving 200 parts takes ~16 ms against the 2 ms target; it needs incremental solving (`docs/PERF.md`).
+- The geometry worker and trim-sheet UVs are not built; both are M2 (the trim sheet needs the art pass, the worker needs the LOD pipeline).
+- A clean span of up to 24 m between two ports is one plain tube; a node appears from about 26 m, or when the route has to bend around something.
 
 ### 4.4 Snapping and the ghost
 

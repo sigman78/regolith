@@ -30,3 +30,14 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-17 22:07 · 2b7c423 · Letter C launcher (mass driver on a sled, coils, hazard muzzle ring) and mixed-alphabet solver property tests
 - 2026-10-17 22:10 · 13dff7a · Art pass: hull/graphite instead of aluminum until the env map, hollow muzzle ring, one-line tray labels
 - 2026-10-17 22:10 · 9792cf0 · Screenshot sheet for the new modules (12:00 and 18:30), docs for hosts and limits
+
+## M1 — finish
+
+- 2026-10-17 22:25 · 9b2d64b · Parameter picker for every part, remembered per letter, one undo step per change
+- 2026-10-17 22:26 · 05259f9 · Letter D opaque dome with collar PRESS ports
+- 2026-10-17 22:27 · 2400d52 · Ghost snap arrow when the solver moves the preview
+- 2026-10-17 22:37 · a1b6466 · Router fix: no lead through a neighbouring hull, no node on an earlier tube
+- 2026-10-17 22:37 · 371557a · Diagnose stage for the DESIGN_GUIDE §8.4 invariants, with property and mutation tests
+- 2026-10-17 22:42 · 7288f7d · Router memoisation and pocket shortcut, throttled ghost; PERF.md numbers (2 ms target still unmet)
+- 2026-10-17 22:43 · 48df4fb · M1 exit criteria as headless tests: 20 m tube and node, drag-through, 30 parts and undo all
+- 2026-10-17 22:45 · cb3bc9d · Screenshots for the picker, dome and snap arrow; 30-part and connect shots driven by real mouse input
