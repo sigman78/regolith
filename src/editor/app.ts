@@ -310,6 +310,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
     const dt = Math.min(timer.getDelta(), 0.1);
     rig.update(dt);
     lighting.apply(hour, rig.target);
+    renderer.toneMappingExposure = lighting.exposure;
     handles?.update();
     halos?.update();
     renderer.render(scene, rig.camera);

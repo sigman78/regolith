@@ -4,6 +4,7 @@
  */
 import { Color, DoubleSide, MeshStandardMaterial } from 'three';
 import type { MaterialName } from '@/geometry/bundle';
+import { patchEdgeFade } from './shader-patches';
 
 export const PALETTE = {
   regolith: '#b5582f',
@@ -20,8 +21,9 @@ export const PALETTE = {
 } as const;
 
 export const materials = {
+  // The palette lives in the vertex colours (terrain-mesh.ts); a tinted base colour would square it.
   regolith: new MeshStandardMaterial({
-    color: new Color(PALETTE.regolith),
+    color: new Color(0xffffff),
     roughness: 0.95,
     metalness: 0.0,
     vertexColors: true,
@@ -73,6 +75,8 @@ export const materials = {
     side: DoubleSide,
   }),
 };
+
+patchEdgeFade(materials.regolith);
 
 // Compile-time check: every material name geometry/ may emit exists in the library.
 const _complete: MaterialName extends keyof typeof materials ? true : never = true;

@@ -15,6 +15,13 @@ export interface SkyState {
   sunAltitude: number;
   sunColor: Color;
   sunIntensity: number;
+  /**
+   * Direction the sunlight comes from. Never lower than LIGHT_MIN_ELEVATION, so a low sun
+   * still lights the ground with long, readable shadows instead of a grazing black.
+   */
+  lightDir: Vector3;
+  /** Tone-map exposure: a little up at twilight and more at night, so the scene stays readable. */
+  exposure: number;
   skyZenith: Color;
   skyHorizon: Color;
   ambientSky: Color;
@@ -22,6 +29,9 @@ export interface SkyState {
   ambientIntensity: number;
   fogColor: Color;
 }
+
+/** The blue halo around the sun, strongest at sunset (DESIGN_GUIDE §5). */
+export const SKY_AUREOLE = '#6f8fc9';
 
 const NOON_SKY_ZENITH = new Color('#c99a6b');
 const NOON_SKY_HORIZON = new Color('#e8c39a');
@@ -46,6 +56,8 @@ function smoothstep(e0: number, e1: number, x: number): number {
 
 /** The sun is above the horizon for 14 of the 24 hours: up before 06:00, down after 19:00. */
 const HALF_DAY_HOURS = 7;
+/** sin(elevation) the sunlight is never lower than: about 9 degrees. */
+const LIGHT_MIN_ELEVATION = 0.16;
 /** Sun altitude at noon, degrees. */
 const NOON_ALTITUDE_DEG = 68;
 
@@ -69,7 +81,8 @@ export function computeSky(hour: number, latitudeDeg = 18): SkyState {
 
   // 0 = night, 1 = full day, with a twilight band around the horizon.
   const dayness = smoothstep(-0.08, 0.25, sunDir.y);
-  const duskness = 1 - Math.abs(smoothstep(-0.2, 0.2, sunDir.y) * 2 - 1); // peaks at horizon
+  // Twilight colours while the sun is low (about 0-20 degrees) and just below the horizon.
+  const duskness = (1 - smoothstep(0.02, 0.4, sunDir.y)) * smoothstep(-0.2, -0.02, sunDir.y);
 
   const skyZenith = new Color();
   const skyHorizon = new Color();
@@ -81,12 +94,17 @@ export function computeSky(hour: number, latitudeDeg = 18): SkyState {
   const sunColor = mix(new Color(), SUN_LOW, SUN_NOON, smoothstep(0.05, 0.5, altitude));
   // Keep a low warm sun a little past the geometric horizon so dusk has light in it.
   const sunIntensity = 2.4 * smoothstep(-0.06, 0.18, sunDir.y) + 0.6 * altitude;
-  if (sunDir.y < 0.05) sunDir.y = 0.05 + (sunDir.y - 0.05) * 0.2; // flatten, never below ~3 deg
+  if (sunDir.y < 0.05) sunDir.y = 0.05 + (sunDir.y - 0.05) * 0.2; // the disc never sinks far below the horizon
   sunDir.normalize();
+  const lightDir = sunDir.clone();
+  lightDir.y = Math.max(lightDir.y, LIGHT_MIN_ELEVATION);
+  lightDir.normalize();
 
   const ambientSky = NIGHT_AMBIENT.clone().lerp(skyHorizon.clone().lerp(skyZenith, 0.5), dayness);
   const ambientGround = GROUND.clone().multiplyScalar(0.35 + 0.65 * dayness);
-  const ambientIntensity = 0.7 + 0.5 * dayness;
+  // Lifted at twilight too: shadows are cool and readable, never black (design guide §5).
+  const ambientIntensity =
+    0.7 + 0.5 * dayness + 0.35 * duskness + 0.9 * (1 - dayness) * (1 - duskness);
 
   return {
     hour: h,
@@ -94,6 +112,8 @@ export function computeSky(hour: number, latitudeDeg = 18): SkyState {
     sunAltitude: altitude,
     sunColor,
     sunIntensity,
+    lightDir,
+    exposure: 1.1 + 0.35 * duskness + 0.6 * (1 - dayness) * (1 - duskness),
     skyZenith,
     skyHorizon,
     ambientSky,

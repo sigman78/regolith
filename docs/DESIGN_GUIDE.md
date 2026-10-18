@@ -84,6 +84,8 @@ A sol is scrubbed 0 → 24 h. Default start 15:30 (long warm shadows).
 | 18:30 | setting, `#FFB070` | `#5A3F55` → `#6F8FC9` | cool | The blue sunset. Windows start to warm. |
 | 21:00 | none | `#0B0D16` → `#1A1B2A` | 0.25 | Night: lights, beacons, Phobos, stars. |
 
+**Sun path (as built in M2).** The sun is above the horizon for 14 of the 24 hours: 11° up at 06:00, 68° at noon, 5° up at 18:30, gone by 21:00. Twilight colours (blue halo, cool ambient) follow the sun's altitude, not the clock. The light never comes in lower than about 9° (the sun *disc* still sets), so low sun lights the ground with long shadows instead of grazing black. Exposure rises a little at twilight and more at night so the base stays readable. The terrain fades into the horizon colour over its outer 20 m, so the edge of the world is haze, not a cliff.
+
 Rules:
 
 - **Shadows are lifted and warm.** Hemisphere ambient with a ground colour of warm regolith bounce. Never a black shadow.
