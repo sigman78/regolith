@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createDocument, partList } from '@/world/document';
+import { createDocument, keepMirror, partList } from '@/world/document';
 import { cmd } from './commands';
 import { DocumentStore } from './store';
 
@@ -130,5 +130,46 @@ describe('undo / redo', () => {
     off();
     s.undo();
     expect(fn).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('flip (mirror) in the document', () => {
+  const hab = {
+    id: 'h',
+    letter: 'H' as const,
+    params: { length: 8, radius: 2 },
+    pose: { x: 4, z: 4, yaw: 0 as const },
+  };
+
+  it('is stored only when true, undoable, and a no-op when unchanged', () => {
+    const store = new DocumentStore(createDocument({ seed: 't' }));
+    store.execute(cmd.addPart(hab));
+    expect(store.doc.parts['h']?.pose).toEqual({ x: 4, z: 4, yaw: 0 });
+
+    store.execute(cmd.setPose('h', { x: 4, z: 4, yaw: 0, mirror: true }));
+    expect(store.doc.parts['h']?.pose.mirror).toBe(true);
+
+    const before = store.doc;
+    store.execute(cmd.setPose('h', { x: 4, z: 4, yaw: 0, mirror: true }));
+    expect(store.doc).toBe(before); // same flip again changes nothing
+
+    store.undo();
+    expect(store.doc.parts['h']?.pose).toEqual({ x: 4, z: 4, yaw: 0 });
+    store.redo();
+    expect(store.doc.parts['h']?.pose.mirror).toBe(true);
+  });
+
+  it('survives a move and a turn that go through keepMirror', () => {
+    expect(keepMirror({ x: 0, z: 0, yaw: 0, mirror: true }, { x: 5, z: 6, yaw: 90 })).toEqual({
+      x: 5,
+      z: 6,
+      yaw: 90,
+      mirror: true,
+    });
+    expect(keepMirror({ x: 0, z: 0, yaw: 0 }, { x: 5, z: 6, yaw: 90 })).toEqual({
+      x: 5,
+      z: 6,
+      yaw: 90,
+    });
   });
 });

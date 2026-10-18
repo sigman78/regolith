@@ -14,6 +14,8 @@ export interface Pose {
   z: number;
   /** degrees, same handedness as three's `rotation.y` */
   yaw: number;
+  /** Mirrored across the part's local XY plane (z becomes -z), applied before the yaw. */
+  mirror?: boolean;
 }
 
 const DEG = Math.PI / 180;
@@ -25,14 +27,30 @@ export function rotateY(v: Vec3, yawDeg: number): Vec3 {
   return [v[0] * c + v[2] * s, v[1], -v[0] * s + v[2] * c];
 }
 
+/** Mirror across the local XY plane: what a flipped part does before it is turned. */
+export function mirrorZ(v: Vec3): Vec3 {
+  return [v[0], v[1], -v[2]];
+}
+
 export function localToWorld(pose: Pose, v: Vec3): Vec3 {
-  const r = rotateY(v, pose.yaw);
+  const r = rotateY(pose.mirror ? mirrorZ(v) : v, pose.yaw);
   return [r[0] + pose.x, r[1] + pose.y, r[2] + pose.z];
 }
 
-/** Direction only: rotate, do not translate. */
+/** Direction only: mirror and rotate, do not translate. */
 export function localDirToWorld(pose: Pose, v: Vec3): Vec3 {
-  return rotateY(v, pose.yaw);
+  return rotateY(pose.mirror ? mirrorZ(v) : v, pose.yaw);
+}
+
+/** The inverse of `localToWorld`: a world point in the part's own frame. */
+export function worldToLocal(pose: Pose, v: Vec3): Vec3 {
+  return worldDirToLocal(pose, [v[0] - pose.x, v[1] - pose.y, v[2] - pose.z]);
+}
+
+/** The inverse of `localDirToWorld`. */
+export function worldDirToLocal(pose: Pose, v: Vec3): Vec3 {
+  const r = rotateY(v, -pose.yaw);
+  return pose.mirror ? mirrorZ(r) : r;
 }
 
 /** Nearest of the eight yaw stops. */

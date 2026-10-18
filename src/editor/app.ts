@@ -28,7 +28,7 @@ import { GRID } from '@/geometry/design-constants';
 import { ScatterSync } from '@/render/scatter-sync';
 import { SceneSync } from '@/render/scene-sync';
 import { buildTerrainMesh } from '@/render/terrain-mesh';
-import { createDocument, type PartId } from '@/world/document';
+import { createDocument, keepMirror, type PartId } from '@/world/document';
 import { raycastTerrain, type Ray } from '@/world/raycast';
 import { scatterCandidates } from '@/world/scatter';
 import { generateTerrain, heightAt } from '@/world/terrain';
@@ -181,7 +181,10 @@ export function startApp(canvas: HTMLCanvasElement): void {
       const doc = store.doc.parts[id];
       if (!part || !doc) return;
       store.execute(
-        cmd.setPose(id, { x: part.pose.x, z: part.pose.z, yaw: snapYaw(part.pose.yaw) }),
+        cmd.setPose(
+          id,
+          keepMirror(doc.pose, { x: part.pose.x, z: part.pose.z, yaw: snapYaw(part.pose.yaw) }),
+        ),
       );
     },
     tip: (text, x, y) => {

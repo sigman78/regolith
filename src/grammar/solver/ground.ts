@@ -13,7 +13,7 @@
  * the hull belly never dips below the sampled terrain.
  */
 import { FOOT_SINK } from '@/geometry/design-constants';
-import { localToWorld, rotateY } from '@/core/math';
+import { localDirToWorld, localToWorld, rotateY } from '@/core/math';
 import { cellCenter } from '../footprint';
 import type { Draft, Leg, ResolvedPort, SolverWorld } from './types';
 
@@ -113,7 +113,7 @@ function groundOne(draft: Draft, world: SolverWorld): Grounded {
     id: p.id,
     type: p.type,
     position: localToWorld(pose, p.position),
-    normal: localToWorld({ x: 0, y: 0, z: 0, yaw: pose.yaw }, p.normal),
+    normal: localDirToWorld(pose, p.normal),
   }));
 
   const legs: Leg[] = [];

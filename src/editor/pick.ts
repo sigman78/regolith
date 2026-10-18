@@ -3,7 +3,7 @@
  * bounds, posed). Footprint proxies, not render meshes (ARCHITECTURE §8), so
  * picking is pure and stays cheap with hundreds of parts.
  */
-import { rotateY, type Vec3 } from '@/core/math';
+import { worldDirToLocal, worldToLocal, type Vec3 } from '@/core/math';
 import { buildBundle } from '@/geometry/build';
 import { TUBE_RADIUS } from '@/geometry/design-constants';
 import type { ResolvedBase, ResolvedPart } from '@/grammar/solver';
@@ -18,11 +18,8 @@ export interface PartHit {
 /** Ray vs the part's posed local AABB; returns distance or null. */
 export function rayHitsPart(ray: Ray, part: ResolvedPart): number | null {
   const bounds = buildBundle(part.recipe).bounds;
-  const o = rotateY(
-    [ray.origin[0] - part.pose.x, ray.origin[1] - part.pose.y, ray.origin[2] - part.pose.z],
-    -part.pose.yaw,
-  );
-  const d = rotateY(ray.dir, -part.pose.yaw);
+  const o = worldToLocal(part.pose, ray.origin);
+  const d = worldDirToLocal(part.pose, ray.dir);
   return slab(o, d, bounds.min, bounds.max);
 }
 

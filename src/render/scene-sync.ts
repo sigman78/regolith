@@ -64,7 +64,7 @@ interface Drawable {
   recipeHash: string;
   legs: Leg[];
   /** body transform; tubes are authored in world space and have none */
-  pose?: { x: number; y: number; z: number; yaw: number };
+  pose?: { x: number; y: number; z: number; yaw: number; mirror?: boolean };
   /** tube only: its centreline, world space */
   path?: readonly (readonly [number, number, number])[];
 }
@@ -273,6 +273,8 @@ export class SceneSync {
       entry.root.position.copy(entry.pivot);
       entry.legs.position.set(-d.pose.x, -d.pose.y, -d.pose.z);
       entry.body.rotation.y = d.pose.yaw * DEG;
+      // A flip is a negative scale: three flips the winding for it, so the mirrored part shares its geometry.
+      entry.body.scale.z = d.pose.mirror ? -1 : 1;
     }
 
     const key = JSON.stringify(d.legs);

@@ -8,7 +8,7 @@ import { cmd } from '../commands';
 import { getPart } from '@/grammar/registry';
 import type { ParamEditor, PointerInfo, Tool, ToolHost } from './tool';
 import { pickPart } from '../pick';
-import type { PartId } from '@/world/document';
+import { keepMirror, type PartId } from '@/world/document';
 
 export class SelectTool implements Tool {
   readonly id = 'select';
@@ -58,11 +58,14 @@ export class SelectTool implements Tool {
       const part = host.store.doc.parts[this.drag.id];
       if (!p.ground || !part) return;
       host.store.execute(
-        cmd.setPose(this.drag.id, {
-          x: p.ground[0] + this.drag.dx,
-          z: p.ground[2] + this.drag.dz,
-          yaw: part.pose.yaw,
-        }),
+        cmd.setPose(
+          this.drag.id,
+          keepMirror(part.pose, {
+            x: p.ground[0] + this.drag.dx,
+            z: p.ground[2] + this.drag.dz,
+            yaw: part.pose.yaw,
+          }),
+        ),
       );
       return;
     }
@@ -109,12 +112,25 @@ export class SelectTool implements Tool {
       if (!part) return false;
       host.setMoving(id);
       host.store.execute(
-        cmd.setPose(id, {
-          x: part.pose.x,
-          z: part.pose.z,
-          yaw: snapYaw(part.pose.yaw + (e.shiftKey ? -45 : 45)),
-        }),
+        cmd.setPose(
+          id,
+          keepMirror(part.pose, {
+            x: part.pose.x,
+            z: part.pose.z,
+            yaw: snapYaw(part.pose.yaw + (e.shiftKey ? -45 : 45)),
+          }),
+        ),
       );
+      host.commitResolved(id);
+      host.setMoving(null);
+      return true;
+    }
+    if (e.key.toLowerCase() === 'f') {
+      const part = host.store.doc.parts[id];
+      if (!part) return false;
+      const { mirror: _was, ...rest } = part.pose;
+      host.setMoving(id);
+      host.store.execute(cmd.setPose(id, part.pose.mirror ? rest : { ...rest, mirror: true }));
       host.commitResolved(id);
       host.setMoving(null);
       return true;

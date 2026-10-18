@@ -59,16 +59,28 @@ export class Ghost {
   show(
     letter: Letter,
     params: ParamValues,
-    at: { x: number; z: number; yaw: number },
+    at: { x: number; z: number; yaw: number; mirror?: boolean },
   ): ResolvedPart | null {
     if (!getPart(letter)) return this.hide();
     // The solver snaps to the grid, so the preview only changes when the snapped
     // pose, the part or the document does; between those the cursor just moves the arrow.
     const yaw = snapYaw(at.yaw);
     const base = this.getDoc();
-    const key = JSON.stringify([letter, params, snap(at.x, GRID), snap(at.z, GRID), yaw]);
+    const key = JSON.stringify([
+      letter,
+      params,
+      snap(at.x, GRID),
+      snap(at.z, GRID),
+      yaw,
+      !!at.mirror,
+    ]);
     if (!(this.last && this.last.doc === base && this.last.key === key)) {
-      const pose: PartPose = { x: at.x, z: at.z, yaw };
+      const pose: PartPose = {
+        x: at.x,
+        z: at.z,
+        yaw,
+        ...(at.mirror ? { mirror: true as const } : {}),
+      };
       const doc = addPart(base, { id: GHOST_ID, letter, params, pose });
       const solved = solve(doc, this.world, { movingId: GHOST_ID });
       this.solves++;
