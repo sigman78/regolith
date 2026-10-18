@@ -56,6 +56,7 @@ function geometriesFor(bundle: GeometryBundle): Partial<Record<MaterialName, Buf
     g.setAttribute('position', new BufferAttribute(b.positions, 3));
     g.setAttribute('normal', new BufferAttribute(b.normals, 3));
     g.setAttribute('uv', new BufferAttribute(b.uvs, 2));
+    g.setAttribute('color', new BufferAttribute(b.colors, 3));
     g.setIndex(new BufferAttribute(b.indices, 1));
     g.computeBoundingSphere();
     out[name] = g;

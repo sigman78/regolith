@@ -39,6 +39,8 @@ The palette is a closed set. New colours are added here first, with a role.
 | Regolith light | `#D98C5A` | Crater rims, dune crests, worn paths. |
 | Hull white | `#E8E4DC` | Warm off-white. All pressurized skins. |
 | Hull shaded | `#CFC8BB` | Underside tint baked into vertex colour on habs. |
+| Underside shade | `#9A9088` (multiplier) | Vertex tint on down-facing surfaces and the lowest 0.8 m of any part (`tintUnderside`). Multiplies the material colour; never a paint colour. |
+| Dust tint | `#D9B38C` (multiplier) | Vertex tint on the lowest 1.4 m of a part, thickest to windward (`tintDust`, wind from 215°). Not applied to glass. |
 | Accent orange | `#FF6A2A` | One stripe per module, hatch rings, rover body, flags. The brand colour. |
 | Graphite | `#2B2F36` | Ribs, flanges, trusses, legs, cables, rubber. Never pure black. |
 | Aluminium | `#B9BCC2` | Tanks, radiator backs, dish. Metal 1.0. |

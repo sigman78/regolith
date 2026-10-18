@@ -300,3 +300,19 @@ export const HAB_WINDOW_THICK = 0.05;
 export const HAB_WINDOW_PROUD = 0.02;
 /** Angle of the window rows from the top of the hull, degrees. */
 export const HAB_WINDOW_ANGLE_DEG = 52;
+
+// ---- Vertex tints (DESIGN_GUIDE §3, §9) -------------------------------------------
+/** Colour multipliers, as hex: they scale the material colour, they never replace it. */
+export const TINT_UNDERSIDE = '#9a9088';
+export const TINT_DUST = '#d9b38c';
+/** Surfaces facing straight down get the full underside shade; it fades out by this normal.y. */
+export const UNDERSIDE_FADE_TOP = 0.15;
+export const UNDERSIDE_FADE_BOTTOM = -0.85;
+/** Contact shading: the lowest metre of a part is a little darker (ambient occlusion stand-in). */
+export const CONTACT_HEIGHT = 0.8;
+export const CONTACT_STRENGTH = 0.2;
+/** Dust is kicked up from the ground: it covers the lowest part of a module, thickest to windward. */
+export const DUST_HEIGHT = 1.4;
+export const DUST_MAX = 0.6;
+/** Direction the prevailing wind blows from, degrees in the plan (x toward z). */
+export const WIND_FROM_DEG = 215;

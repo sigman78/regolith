@@ -33,6 +33,7 @@ function checkBuffers(name: string, b: MaterialBuffers, problems: string[]): voi
     ['positions', p],
     ['normals', n],
     ['uvs', b.uvs],
+    ['colors', b.colors],
   ] as const) {
     for (let i = 0; i < arr.length; i++) {
       if (!Number.isFinite(arr[i])) {
@@ -42,6 +43,7 @@ function checkBuffers(name: string, b: MaterialBuffers, problems: string[]): voi
     }
   }
   if (n.length !== p.length) problems.push(`${name}: normals/positions length mismatch`);
+  if (b.colors.length !== p.length) problems.push(`${name}: colors/positions length mismatch`);
   if (idx.length % 3 !== 0) problems.push(`${name}: index count not a multiple of 3`);
 
   for (let v = 0; v < vertexCount; v++) {
