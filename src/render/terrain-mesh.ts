@@ -38,7 +38,9 @@ export function buildTerrainMesh(hf: Heightfield): Mesh {
       const x = pos.getX(idx);
       const z = pos.getZ(idx);
       const grain = fbm2(x * 0.35, z * 0.35, { octaves: 2, seed: 99 }) * 0.5 + 0.5;
-      c.copy(dark).lerp(base, Math.min(1, t * 1.6)).lerp(light, Math.max(0, t - 0.6) * 1.5);
+      c.copy(dark)
+        .lerp(base, Math.min(1, t * 1.6))
+        .lerp(light, Math.max(0, t - 0.6) * 1.5);
       c.lerp(light, grain * 0.12);
       colors[idx * 3] = c.r;
       colors[idx * 3 + 1] = c.g;
