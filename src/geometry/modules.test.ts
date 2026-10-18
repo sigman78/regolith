@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { allParts, getPart } from '@/grammar/registry';
 import type { ParamSchema, ParamValues } from '@/grammar/types';
 import { buildBundle } from './build';
-import { SLAB_THICK } from './design-constants';
+import { SLAB_THICK, TOWER_CAP_RATIO, TOWER_FLOOR_HEIGHT, TOWER_RADIUS } from './design-constants';
 import { assertValidBundle } from './validate';
 
 /** Every combination of choice/toggle values and the min / default / max of each range. */
@@ -101,6 +101,37 @@ describe('slab geometry', () => {
         expect(Math.abs(f.position[0])).toBeLessThan(Number(p.w) / 2);
         expect(Math.abs(f.position[2])).toBeLessThan(Number(p.d) / 2);
       }
+    }
+  });
+});
+
+describe('tower geometry', () => {
+  const V = getPart('V');
+
+  it('rises floors × floor height plus the cap, and rests on y = 0', () => {
+    if (!V) throw new Error('V is not registered');
+    for (const floors of [2, 3, 4, 5]) {
+      const p = V.resolve({ floors });
+      const { bounds } = buildBundle(V.geometry(p, { seed: 't' }));
+      expect(bounds.min[1]).toBeCloseTo(0, 5);
+      const top = floors * TOWER_FLOOR_HEIGHT;
+      expect(bounds.max[1]).toBeGreaterThan(top);
+      expect(bounds.max[1]).toBeLessThan(top + TOWER_RADIUS * TOWER_CAP_RATIO + 0.1);
+    }
+  });
+
+  it('has 4 ground ports, 2 per upper floor, all on the hull cylinder', () => {
+    if (!V) throw new Error('V is not registered');
+    for (const floors of [2, 3, 4, 5]) {
+      const ports = V.ports(V.resolve({ floors }));
+      const press = ports.filter((q) => q.type === 'PRESS');
+      expect(press).toHaveLength(4 + 2 * (floors - 1));
+      for (const q of press) {
+        expect(Math.hypot(q.position[0], q.position[2])).toBeCloseTo(TOWER_RADIUS, 9);
+        expect(q.normal[1]).toBe(0);
+        expect(q.position[1]).toBeLessThan(floors * TOWER_FLOOR_HEIGHT);
+      }
+      for (const q of ports.filter((s) => s.type === 'STRUCT')) expect(q.position[1]).toBe(0);
     }
   });
 });

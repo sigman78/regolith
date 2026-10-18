@@ -135,3 +135,28 @@ export const SLAB_FOOT_SPACING = 4;
 export const SLAB_BAND_WIDTH = 0.2;
 export const SLAB_BAND_INSET = 0.2;
 export const SLAB_BAND_PROUD = 0.02;
+
+// ---- Tower (letter V) -------------------------------------------------------
+
+export const TOWER_FLOORS = { min: 2, max: 5, step: 1, default: 3 } as const;
+/** Hull radius of the tower, metres (hab size M). */
+export const TOWER_RADIUS = 3;
+export const TOWER_FLOOR_HEIGHT = 3;
+/** Dome cap depth as a fraction of radius. */
+export const TOWER_CAP_RATIO = 0.3;
+export const TOWER_CAP_STEPS = 6;
+export const TOWER_SEGMENTS = 32;
+export const TOWER_FOOTPRINT_MARGIN = 0.15;
+/** PRESS ports sit this far above their floor level. */
+export const TOWER_PORT_Y = 1;
+/** Four feet on the flat underside, radial distance as a fraction of the radius. */
+export const TOWER_FOOT_RADIAL = 0.7;
+/** Window band per floor: centre height above floor level, half height, proud of the hull. */
+export const TOWER_WINDOW_Y = 2.2;
+export const TOWER_WINDOW_HALF = 0.35;
+export const TOWER_WINDOW_PROUD = 0.012;
+/** Accent stripe under the cap: half width and distance below the top rim. */
+export const TOWER_STRIPE_HALF = 0.25;
+export const TOWER_STRIPE_BELOW_TOP = 0.6;
+/** Rib thickness between floors and at the top rim. */
+export const TOWER_RIB_THICK = 0.2;
