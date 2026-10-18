@@ -29,4 +29,4 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-17 22:05 · a66f61d · Letter E power plant: 2/3 m drum, radiator fins, hazard band, three inert POWER ports
 - 2026-10-17 22:07 · 2b7c423 · Letter C launcher (mass driver on a sled, coils, hazard muzzle ring) and mixed-alphabet solver property tests
 - 2026-10-17 22:10 · 13dff7a · Art pass: hull/graphite instead of aluminum until the env map, hollow muzzle ring, one-line tray labels
-- 2026-10-17 22:14 · (this commit) · Screenshot sheet for the new modules (12:00 and 18:30), docs for hosts and limits
+- 2026-10-17 22:10 · 9792cf0 · Screenshot sheet for the new modules (12:00 and 18:30), docs for hosts and limits
