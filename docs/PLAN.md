@@ -74,6 +74,7 @@ Deliverables:
 - Inflate/deflate on place/delete; telescoping tubes; docking clunk.
 - Windows on H; glass with night emissive.
 - Geometry worker.
+- Ambient rocks and boulders, scatter stage S1 ([SCATTER.md](SCATTER.md)): keep-out solver stage, `world/scatter.ts`, instanced rocks.
 
 **Exit:** a 4-angle × 4-hour screenshot sheet of the golden base reviewed against the design guide; 60 fps on the reference iGPU laptop; zero z-fighting or acne in the sheet.
 
@@ -107,7 +108,7 @@ Deliverables:
 - Dust accumulation on windward faces over time; drone cleaning for arrays (drone agent).
 - Decorators: handrails, ladders, stencil serials, chevrons, pipe from tank to nearest hab.
 - Dust devils (ambient), windsock.
-- **Automatic terrain decoration** (mostly hands-off, derived from the world seed and the base, never stored): scattered rocks and boulders, rock formations and outcrops, wheel tracks (rover and crew traffic, tied to the worn-path field), and other debris such as scree, small craters' ejecta and the odd lost crate. Seeded and deterministic (same seed, same bytes), instanced for cost, kept clear of every footprint and tube, denser near craters and the terrain edge, sparser in the build area so the base stays the hero. The player gets at most a brush to nudge density or clear an area.
+- **Automatic terrain decoration, stage S2** (design in [SCATTER.md](SCATTER.md)): terrain-edit dirty regions, rock-formation clusters, ambient props, density slider and clear brush. Wheel-track ribbons follow with rovers in M5; stage S1 (rocks) lands in M2.
 
 **Exit:** carve a crater rim berm around a cluster, watch paths form between airlocks over two sols, see dust gather on one side and get cleaned.
 

@@ -218,6 +218,9 @@ Principles:
 
 ### 6.2 Terrain
 
+Automatic ground decoration (rocks, formations, tracks, debris) is specified in [SCATTER.md](SCATTER.md).
+
+
 Heightfield mesh in 32×32-cell chunks so brush edits re-upload a small patch. Path wear and dust are a 2-channel data texture sampled in the regolith shader, not geometry. Pads cut terrain by pulling vertices (keeps the mesh single-surface).
 
 ### 6.3 Lighting, sky, time
