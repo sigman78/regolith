@@ -7,6 +7,7 @@ import type { GeometryRecipe } from '@/grammar/types';
 import { BundleBuilder, type GeometryBundle } from './bundle';
 import { buildHab } from './hab';
 import { buildLegFoot, buildLegStrut } from './leg';
+import { buildLauncher } from './launcher';
 import { buildMast } from './mast';
 import { buildNode } from './node';
 import { buildSlab } from './slab';
@@ -36,6 +37,9 @@ export function buildBundle(recipe: GeometryRecipe): GeometryBundle {
         break;
       case 'slab':
         buildSlab(out, op);
+        break;
+      case 'launcher':
+        buildLauncher(out, op);
         break;
       case 'reactor':
         buildReactor(out, op);

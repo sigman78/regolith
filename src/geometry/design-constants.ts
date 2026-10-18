@@ -229,3 +229,36 @@ export const REACTOR_RIB_THICK = 0.22;
 export const REACTOR_PORT_Y = 0.9;
 export const REACTOR_PORT_COUNT = 3;
 export const REACTOR_JUNCTION = { radial: 0.3, h: 0.5, tangent: 0.5 } as const;
+
+// ---- Launcher (letter C) ----------------------------------------------------
+
+export const LAUNCHER_LENGTH = { min: 8, max: 20, step: 4, default: 12 } as const;
+/** Barrel elevation options, degrees above horizontal. */
+export const LAUNCHER_ELEVATIONS = [10, 20, 30] as const;
+export const LAUNCHER_SLED_HEIGHT = 0.4;
+export const LAUNCHER_SLED_WIDTH = 2.4;
+export const LAUNCHER_FOOTPRINT_MARGIN = 0.15;
+/** Four feet under the sled: distance in from each end, and half the spacing across. */
+export const LAUNCHER_FOOT_INSET = 1;
+export const LAUNCHER_FOOT_HALF_Z = 0.8;
+/** The barrel hinges this far in from the rear end, and this high above the sled top. */
+export const LAUNCHER_HINGE_INSET = 0.8;
+export const LAUNCHER_HINGE_HEIGHT = 0.9;
+/** The barrel ends this far short of the front end (in plan). */
+export const LAUNCHER_MUZZLE_INSET = 0.8;
+export const LAUNCHER_BARREL_RADIUS = 0.45;
+export const LAUNCHER_COIL_RADIUS = 0.8;
+export const LAUNCHER_COIL_THICK = 0.3;
+export const LAUNCHER_COIL_SPACING = 1.2;
+/** First coil this far along the barrel from the hinge; last coil this far before the muzzle. */
+export const LAUNCHER_COIL_START = 1.4;
+export const LAUNCHER_COIL_END = 1.2;
+export const LAUNCHER_MUZZLE_BAND = 0.35;
+export const LAUNCHER_MUZZLE_BAND_RADIUS = 0.68;
+/** Breech block behind and around the hinge. */
+export const LAUNCHER_BREECH = { w: 1.2, d: 1.4, extra: 0.8 } as const;
+/** Trestle posts under the barrel at these fractions of its length; post footprint in plan. */
+export const LAUNCHER_POSTS = [0.35, 0.7] as const;
+export const LAUNCHER_POST_WIDTH = 0.35;
+export const LAUNCHER_POST_DEPTH = 0.9;
+export const LAUNCHER_SEGMENTS = 20;

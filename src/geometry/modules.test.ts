@@ -3,6 +3,7 @@ import { allParts, getPart } from '@/grammar/registry';
 import type { ParamSchema, ParamValues } from '@/grammar/types';
 import { buildBundle } from './build';
 import {
+  LAUNCHER_ELEVATIONS,
   MAST_BASE_RADIUS,
   MAST_HEADS,
   MAST_HEIGHTS,
@@ -205,6 +206,39 @@ describe('power plant geometry', () => {
       // Fins reach out REACTOR_FIN_REACH of the radius beyond the hull.
       expect(bounds.max[0]).toBeGreaterThan(radius * (1 + REACTOR_FIN_REACH) - 0.2);
       expect(bounds.max[1]).toBeGreaterThan(radius * REACTOR_HEIGHT_RATIO);
+    }
+  });
+});
+
+describe('launcher geometry', () => {
+  const C = getPart('C');
+
+  it('lays its barrel out along +X and rises with the elevation, inside the footprint', () => {
+    if (!C) throw new Error('C is not registered');
+    const tops: number[] = [];
+    for (const elevation of LAUNCHER_ELEVATIONS) {
+      const p = C.resolve({ length: 16, elevation });
+      const { bounds } = buildBundle(C.geometry(p, { seed: 't' }));
+      expect(bounds.min[1]).toBeCloseTo(0, 5);
+      expect(bounds.max[0]).toBeLessThanOrEqual(8 + 1e-6);
+      expect(bounds.min[0]).toBeGreaterThanOrEqual(-8 - 1e-6);
+      tops.push(bounds.max[1]);
+    }
+    // Steeper is higher.
+    expect(tops[1]).toBeGreaterThan(tops[0] ?? Infinity);
+    expect(tops[2]).toBeGreaterThan(tops[1] ?? Infinity);
+  });
+
+  it('has four feet under the sled and a POWER port on its rear face', () => {
+    if (!C) throw new Error('C is not registered');
+    for (const length of [8, 12, 16, 20]) {
+      const ports = C.ports(C.resolve({ length }));
+      const feet = ports.filter((q) => q.type === 'STRUCT');
+      expect(feet).toHaveLength(4);
+      for (const f of feet) expect(f.position[1]).toBe(0);
+      const power = ports.find((q) => q.type === 'POWER');
+      expect(power?.position[0]).toBe(-length / 2);
+      expect(power?.normal).toEqual([-1, 0, 0]);
     }
   });
 });

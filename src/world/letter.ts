@@ -3,4 +3,20 @@
  * because the document stores them; grammar/ attaches meaning to them.
  */
 export type Letter =
-  'H' | 'V' | 'N' | 'D' | 'T' | 'A' | 'G' | 'L' | 'S' | 'E' | 'K' | 'R' | 'M' | 'B' | 'X' | 'P';
+  | 'H'
+  | 'V'
+  | 'N'
+  | 'D'
+  | 'T'
+  | 'A'
+  | 'G'
+  | 'L'
+  | 'S'
+  | 'E'
+  | 'K'
+  | 'R'
+  | 'M'
+  | 'B'
+  | 'X'
+  | 'P'
+  | 'C';
