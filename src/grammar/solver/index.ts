@@ -11,6 +11,7 @@
  */
 import { hashValue } from '@/core/hash';
 import type { BaseDocument } from '@/world/document';
+import { diagnose } from './diagnose';
 import { dock } from './dock';
 import { ground, isHost, type Grounded } from './ground';
 import { overlap } from './overlap';
@@ -27,6 +28,7 @@ import type {
 
 export type * from './types';
 export { linkKey } from './tubes';
+export { canTakeTube } from './ports';
 
 export function emptyBase(): ResolvedBase {
   return { parts: new Map(), tubes: new Map(), usedPorts: new Set(), diagnostics: [] };
@@ -64,7 +66,9 @@ export function solve(
   const tubes = new Map<string, ResolvedTube>();
   for (const t of [...docks, ...linked.tubes]) tubes.set(t.id, t);
 
-  return { parts, tubes, usedPorts: used, diagnostics };
+  const base: ResolvedBase = { parts, tubes, usedPorts: used, diagnostics };
+  if (opts.diagnose) diagnostics.push(...diagnose(doc, base, { terrain: world, surface }));
+  return base;
 }
 
 function toResolved(g: Grounded, seed: string, derived: boolean): ResolvedPart {

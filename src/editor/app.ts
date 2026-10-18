@@ -37,6 +37,7 @@ import { SelectTool } from './tools/select';
 import type { PointerInfo, Tool, ToolHost, ToolId } from './tools/tool';
 import { GrowHandles } from './ui/handles';
 import { Halos } from './ui/halos';
+import { ParamsPanel } from './ui/params-panel';
 import { Tray } from './ui/tray';
 
 export function startApp(canvas: HTMLCanvasElement): void {
@@ -100,7 +101,9 @@ export function startApp(canvas: HTMLCanvasElement): void {
     setTool: (id) => setTool(id),
     select: (id) => {
       selected = id;
+      refreshUi();
     },
+    refreshUi: () => refreshUi(),
     setMoving: (id) => {
       movingId = id;
     },
@@ -189,8 +192,12 @@ export function startApp(canvas: HTMLCanvasElement): void {
       )
     : null;
 
+  const paramsEl = document.getElementById('params');
+  const panel = paramsEl ? new ParamsPanel(paramsEl) : null;
+
   function refreshUi(): void {
     tray?.refresh(active);
+    panel?.show(active.editor());
   }
 
   store.subscribe(() => {
@@ -268,7 +275,10 @@ export function startApp(canvas: HTMLCanvasElement): void {
       switchTo(tool);
       return;
     }
-    if (key === 'escape') selected = null;
+    if (key === 'escape') {
+      selected = null;
+      refreshUi();
+    }
     if (key === '[') hour -= 0.5;
     if (key === ']') hour += 0.5;
     if (key === 'q') rig.rotateStep(-1);
@@ -310,6 +320,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
       rig,
       select: (id: PartId | null) => {
         selected = id;
+        refreshUi();
       },
     };
   }

@@ -34,6 +34,7 @@ const SCHEMA = {
     max: TOWER_FLOORS.max,
     step: TOWER_FLOORS.step,
     default: TOWER_FLOORS.default,
+    label: 'Floors',
   },
 } as const satisfies ParamSchema;
 

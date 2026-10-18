@@ -28,8 +28,13 @@ import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 export type MastParams = { height: number; head: number };
 
 const SCHEMA = {
-  height: { kind: 'choice', options: MAST_HEIGHTS, default: 12 },
-  head: { kind: 'choice', options: MAST_HEADS, default: MAST_HEAD_DISH },
+  height: { kind: 'choice', options: MAST_HEIGHTS, default: 12, unit: ' m' },
+  head: {
+    kind: 'choice',
+    options: MAST_HEADS,
+    default: MAST_HEAD_DISH,
+    labels: ['Dish', 'Whip', 'Relay'],
+  },
 } as const satisfies ParamSchema;
 
 export const M: PartDefinition<MastParams> = {

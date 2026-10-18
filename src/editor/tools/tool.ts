@@ -5,12 +5,22 @@
  */
 import type { Vec3 } from '@/core/math';
 import type { ResolvedBase } from '@/grammar/solver';
+import type { ParamSchema, ParamValue, ParamValues } from '@/grammar/types';
 import type { PartId } from '@/world/document';
 import type { Ray } from '@/world/raycast';
 import type { Ghost } from '../ghost';
 import type { DocumentStore } from '../store';
 
 export type ToolId = 'select' | 'place' | 'connect' | 'delete';
+
+/** What the parameter picker shows for the active tool: a schema, its current values, and a setter. */
+export interface ParamEditor {
+  title: string;
+  schema: ParamSchema;
+  values: ParamValues;
+  /** Clamps and applies; one call is one undo step when it edits the document. */
+  set(key: string, value: ParamValue): void;
+}
 
 export interface PointerInfo {
   ray: Ray;
@@ -38,6 +48,8 @@ export interface ToolHost {
   /** Small text near the cursor; null hides it. */
   tip(text: string | null, clientX?: number, clientY?: number): void;
   describe(id: PartId): string;
+  /** Rebuild the tray and the parameter picker (selection or tool state changed). */
+  refreshUi(): void;
 }
 
 export interface Tool {
@@ -47,6 +59,8 @@ export interface Tool {
   readonly key: string;
   activate(): void;
   deactivate(): void;
+  /** Parameters the picker should offer right now, or null for none. */
+  editor(): ParamEditor | null;
   move(p: PointerInfo): void;
   down(p: PointerInfo): void;
   up(p: PointerInfo): void;

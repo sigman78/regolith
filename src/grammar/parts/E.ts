@@ -24,7 +24,13 @@ import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 export type ReactorParams = { radius: number };
 
 const SCHEMA = {
-  radius: { kind: 'choice', options: REACTOR_RADII, default: REACTOR_RADII[0] },
+  radius: {
+    kind: 'choice',
+    options: REACTOR_RADII,
+    default: REACTOR_RADII[0],
+    label: 'Size',
+    labels: ['Small', 'Large'],
+  },
 } as const satisfies ParamSchema;
 
 export const E: PartDefinition<ReactorParams> = {

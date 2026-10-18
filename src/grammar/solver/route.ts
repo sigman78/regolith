@@ -55,6 +55,17 @@ export function route(q: RouteQuery): Lattice[] | null {
 
   const g = new Float64Array(w * h * 8).fill(Infinity);
   const from = new Int32Array(w * h * 8).fill(-1);
+  // `free` is asked about each lattice point once per heading and neighbour; remember the answer.
+  const memo = new Uint8Array(w * h);
+  const isFree = (x: number, z: number): boolean => {
+    const m = (x - x0) * h + (z - z0);
+    let v = memo[m] ?? 0;
+    if (v === 0) {
+      v = q.free(x, z) ? 1 : 2;
+      memo[m] = v;
+    }
+    return v === 1;
+  };
   const heap = new MinHeap();
 
   const heuristic = (x: number, z: number): number => {
@@ -62,6 +73,16 @@ export function route(q: RouteQuery): Lattice[] | null {
     const dz = Math.abs(z - q.goal[1]);
     return Math.max(dx, dz) + (Math.SQRT2 - 1) * Math.min(dx, dz);
   };
+
+  // A route cannot exist if either end sits in a small closed pocket (headings only
+  // remove moves, never add them). Checking that is cheap; flooding the whole window
+  // with heading states to find out is not.
+  if (
+    pocketed(q.start, q.goal, isFree, [x0, x1, z0, z1]) ||
+    pocketed(q.goal, q.start, isFree, [x0, x1, z0, z1])
+  ) {
+    return null;
+  }
 
   const s = id(q.start[0], q.start[1], q.startHeading);
   g[s] = 0;
@@ -97,7 +118,7 @@ export function route(q: RouteQuery): Lattice[] | null {
       const nx = x + d[0];
       const nz = z + d[1];
       if (nx < x0 || nx > x1 || nz < z0 || nz > z1) continue;
-      if (!q.free(nx, nz)) continue;
+      if (!isFree(nx, nz)) continue;
       const step = (d[0] !== 0 && d[1] !== 0 ? Math.SQRT2 : 1) + TUBE_TURN_COST * t;
       const next = id(nx, nz, nk);
       const ng = gc + step;
@@ -120,6 +141,40 @@ export function route(q: RouteQuery): Lattice[] | null {
   }
   pts.reverse();
   return pts;
+}
+
+/** How many points a pocket check explores before it decides the end is not boxed in. */
+const POCKET_CAP = 400;
+
+/**
+ * Is `from` walled into a pocket of at most POCKET_CAP free points that does not
+ * contain `other`? The end points themselves count as open (the caller makes them so).
+ */
+function pocketed(
+  from: Lattice,
+  other: Lattice,
+  free: (x: number, z: number) => boolean,
+  [x0, x1, z0, z1]: readonly [number, number, number, number],
+): boolean {
+  const seen = new Set<number>();
+  const key = (x: number, z: number): number => (x - x0) * (z1 - z0 + 1) + (z - z0);
+  const queue: Lattice[] = [from];
+  seen.add(key(from[0], from[1]));
+  for (let head = 0; head < queue.length; head++) {
+    const p = queue[head] as Lattice;
+    if (p[0] === other[0] && p[1] === other[1]) return false;
+    if (queue.length > POCKET_CAP) return false;
+    for (const d of DIRS) {
+      const nx = p[0] + d[0];
+      const nz = p[1] + d[1];
+      if (nx < x0 || nx > x1 || nz < z0 || nz > z1) continue;
+      const k = key(nx, nz);
+      if (seen.has(k) || !free(nx, nz)) continue;
+      seen.add(k);
+      queue.push([nx, nz]);
+    }
+  }
+  return true;
 }
 
 /** Drop lattice points that lie on a straight line between their neighbours. */

@@ -40,10 +40,24 @@ export type GroundSpec =
 export type ParamValue = number | string | boolean;
 export type ParamValues = Record<string, ParamValue>;
 
+/** Display hints shared by every kind; the picker uses them, the solver never does. */
+interface ParamLook {
+  /** Shown instead of the capitalised key. */
+  label?: string;
+  /** Appended to numbers: 'm', '°'. */
+  unit?: string;
+}
+
 export type ParamSpec =
-  | { kind: 'range'; min: number; max: number; step: number; default: number }
-  | { kind: 'choice'; options: readonly number[]; default: number }
-  | { kind: 'toggle'; default: boolean };
+  | (ParamLook & { kind: 'range'; min: number; max: number; step: number; default: number })
+  | (ParamLook & {
+      kind: 'choice';
+      options: readonly number[];
+      default: number;
+      /** One name per option, instead of the number. */
+      labels?: readonly string[];
+    })
+  | (ParamLook & { kind: 'toggle'; default: boolean });
 
 export type ParamSchema = Readonly<Record<string, ParamSpec>>;
 
@@ -58,6 +72,7 @@ export type GeomOp =
   | { kind: 'mast'; height: number; head: number }
   | { kind: 'reactor'; radius: number }
   | { kind: 'launcher'; length: number; elevation: number }
+  | { kind: 'dome'; radius: number }
   /** World-space centreline, flat x,y,z, already embedded slightly into the hulls at both ends. */
   | { kind: 'tube'; points: number[] }
   /** Unit-height leg strut, base at y = 0. Render scales it in Y to the leg length. */

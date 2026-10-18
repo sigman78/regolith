@@ -80,6 +80,14 @@ export interface ResolvedTube {
   recipeHash: string;
 }
 
+export type InvariantRule =
+  | 'stands-on-something'
+  | 'unique-serial'
+  | 'hull-gap'
+  | 'tube-free-end'
+  | 'tube-crosses-hull'
+  | 'halo-usable';
+
 export type Diagnostic =
   | { kind: 'unknown-letter'; part: PartId; letter: string }
   | { kind: 'moved'; part: PartId; dx: number; dz: number }
@@ -89,7 +97,9 @@ export type Diagnostic =
   /** No clear route: a straight tube was drawn anyway (never reject, P1). */
   | { kind: 'tube-unroutable'; tube: string }
   /** Over the span or kink limit and no room for a node. */
-  | { kind: 'tube-too-long'; tube: string };
+  | { kind: 'tube-too-long'; tube: string }
+  /** A DESIGN_GUIDE §8.4 rule is broken. Only produced when `SolveOptions.diagnose` is set. */
+  | { kind: 'invariant'; rule: InvariantRule; subject: string; detail: string };
 
 export interface ResolvedBase {
   parts: Map<PartId, ResolvedPart>;
@@ -107,4 +117,6 @@ export interface SolveOptions {
    * their spots and the moving part yields.
    */
   movingId?: PartId;
+  /** Also run the invariant checks (O(n²) in parts): tests and debug builds, not the hot path. */
+  diagnose?: boolean;
 }

@@ -33,7 +33,10 @@ const SIZE_SPEC = {
   default: SLAB_SIZE.default,
 } as const;
 
-const SCHEMA = { w: SIZE_SPEC, d: SIZE_SPEC } as const satisfies ParamSchema;
+const SCHEMA = {
+  w: { ...SIZE_SPEC, label: 'Width', unit: ' m' },
+  d: { ...SIZE_SPEC, label: 'Depth', unit: ' m' },
+} as const satisfies ParamSchema;
 
 /** `count` points from -half to +half, spaced evenly, at most SLAB_FOOT_SPACING apart. */
 function along(half: number): number[] {

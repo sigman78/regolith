@@ -50,6 +50,16 @@ Deliverables:
 
 **Exit:** build a 30-part base in under 3 minutes with no visible glitch; drag a hab through another and watch it resolve; connect two habs 20 m apart and get a routed tube with a node; undo everything.
 
+**Status: done, with two honest deviations (2026-10-17).**
+- [x] Document, commands, undo; part definitions and the alphabet H N D V P M E C; solver place → overlap → ground → dock → tubes → diagnose; `SceneSync`; Select, Place, Grow, Connect, Delete; parameter picker; ghost with snap arrow.
+- [x] Property tests: nothing floats, hulls never overlap, tubes never cross hulls (diagnose on random mixed bases with links), all bundles valid.
+- [x] Exit criteria, checked headless in `src/editor/m1-exit.test.ts` and by real mouse and key input in the browser (30 parts placed by hotkey and click, a hab dragged over another, two habs connected by dragging halo to halo, Ctrl+Z; shots `build30`, `connect`, `picker`, `dome`, `snap-arrow` in `docs/shots/m1/`).
+- **Deviation — the node.** Two habs ~20 m apart with a clear way get **one plain tube and no node**: the span limit is 24 m (`TUBE_MAX_SPAN`), and a node appears from about 26 m or when the route must bend around a part. Both are tested (20 m with a hab in the way → a node on the detour; 26 m clear → a node). The constants were not tuned to fit the sentence.
+- **Deviation — performance.** The 2 ms solve target for 200 parts is **not met** (~16 ms; see `docs/PERF.md`). Router memoisation, a walled-in-pocket shortcut and a throttled ghost help; incremental solving is the next step and is scheduled with M2's worker.
+- **Moved to M2:** trim-sheet UVs (they only matter with the procedural trim sheet) and the geometry worker (needed by LOD). The brief said "worker optional here, required by M2".
+- **Not yet:** gizmos on the selected part for tweaking parameters interactively in the scene (drag a handle for length, radius, floors, mast height) — today only H has grow handles and every other letter uses the picker panel. Scheduled after the M2 art gate, as a generic handle set driven by the `ParamSpec` schema (one undo step per drag, like the picker).
+- Not built because it never belonged to M1: letter **L** (landing pad, M5).
+
 ## M2 — The Look (art gate)
 
 **Goal:** screenshots that make someone say "oh". This is a hard gate; nothing from M3 starts until it passes.
@@ -64,6 +74,7 @@ Deliverables:
 - Inflate/deflate on place/delete; telescoping tubes; docking clunk.
 - Windows on H; glass with night emissive.
 - Geometry worker.
+- Ambient rocks and boulders, scatter stage S1 ([SCATTER.md](SCATTER.md)): keep-out solver stage, `world/scatter.ts`, instanced rocks.
 
 **Exit:** a 4-angle × 4-hour screenshot sheet of the golden base reviewed against the design guide; 60 fps on the reference iGPU laptop; zero z-fighting or acne in the sheet.
 
@@ -97,6 +108,7 @@ Deliverables:
 - Dust accumulation on windward faces over time; drone cleaning for arrays (drone agent).
 - Decorators: handrails, ladders, stencil serials, chevrons, pipe from tank to nearest hab.
 - Dust devils (ambient), windsock.
+- **Automatic terrain decoration, stage S2** (design in [SCATTER.md](SCATTER.md)): terrain-edit dirty regions, rock-formation clusters, ambient props, density slider and clear brush. Wheel-track ribbons follow with rovers in M5; stage S1 (rocks) lands in M2.
 
 **Exit:** carve a crater rim berm around a cluster, watch paths form between airlocks over two sols, see dust gather on one side and get cleaned.
 
@@ -134,7 +146,7 @@ Deliverables:
 
 ## First ten tasks for the next agent (M0 tail → M1 start)
 
-**Status: all ten done** (screenshots in `docs/shots/m1/`). What M1 still owes: letter D (and L), a parameter picker for the new letters, the `diagnose` stage, the worker, incremental solving (see `docs/PERF.md`), and the known limits listed in ARCHITECTURE §4.3.
+**Status: all ten done**, and M1 is finished (see the M1 status above): D, the picker and diagnose are in. What is still owed is incremental solving (`docs/PERF.md`), the worker and trim UVs (M2), and the known limits listed in ARCHITECTURE §4.3.
 
 1. Add ESLint + Prettier with the layer import rule from ARCHITECTURE §2; fix any findings.
 2. Create `src/geometry/design-constants.ts` (BEVEL 0.06, FLANGE_RATIO 0.10, RIB_SPACING 2, HAB_RADII [2, 3], DOME_RADII [3, 4.5, 6, 8]) and use it in `hab.ts`.
@@ -149,6 +161,7 @@ Deliverables:
 
 ## Backlog (not scheduled)
 
+- Parameter gizmos on the selected part (drag handles instead of the picker panel); see the M1 status.
 - Touch and gamepad input.
 - WebGPU renderer + node materials port.
 - Interiors visible through a cutaway when zoomed close.

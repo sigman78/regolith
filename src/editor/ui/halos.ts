@@ -5,7 +5,7 @@
  * the routed result while you drag.
  */
 import { Vector3, type PerspectiveCamera } from 'three';
-import type { ResolvedBase } from '@/grammar/solver';
+import { canTakeTube, type ResolvedBase } from '@/grammar/solver';
 import type { Link, PartId } from '@/world/document';
 import { cmd } from '../commands';
 import type { Ghost } from '../ghost';
@@ -63,7 +63,7 @@ export class Halos {
     let n = 0;
     for (const part of base.parts.values()) {
       for (const port of part.ports) {
-        if (port.type !== 'PRESS' || Math.abs(port.normal[1]) > 1e-6) continue;
+        if (!canTakeTube(port)) continue;
         if (base.usedPorts.has(`${part.id}/${port.id}`)) continue;
         this.tmp
           .set(port.position[0], port.position[1], port.position[2])
