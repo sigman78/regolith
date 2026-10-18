@@ -86,3 +86,4 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-18 03:07 · 9672739 · Merged feat/m3-letters (airlock, solar array, light pole) into main and pushed
 - 2026-10-18 03:21 · 80ac8db · Airlock exit and cycle: crew walk out 08-18 to a loiter spot 4-8 m from the ramp, lock seal/pump/open with up to two riders, per-instance airlock lamp (orange, yellow, green), suited figure outdoors; paused 2 frames per 10 s, 4x capped at 10 Hz
 - 2026-10-18 03:31 · 42d24f3 · Merged feat/m3-exit (airlock exit and cycle, crew outdoors, airlock lamp) into main and pushed
+- 2026-10-18 03:44 · a5f07c0 · Night lights: pole heads and the one beacon (tallest part that offers a mount, ties by id) as instanced lamps on one material, baked light material removed; paused 2 frames per 10 s
