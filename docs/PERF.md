@@ -75,7 +75,9 @@ Measured with `EXT_disjoint_timer_query_webgl2` in Chrome (the `__regolith` debu
 
 What the user saw ("GPU goes brr"): the loop drew at the display's refresh rate forever, with the shadow map redrawn every frame, MSAA on the canvas and in the composer, pixel ratio up to 2 and high as the default.
 
-Done: render on demand (draw only while input, camera easing, an edit, the hour or an animation is active; 60 fps cap; 2 fps heartbeat idle), shadow map refreshed only when the hour, an edit or an animation changes it, no canvas MSAA when the composer resolves its own, pixel ratio capped at 1.5, F2 toggles medium / high. Measured idle: about 2 renders a second instead of 60+; panning leaves the shadow map alone; an edit refreshes it for the length of the animation only.
+Done: render on demand (draw only while input, camera easing, an edit, the hour or an animation is active; 60 fps cap; one frame every 5 s heartbeat idle), shadow map refreshed only when the hour, an edit or an animation changes it, no canvas MSAA when the composer resolves its own, pixel ratio capped at 1.5, F2 toggles medium / high. Measured idle: about 2 renders a second instead of 60+; panning leaves the shadow map alone; an edit refreshes it for the length of the animation only.
+
+Measured on the golden base at high (2026-10-18): 2 frames in 10 s idle (the heartbeat); a 120-step middle-button orbit drew 311 of 314 display frames. The preset steps down by itself on a slow machine (`quality-governor.ts`, 5 unit tests; not yet seen on the reference iGPU laptop).
 
 Not done: dynamic resolution, caster culling for the shadow pass.
 

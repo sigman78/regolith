@@ -73,3 +73,5 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-18 01:12 · 79a0a34 · Worn ring around footprints and footpads: a 2-channel wear texture (R ring, G reserved for paths) read by the merged regolith shader patch
 - 2026-10-18 01:13 · 1c3ef3f · Merged feat/contact into main and pushed
 - 2026-10-18 01:25 · 2cfa39d · Individuality: per-instance hull tint (palette segment) and hab stripe variants derived from serial and seed, nothing stored
+- 2026-10-18 01:27 · 9b0e68e · Serial stencil on hab hulls as a decal: wrapped onto the hull, yaw-only so flips never mirror it, no extra draw call
+- 2026-10-18 01:29 · 8c23d4a · Merged feat/individuality into main and pushed

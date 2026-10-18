@@ -24,6 +24,7 @@ import { allParts, getPart } from '@/grammar/registry';
 import { CameraRig } from '@/render/camera-rig';
 import { Lighting } from '@/render/lighting';
 import { parseQuality, PostChain } from '@/render/post';
+import { QualityGovernor } from '@/render/quality-governor';
 import { GRID } from '@/geometry/design-constants';
 import { wearOf } from '@/grammar/solver/wear';
 import { ScatterSync } from '@/render/scatter-sync';
@@ -52,7 +53,7 @@ import { ParamsPanel } from './ui/params-panel';
 import { Tray } from './ui/tray';
 
 /** While nothing changes the picture is redrawn at this interval (see the frame loop). */
-const IDLE_FRAME_MS = 500;
+const IDLE_FRAME_MS = 5000;
 const MAX_PIXEL_RATIO = 1.5;
 
 export function startApp(canvas: HTMLCanvasElement): void {
@@ -405,6 +406,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
     if (key === 'f2') {
       // Ambient occlusion is the expensive part; this is the quick way to trade it for battery.
       post.setQuality(post.current === 'high' ? 'medium' : 'high');
+      governor.enabled = false;
       wake(true);
     }
     if (key === '[') hour -= 0.5;
@@ -425,15 +427,21 @@ export function startApp(canvas: HTMLCanvasElement): void {
   resize();
 
   // Render on demand: draw only while something changes (input, easing, an animation, an edit,
-  // the hour), with a slow heartbeat while idle so a missed wake-up
-  // shows up as a stale frame for half a second rather than forever.
+  // the hour), with a rare heartbeat while idle so a missed wake-up
+  // shows up as a stale frame for a few seconds rather than forever.
   let lastRender = -Infinity;
+  /** Frames actually drawn; the debug hook reads it to prove idle draws nothing. */
+  let rendered = 0;
+  // Without an explicit preset, step down by itself when the machine cannot keep up.
+  const governor = new QualityGovernor(!params.has('quality'));
   let shownHour = Number.NaN;
   for (const type of ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'keydown', 'keyup']) {
     // Capture phase: handle and halo drags stop propagation and hold the pointer on their own elements.
     window.addEventListener(type, () => wake(), { passive: true, capture: true });
   }
   window.addEventListener('resize', () => wake());
+  document.addEventListener('visibilitychange', () => wake());
+  window.addEventListener('focus', () => wake());
 
   function frame(now: number): void {
     requestAnimationFrame(frame);
@@ -462,6 +470,10 @@ export function startApp(canvas: HTMLCanvasElement): void {
     if (shadowDirty || animating) renderer.shadowMap.needsUpdate = true;
     shadowDirty = false;
     post.render(dt);
+    rendered++;
+    // Only back-to-back frames say anything about load; the idle heartbeat is a pause.
+    const slower = governor.observe(gap, post.current);
+    if (slower) post.setQuality(slower);
     dirty = again;
   }
   requestAnimationFrame(frame);
@@ -474,6 +486,8 @@ export function startApp(canvas: HTMLCanvasElement): void {
       renderer,
       post,
       wear: wearMap,
+      frames: () => rendered,
+      quality: () => post.current,
       base: () => resolved,
       setHour: (h: number) => {
         hour = h;
