@@ -112,13 +112,25 @@ export class CameraRig {
       this.dragYaw -= dx * 0.008;
       this.yawGoal = this.dragYaw;
     } else {
-      const scale = this.distance * 0.0012;
-      const right = new Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
-      const fwd = new Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
-      this.target.addScaledVector(right, -dx * scale);
-      this.target.addScaledVector(fwd, -dy * scale);
+      this.panBy(dx, dy);
     }
   };
+
+  /**
+   * Grab-the-ground pan: the point under the cursor stays under it. A pixel is
+   * `2 tan(fov/2) * distance / height` metres across the target plane, and a
+   * pixel down the screen covers `1 / sin(pitch)` times that along the ground.
+   */
+  panBy(dx: number, dy: number): void {
+    const height = Math.max(1, this.el.clientHeight);
+    const perPixel =
+      (2 * Math.tan(MathUtils.degToRad(this.camera.fov) / 2) * this.distance) / height;
+    const right = new Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
+    const fwd = new Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
+    this.target.addScaledVector(right, -dx * perPixel);
+    // Dragging down pulls the ground toward the viewer, so the view moves forward.
+    this.target.addScaledVector(fwd, (dy * perPixel) / Math.sin(this.pitch));
+  }
 
   private onUp = (e: PointerEvent): void => {
     if (this.dragging === 'none') return;
