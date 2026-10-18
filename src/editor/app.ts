@@ -5,7 +5,8 @@
  *
  * Flow: pointer/key -> active tool -> command -> store -> solve -> SceneSync.
  * URL params: `?hour=18.5` start hour (deterministic screenshots),
- * `?empty` start with no parts, `?seed=name` terrain seed.
+ * `?empty` start with no parts, `?seed=name` terrain seed, `?golden` the fixed
+ * screenshot base, `?shot` hide the HUD (screenshot sheets, see scripts/shot-sheet.js).
  */
 import {
   ACESFilmicToneMapping,
@@ -28,6 +29,7 @@ import { raycastTerrain, type Ray } from '@/world/raycast';
 import { generateTerrain, heightAt } from '@/world/terrain';
 import { cmd } from './commands';
 import { demoParts } from './demo-base';
+import { goldenBase } from './golden-base';
 import { Ghost } from './ghost';
 import { DocumentStore } from './store';
 import { ConnectTool } from './tools/connect';
@@ -78,11 +80,18 @@ export function startApp(canvas: HTMLCanvasElement): void {
     sync.sync(resolved);
   };
 
-  if (!params.has('empty')) {
+  if (params.has('golden')) {
+    const g = goldenBase();
+    let doc = initial;
+    for (const p of g.parts) doc = cmd.addPart(p).apply(doc);
+    for (const l of g.links) doc = cmd.addLink(l).apply(doc);
+    store.reset(doc);
+  } else if (!params.has('empty')) {
     let doc = initial;
     for (const p of demoParts()) doc = cmd.addPart(p).apply(doc);
     store.reset(doc);
   }
+  if (params.has('shot')) document.body.classList.add('shot');
   resolve();
 
   // ---- tools ---------------------------------------------------------------------

@@ -75,6 +75,12 @@ export class CameraRig {
     return this.dragging !== 'none';
   }
 
+  /** Jump the zoom (metres from the target), clamped; for screenshot scripts. */
+  setDistance(metres: number): void {
+    this.distanceGoal = MathUtils.clamp(metres, this.minDistance, this.maxDistance);
+    this.distance = this.distanceGoal;
+  }
+
   rotateStep(dir: 1 | -1): void {
     this.yawGoal += this.yawStep * dir;
   }
