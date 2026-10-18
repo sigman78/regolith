@@ -2,13 +2,19 @@
  * SceneSync: diffs a ResolvedBase into the scene. The only code that turns
  * solver output into meshes (ARCHITECTURE §6.1).
  *
- * Parts: one `body` group (meshes per material, built from the recipe's
- * bundle and shared by recipe hash) posed by the resolved pose, plus a `legs`
- * group in world space. Tubes and docks: world-space bodies plus legs. Entries
- * are added, removed and updated by id; a body is only rebuilt when its recipe
- * hash changes, legs only when their numbers do.
+ * Parts: one `body` group posed by the resolved pose, plus a `legs` group in
+ * world space. Tubes and docks: world-space bodies plus legs. Entries are
+ * added, removed and updated by id; a body is only rebuilt when its recipe hash
+ * changes, legs only when their numbers do.
+ *
+ * The groups only carry transforms (inflate, yaw, flip, tube stretch). What is
+ * drawn are instances in one `BatchedMesh` per material (batch.ts), whose
+ * matrices are written from the groups' world matrices once a frame, for the
+ * entries that moved. The ghost preview keeps plain meshes: it needs the
+ * override material and is a handful of objects.
  */
 import {
+  type BatchedMesh,
   BufferAttribute,
   BufferGeometry,
   Group,
@@ -33,18 +39,36 @@ import {
   inflateScale,
   TUBE_EXTEND_SECONDS,
 } from './inflate';
+import { MaterialBatch, mirrored } from './batch';
 import { materials } from './materials';
 
 const DEG = Math.PI / 180;
+/** Undoes the body's own flip: a mirrored part draws a mirrored geometry under a proper rotation. */
+const UNFLIP = new Matrix4().makeScale(1, 1, -1);
+const scratch = new Matrix4();
 
 /** A tube extends from its first point along its chord; a part inflates about its base. */
 type Motion =
   { kind: 'inflate'; t: number } | { kind: 'deflate'; t: number } | { kind: 'extend'; t: number };
 
+/** One drawn piece of an entry: an instance in the batch of its material. */
+interface Piece {
+  batch: MaterialBatch;
+  key: string;
+  id: number;
+  /** relative to the entry's legs group; body pieces sit at the body's origin */
+  local: Matrix4 | null;
+  /** body pieces of a flipped part use the mirrored geometry */
+  flip: boolean;
+}
+
 interface Entry {
   root: Group;
   body: Group;
   legs: Group;
+  bodyPieces: Piece[];
+  legPieces: Piece[];
+  mirror: boolean;
   recipeHash: string;
   legsKey: string;
   /** part: its base point; tube: the first point of its centreline */
@@ -104,6 +128,10 @@ export class SceneSync {
   /** Removed entries still shrinking away. */
   private readonly dying = new Set<Entry>();
   private readonly root = new Group();
+  private readonly batched: boolean;
+  private readonly batches = new Map<MaterialName, MaterialBatch>();
+  /** Entries whose matrices must be written to their batches. */
+  private readonly dirty = new Set<Entry>();
   /** The first sync loads the document as it is; only later changes animate. */
   private primed = false;
 
@@ -111,6 +139,7 @@ export class SceneSync {
     scene: Scene,
     private readonly opts: SceneSyncOptions = {},
   ) {
+    this.batched = !opts.override;
     this.root.name = opts.override ? 'ghost' : 'base';
     scene.add(this.root);
   }
@@ -156,7 +185,7 @@ export class SceneSync {
         entry.motion = { kind: 'deflate', t: 0 };
         this.dying.add(entry);
       } else {
-        this.root.remove(entry.root);
+        this.dispose(entry);
       }
     }
     for (const d of drawables) {
@@ -172,6 +201,14 @@ export class SceneSync {
       if (entry.motion) this.applyMotion(entry);
     }
     this.primed = true;
+    this.flush();
+  }
+
+  /** The batched meshes in the scene (tests, and the HUD's draw-call estimate). */
+  get batchMeshes(): BatchedMesh[] {
+    const out: BatchedMesh[] = [];
+    for (const b of this.batches.values()) if (b.mesh) out.push(b.mesh);
+    return out;
   }
 
   clear(): void {
@@ -183,7 +220,7 @@ export class SceneSync {
     for (const e of this.dying) {
       if (e.motion) e.motion.t += dt / DEFLATE_SECONDS;
       if (!e.motion || e.motion.t >= 1) {
-        this.root.remove(e.root);
+        this.dispose(e);
         this.dying.delete(e);
       } else this.applyMotion(e);
     }
@@ -209,6 +246,7 @@ export class SceneSync {
         this.applyMotion(e);
       }
     }
+    this.flush();
   }
 
   /** A finished tube nudges the parts it joins. */
@@ -234,6 +272,9 @@ export class SceneSync {
       root,
       body,
       legs,
+      bodyPieces: [],
+      legPieces: [],
+      mirror: false,
       recipeHash: '',
       legsKey: '',
       pivot: new Vector3(),
@@ -261,10 +302,13 @@ export class SceneSync {
   }
 
   private update(entry: Entry, d: Drawable): void {
-    if (entry.recipeHash !== d.recipeHash) {
+    const mirror = !!d.pose?.mirror;
+    if (entry.recipeHash !== d.recipeHash || (this.batched && entry.mirror !== mirror)) {
+      this.clearPieces(entry.bodyPieces);
       entry.body.clear();
-      this.fill(entry.body, buildBundle(d.recipe));
+      this.fill(entry, buildBundle(d.recipe), mirror);
       entry.recipeHash = d.recipeHash;
+      entry.mirror = mirror;
     }
     if (d.path) this.setChord(entry, d.path);
     if (d.pose) {
@@ -279,14 +323,17 @@ export class SceneSync {
 
     const key = JSON.stringify(d.legs);
     if (entry.legsKey !== key) {
+      this.clearPieces(entry.legPieces);
       entry.legs.clear();
-      this.buildLegs(entry.legs, d.legs);
+      this.buildLegs(entry, d.legs);
       entry.legsKey = key;
     }
+    this.dirty.add(entry);
   }
 
   /** Write the entry's current scale (parts) or stretch along its chord (tubes). */
   private applyMotion(e: Entry): void {
+    this.dirty.add(e);
     if (e.axis) {
       const f = e.motion ? Math.max(0.02, extendFraction(e.motion.t)) : 1;
       const a = e.axis;
@@ -313,10 +360,13 @@ export class SceneSync {
     e.root.scale.set(s, s * dip, s);
   }
 
-  private fill(group: Group, bundle: GeometryBundle): void {
+  private fill(entry: Entry, bundle: GeometryBundle, mirror: boolean): void {
     const geos = geometriesFor(bundle);
     for (const [name, geo] of Object.entries(geos) as [MaterialName, BufferGeometry][]) {
-      group.add(this.mesh(geo, name));
+      if (this.batched) {
+        const key = mirror ? `${bundle.hash}|m` : bundle.hash;
+        entry.bodyPieces.push(this.piece(name, key, geo, null, mirror));
+      } else entry.body.add(this.mesh(geo, name));
     }
   }
 
@@ -328,17 +378,81 @@ export class SceneSync {
     return m;
   }
 
-  private buildLegs(group: Group, legs: Leg[]): void {
-    const strut = geometriesFor(buildBundle({ ops: [{ kind: 'leg-strut' }] })).graphite;
-    const foot = geometriesFor(buildBundle({ ops: [{ kind: 'leg-foot' }] })).graphite;
+  private piece(
+    name: MaterialName,
+    key: string,
+    geo: BufferGeometry,
+    local: Matrix4 | null,
+    flip: boolean,
+  ): Piece {
+    let batch = this.batches.get(name);
+    if (!batch) {
+      // Glass blends, so its instances are depth-sorted; opaque ones never need it.
+      batch = new MaterialBatch(this.root, materials[name], name === 'glass');
+      this.batches.set(name, batch);
+    }
+    const id = batch.add(key, () => (flip ? mirrored(geo) : geo));
+    return { batch, key, id, local, flip };
+  }
+
+  private clearPieces(pieces: Piece[]): void {
+    for (const p of pieces) p.batch.remove(p.key, p.id);
+    pieces.length = 0;
+  }
+
+  private buildLegs(entry: Entry, legs: Leg[]): void {
+    const strutBundle = buildBundle({ ops: [{ kind: 'leg-strut' }] });
+    const footBundle = buildBundle({ ops: [{ kind: 'leg-foot' }] });
+    const strut = geometriesFor(strutBundle).graphite;
+    const foot = geometriesFor(footBundle).graphite;
     if (!strut || !foot) return;
     for (const leg of legs) {
+      const footAt: [number, number, number] = [leg.bottom[0], leg.bottom[1], leg.bottom[2]];
+      const strutAt: [number, number, number] = [
+        leg.bottom[0],
+        leg.bottom[1] + FOOT_HEIGHT,
+        leg.bottom[2],
+      ];
+      const height = leg.top[1] + LEG_TOP_OVERLAP - strutAt[1];
+      if (this.batched) {
+        const footM = new Matrix4().makeTranslation(...footAt);
+        const strutM = new Matrix4().makeTranslation(...strutAt).scale(new Vector3(1, height, 1));
+        entry.legPieces.push(
+          this.piece('graphite', footBundle.hash, foot, footM, false),
+          this.piece('graphite', strutBundle.hash, strut, strutM, false),
+        );
+        continue;
+      }
       const f = this.mesh(foot, 'graphite');
-      f.position.set(leg.bottom[0], leg.bottom[1], leg.bottom[2]);
+      f.position.set(...footAt);
       const s = this.mesh(strut, 'graphite');
-      s.position.set(leg.bottom[0], leg.bottom[1] + FOOT_HEIGHT, leg.bottom[2]);
-      s.scale.y = leg.top[1] + LEG_TOP_OVERLAP - (leg.bottom[1] + FOOT_HEIGHT);
-      group.add(f, s);
+      s.position.set(...strutAt);
+      s.scale.y = height;
+      entry.legs.add(f, s);
     }
+  }
+
+  /** Write the moved entries' world matrices into their batches. */
+  private flush(): void {
+    for (const e of this.dirty) {
+      e.root.updateMatrixWorld(true);
+      for (const p of e.bodyPieces) {
+        const m = p.flip
+          ? scratch.multiplyMatrices(e.body.matrixWorld, UNFLIP)
+          : e.body.matrixWorld;
+        p.batch.setMatrix(p.id, m);
+      }
+      for (const p of e.legPieces) {
+        if (p.local) p.batch.setMatrix(p.id, scratch.multiplyMatrices(e.legs.matrixWorld, p.local));
+      }
+    }
+    this.dirty.clear();
+  }
+
+  private dispose(e: Entry): void {
+    this.clearPieces(e.bodyPieces);
+    this.clearPieces(e.legPieces);
+    this.dirty.delete(e);
+    this.root.remove(e.root);
   }
 }

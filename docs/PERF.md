@@ -77,7 +77,7 @@ What the user saw ("GPU goes brr"): the loop drew at the display's refresh rate 
 
 Done: render on demand (draw only while input, camera easing, an edit, the hour or an animation is active; 60 fps cap; 2 fps heartbeat idle), shadow map refreshed only when the hour, an edit or an animation changes it, no canvas MSAA when the composer resolves its own, pixel ratio capped at 1.5, F2 toggles medium / high. Measured idle: about 2 renders a second instead of 60+; panning leaves the shadow map alone; an edit refreshes it for the length of the animation only.
 
-Not done: dynamic resolution, merging draws per material (the 200-part case), caster culling for the shadow pass.
+Not done: dynamic resolution, caster culling for the shadow pass.
 
 ### Draw calls: measured, 200 parts (`?stress=200`)
 
@@ -94,4 +94,21 @@ Same method (timer queries, 1280×800, pixel ratio 1), one frame with a shadow r
 
 Reading it: at 200 parts the frame is draw-call and vertex bound, not fill bound (low and high differ by 4 ms of 10). About 16 calls per part: 4 meshes, drawn in the shadow pass and again in the colour pass, plus 2 meshes per leg. Skipping the shadow refresh saves about 2.6 ms at 200 parts, which is what on-demand rendering and `autoUpdate = false` buy during orbit and pan.
 
-The next perf step is therefore fewer draws, not cheaper pixels: one `InstancedMesh` for all leg struts and one for all feet, then one batched draw per material for the whole base (per-instance matrix keeps inflate and clunk working). Target: under 100 calls for 200 parts.
+The next perf step was therefore fewer draws, not cheaper pixels. Done next, see below.
+
+### Draw calls after batching
+
+Every part, tube and leg is now an instance in one `BatchedMesh` per material (`render/batch.ts`, `scene-sync.ts`): at most 7 meshes for the whole base, with per-instance frustum culling and no per-instance sorting except for glass. The groups SceneSync keeps only carry the transforms, so inflate, deflate, tube extension and the docking clunk are unchanged; their world matrices are written into the batches once a frame for the entries that moved. Same method as above.
+
+| Base | Preset | Draw calls | Triangles | CPU submit ms | GPU ms | GPU ms, shadows cached |
+| --- | --- | --- | --- | --- | --- | --- |
+| golden (10 parts) | low | 20 | 171 k | 0.5 | 2.1 (noisy) | 0.4 |
+| golden | medium | 34 | 171 k | 0.6 | 1.0 | 0.8 |
+| golden | high | 49 | 280 k | 0.8 | 2.1 | 1.6 |
+| stress (200 small parts) | low | 18 | 988 k | 1.1 | 1.3 | 0.7 |
+| stress | medium | 32 | 988 k | 1.2 | 1.8 | 1.3 |
+| stress | high | 46 | 1377 k | 1.9 | 2.5 | 2.2 |
+
+Draw calls at 200 parts fell from 3,257–4,505 to 18–46, CPU submit from 7–10 ms to 1–2 ms, GPU from 6–10 ms to 1.3–2.5 ms. The remaining calls are the composer's passes and the terrain, rocks and sky. Triangles are unchanged, so LOD is still the lever if a reference laptop says vertices matter.
+
+Notes for the next person: geometry is shared by (bundle hash, material, mirror) and reference-counted; unused geometries stay in the buffers until space runs out, then they are dropped, the buffers repacked and only then grown. Three cannot flip the winding per instance, so a flipped part draws a mirrored copy of the geometry under a rotation-only matrix.
