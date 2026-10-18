@@ -347,6 +347,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
     timer.update();
     const dt = Math.min(timer.getDelta(), 0.1);
     rig.update(dt);
+    sync.tick(dt);
     scatter.tick(dt);
     lighting.apply(hour, rig.target);
     renderer.toneMappingExposure = lighting.exposure;
