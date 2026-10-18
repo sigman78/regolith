@@ -15,6 +15,7 @@
  * point unless no other route existed.
  */
 import {
+  CORRIDOR_MAX_SLOPE,
   NODE_RADII,
   TUBE_LEAD,
   TUBE_MAX_KINKS,
@@ -22,7 +23,7 @@ import {
   TUBE_PORT_EMBED,
   TUBE_RADIUS,
 } from '@/geometry/design-constants';
-import { snapYaw, type Pose, type Yaw } from '@/core/math';
+import { snapYaw, type Pose, type Vec3, type Yaw } from '@/core/math';
 import type { BaseDocument, Link, PartInstance } from '@/world/document';
 import { cellKey, cellOf, footprintCells } from '../footprint';
 import { getPart } from '../registry';
@@ -30,7 +31,7 @@ import { portKey } from './dock';
 import { ground, type Grounded } from './ground';
 import { isHorizontal } from './ports';
 import { corners, DIRS, route, type Lattice } from './route';
-import { profileXZ, tubeFromPath } from './tube-path';
+import { PIPE_AXIS_LIFT, profileXZ, tubeFromPath } from './tube-path';
 import type { Diagnostic, Draft, ResolvedPort, ResolvedTube, SolverWorld } from './types';
 
 type XZ = [number, number];
@@ -260,14 +261,35 @@ function finish(ctx: Ctx, piece: Piece): void {
     kind: 'tube',
     a: piece.a.ref,
     b: piece.b.ref,
-    path: profileXZ(verts, a.position[1], b.position[1], ctx.world),
+    path: profileXZ(
+      verts,
+      a.position[1] + PIPE_AXIS_LIFT,
+      b.position[1] + PIPE_AXIS_LIFT,
+      ctx.world,
+    ),
     world: ctx.world,
     legs: true,
   });
   ctx.result.tubes.push(tube);
+  if (maxSlope(tube.path) > CORRIDOR_MAX_SLOPE) {
+    ctx.diagnostics.push({ kind: 'corridor-steep', tube: tube.id });
+  }
   for (const p of piece.dense) {
     if (Number.isInteger(p[0]) && Number.isInteger(p[1])) markPoint(ctx, cellKey(p[0], p[1]));
   }
+}
+
+/** Steepest rise over run along a centreline (segments shorter than half a metre are skipped). */
+export function maxSlope(path: readonly Vec3[]): number {
+  let worst = 0;
+  for (let i = 1; i < path.length; i++) {
+    const a = path[i - 1];
+    const b = path[i];
+    if (!a || !b) continue;
+    const run = Math.hypot(b[0] - a[0], b[2] - a[2]);
+    if (run >= 0.5) worst = Math.max(worst, Math.abs(b[1] - a[1]) / run);
+  }
+  return worst;
 }
 
 // ---- Node insertion --------------------------------------------------------------

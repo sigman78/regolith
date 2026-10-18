@@ -22,7 +22,7 @@ describe('tower in the solver', () => {
     for (const leg of tower?.legs ?? []) expect(leg.bottom[1]).toBeCloseTo(-FOOT_SINK, 9);
   });
 
-  it('takes a tube from an upper-floor port down to a hab, without diagnostics', () => {
+  it('takes a tube from an upper-floor port down to a hab, flagging only the climb', () => {
     let doc = createDocument({ seed: 's' });
     doc = addPart(doc, {
       id: 't',
@@ -43,7 +43,10 @@ describe('tower in the solver', () => {
     });
     const base = solve(doc, FLAT);
     expect([...base.tubes.keys()].some((k) => k.startsWith('tube:'))).toBe(true);
-    expect(base.diagnostics.filter((d) => d.kind !== 'moved')).toEqual([]);
+    // The tube comes down three metres: a steep corridor is flagged, never refused (P1).
+    expect(
+      base.diagnostics.filter((d) => d.kind !== 'moved' && d.kind !== 'corridor-steep'),
+    ).toEqual([]);
     // Every tube support leg ends on the ground.
     for (const tube of base.tubes.values()) {
       for (const leg of tube.legs) expect(leg.bottom[1]).toBeCloseTo(-FOOT_SINK, 9);

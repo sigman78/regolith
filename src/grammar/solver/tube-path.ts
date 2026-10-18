@@ -2,7 +2,7 @@
  * Turning a centreline into a ResolvedTube: height profile over the terrain,
  * support legs every TUBE_LEG_SPACING, and the (hashable) geometry recipe.
  *
- * Invariants: the first and last points keep the port heights exactly; every
+ * Invariants: the first and last points keep the port heights (plus PIPE_AXIS_LIFT) exactly; every
  * point in between is at least TUBE_RADIUS + TUBE_GROUND_GAP above the terrain;
  * each leg ends in the terrain (FOOT_SINK below it) and reaches the tube's
  * underside. Coordinates are rounded to 1 mm so hashes are stable.
@@ -20,6 +20,12 @@ import type { PortRef } from '@/world/document';
 import type { Leg, ResolvedTube, SolverWorld } from './types';
 
 const mm = (v: number): number => Math.round(v * 1000) / 1000;
+
+/**
+ * Ports sit on the floor; a round pipe stands on it, so its axis is one radius up. The walking
+ * path (graph.ts) is the axis lowered by the same amount. Retires with the pipe (M3.5 stage 1).
+ */
+export const PIPE_AXIS_LIFT = TUBE_RADIUS;
 
 export interface TubeInput {
   id: string;

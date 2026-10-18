@@ -21,10 +21,20 @@ describe('node geometry', () => {
     }
   });
 
-  it('puts every port on the shell', () => {
+  it('puts the hatch and feet on the shell, and the doors on the floor in front of it', () => {
     for (const size of NODE_RADII) {
-      for (const port of N.ports(N.resolve({ size }))) {
-        expect(Math.hypot(...port.position)).toBeCloseTo(size, 9);
+      const p = N.resolve({ size });
+      const floor = N.floor?.(p) ?? NaN;
+      for (const port of N.ports(p)) {
+        if (port.type === 'PRESS' && port.normal[1] === 0) {
+          // On the floor, in the plan position of the equator; the shell is a little behind it
+          // (stage 2's stub closes the gap).
+          expect(port.position[1]).toBeCloseTo(floor, 9);
+          expect(Math.hypot(port.position[0], port.position[2])).toBeCloseTo(size, 9);
+          expect(size - Math.sqrt(size * size - floor * floor)).toBeLessThan(0.4);
+        } else {
+          expect(Math.hypot(...port.position)).toBeCloseTo(size, 9);
+        }
       }
     }
   });

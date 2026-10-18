@@ -15,11 +15,11 @@
 import {
   LEG_MIN_CLEARANCE,
   TOWER_CAP_RATIO,
+  FLOOR_ABOVE_BELLY,
   TOWER_FLOORS,
   TOWER_FLOOR_HEIGHT,
   TOWER_FOOTPRINT_MARGIN,
   TOWER_FOOT_RADIAL,
-  TOWER_PORT_Y,
   TOWER_RADIUS,
 } from '@/geometry/design-constants';
 import type { Vec3 } from '@/core/math';
@@ -69,10 +69,18 @@ export const V: PartDefinition<TowerParams> = {
     return { kind: 'disc', r: TOWER_RADIUS + TOWER_FOOTPRINT_MARGIN };
   },
 
+  floor() {
+    return FLOOR_ABOVE_BELLY;
+  },
+
+  floors(p) {
+    return Array.from({ length: p.floors }, (_, k) => FLOOR_ABOVE_BELLY + k * TOWER_FLOOR_HEIGHT);
+  },
+
   ports(p) {
-    const ports: PortSpec[] = GROUND_DIRS.map((d, i) => pressPort(`g-${i}`, d, TOWER_PORT_Y));
+    const ports: PortSpec[] = GROUND_DIRS.map((d, i) => pressPort(`g-${i}`, d, FLOOR_ABOVE_BELLY));
     for (let k = 1; k < p.floors; k++) {
-      const y = k * TOWER_FLOOR_HEIGHT + TOWER_PORT_Y;
+      const y = k * TOWER_FLOOR_HEIGHT + FLOOR_ABOVE_BELLY;
       const a: Vec3 = k % 2 === 1 ? [1, 0, 0] : [0, 0, 1];
       const b: Vec3 = [-a[0], 0, -a[2]];
       ports.push(pressPort(`f${k}-0`, a, y), pressPort(`f${k}-1`, b, y));

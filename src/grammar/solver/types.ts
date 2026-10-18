@@ -92,7 +92,8 @@ export type InvariantRule =
   | 'hull-gap'
   | 'tube-free-end'
   | 'tube-crosses-hull'
-  | 'halo-usable';
+  | 'halo-usable'
+  | 'port-on-floor';
 
 export type Diagnostic =
   | { kind: 'unknown-letter'; part: PartId; letter: string }
@@ -104,6 +105,8 @@ export type Diagnostic =
   | { kind: 'tube-unroutable'; tube: string }
   /** Over the span or kink limit and no room for a node. */
   | { kind: 'tube-too-long'; tube: string }
+  /** A corridor climbs more than CORRIDOR_MAX_SLOPE: drawn anyway, never refused (P1). */
+  | { kind: 'corridor-steep'; tube: string }
   /** A DESIGN_GUIDE §8.4 rule is broken. Only produced when `SolveOptions.diagnose` is set. */
   | { kind: 'invariant'; rule: InvariantRule; subject: string; detail: string };
 

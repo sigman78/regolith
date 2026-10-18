@@ -95,8 +95,10 @@ describe('hab geometry', () => {
         const { p } = hullBundle(length, radius);
         for (const port of H.ports(p)) {
           if (port.type === 'PRESS' && port.id.startsWith('side')) {
-            // on the cylinder section, at the radius
-            expect(Math.hypot(port.position[1], port.position[2])).toBeCloseTo(radius, 6);
+            // a door on the floor, in the plan position of the flank; the hull is a little behind
+            // it (stage 2's stub closes the gap)
+            expect(port.position[1]).toBeCloseTo(H.floor?.(p) ?? NaN, 9);
+            expect(Math.abs(port.position[2])).toBeCloseTo(radius, 9);
             expect(Math.abs(port.position[0])).toBeLessThan(length / 2);
           }
           if (port.type === 'STRUCT') {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DECK_HEIGHT, TUBE_RADIUS } from '@/geometry/design-constants';
 import { solve, type SolverWorld } from '@/grammar/solver';
 import { addLink, addPart, createDocument } from '@/world/document';
 import { goldenBase } from './golden-base';
@@ -17,6 +18,43 @@ describe('golden base', () => {
       g.links.length,
     );
     for (const p of g.parts) expect(base.parts.has(p.id)).toBe(true);
+  });
+});
+
+describe('golden base on the level (M3.5 stage 0)', () => {
+  const resolved = (): ReturnType<typeof solve> => {
+    const g = goldenBase();
+    let doc = createDocument({ seed: 'golden' });
+    for (const p of g.parts) doc = addPart(doc, p);
+    for (const l of g.links) doc = addLink(doc, l);
+    return solve(doc, FLAT, { diagnose: true });
+  };
+
+  it('keeps its one dock and turns no link into one, now that sills meet', () => {
+    const base = resolved();
+    const docks = [...base.tubes.values()].filter((t) => t.kind === 'dock').map((t) => t.id);
+    expect(docks).toEqual(['dock:g-hab-e/side-0~g-lock/end-']);
+    expect([...base.tubes.values()].filter((t) => t.kind === 'tube')).toHaveLength(
+      goldenBase().links.length,
+    );
+  });
+
+  it('is level: every pipe stands a radius over the deck, every walk stays on the floor', () => {
+    const base = resolved();
+    for (const t of base.tubes.values()) {
+      for (const p of t.path) expect(p[1]).toBeCloseTo(DECK_HEIGHT + TUBE_RADIUS, 9);
+    }
+    for (const e of base.graph.edges) {
+      for (const p of e.path) expect(p[1]).toBeCloseTo(DECK_HEIGHT, 9);
+    }
+    for (const node of base.graph.nodes.values()) {
+      expect(node.centre[1], node.id).toBeCloseTo(DECK_HEIGHT, 9);
+      // The tower's upper floors are higher; every other door is on the deck.
+      for (const [id, p] of node.ports) {
+        if (node.letter === 'V' && id.startsWith('f')) continue;
+        expect(p[1]).toBeCloseTo(DECK_HEIGHT, 9);
+      }
+    }
   });
 });
 
