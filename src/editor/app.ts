@@ -5,6 +5,7 @@
  *
  * Flow: pointer/key -> active tool -> command -> store -> solve -> SceneSync.
  * URL params: `?hour=18.5` start hour (deterministic screenshots),
+ * `?quality=low|medium|high` post-processing preset (default high),
  * `?empty` start with no parts, `?seed=name` terrain seed, `?golden` the fixed
  * screenshot base, `?shot` hide the HUD (screenshot sheets, see scripts/shot-sheet.js).
  */
@@ -23,6 +24,7 @@ import { emptyBase, solve, type ResolvedBase, type SolverWorld } from '@/grammar
 import { allParts, getPart } from '@/grammar/registry';
 import { CameraRig } from '@/render/camera-rig';
 import { Lighting } from '@/render/lighting';
+import { parseQuality, PostChain } from '@/render/post';
 import { SceneSync } from '@/render/scene-sync';
 import { buildTerrainMesh } from '@/render/terrain-mesh';
 import { createDocument, type PartId } from '@/world/document';
@@ -60,6 +62,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
   const scene = new Scene();
   const lighting = new Lighting(scene, renderer);
   const rig = new CameraRig(canvas);
+  const post = new PostChain(renderer, scene, rig.camera, parseQuality(params.get('quality')));
 
   // ---- document, terrain, solver -----------------------------------------------
   const initial = createDocument({ seed });
@@ -326,6 +329,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
     const h = window.innerHeight;
     renderer.setSize(w, h, false);
     rig.resize(w, h);
+    post.resize(w, h, renderer.getPixelRatio());
   }
   window.addEventListener('resize', resize);
   resize();
@@ -339,7 +343,8 @@ export function startApp(canvas: HTMLCanvasElement): void {
     renderer.toneMappingExposure = lighting.exposure;
     handles?.update();
     halos?.update();
-    renderer.render(scene, rig.camera);
+    post.setBloomThreshold(lighting.bloomThreshold);
+    post.render(dt);
     requestAnimationFrame(frame);
   }
   frame();

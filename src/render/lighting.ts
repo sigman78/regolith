@@ -34,6 +34,8 @@ export class Lighting {
   private boundsRadius = 30;
   /** Tone-map exposure for the current hour; the renderer reads it each frame. */
   exposure = 1.1;
+  /** Bloom threshold for the current hour: above sunlit hull by day, lower at night. */
+  bloomThreshold = 1;
 
   constructor(
     private readonly scene: Scene,
@@ -83,6 +85,7 @@ export class Lighting {
     this.rim.color.copy(s.skyHorizon);
     this.rim.intensity = RIM_INTENSITY * Math.min(1, s.sunIntensity);
     this.exposure = s.exposure;
+    this.bloomThreshold = Math.max(1, 0.85 * s.sunIntensity + 0.3);
     edgeFade.color.value.copy(s.skyHorizon);
     this.fog.color.copy(s.fogColor);
     setNightGlow(1 - Math.min(1, s.sunAltitude * 6));
