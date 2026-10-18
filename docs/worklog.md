@@ -59,3 +59,8 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-17 23:21 · f47cfe9 · Inflate and deflate, tubes extend from their first port, docking clunk
 - 2026-10-17 23:24 · 4d41c4a · Docs: M2 status in PLAN (exit left unticked), worklog, PERF numbers, final 4×4 sheet in `docs/shots/m2/final/`
 - 2026-10-17 23:26 · 5191326 · Fix: camera pan inverted vertically and too fast; now grab-the-ground, tested at every yaw stop
+
+## After the M2 review
+
+- 2026-10-17 23:47 · 6159a15 · Perf: render on demand, shadow map only when it changes, no double MSAA, pixel ratio cap, F2 quality; GPU timings per preset in PERF.md
+- 2026-10-17 23:52 · 4ab2fde · Perf: every preset through the composer, capture-phase wake-ups, `?stress=200` benchmark base; 200 parts measured at about 3,300 draw calls
