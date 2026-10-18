@@ -103,3 +103,19 @@ export function patchRegolith(material: MeshStandardMaterial, color: string): vo
   };
   material.customProgramCacheKey = () => 'regolith-edge-wear';
 }
+
+/**
+ * Lamp heads: the instance colour drives the glow as well as the paint, so one instanced mesh can
+ * show an airlock going orange, yellow, green. The emissive colour stays white and the material's
+ * `emissiveIntensity` is the night ramp.
+ */
+export function patchLampEmissive(material: MeshStandardMaterial): void {
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = must(
+      shader.fragmentShader,
+      '#include <emissivemap_fragment>',
+      '#include <emissivemap_fragment>\ntotalEmissiveRadiance *= vColor.rgb;',
+    );
+  };
+  material.customProgramCacheKey = () => 'lamp-instance-emissive';
+}

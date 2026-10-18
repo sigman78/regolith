@@ -7,6 +7,7 @@
 import type { Vec3 } from '@/core/math';
 import type { PartId } from '@/world/document';
 import type { PressEdge, PressGraph } from '@/grammar/solver';
+import { FLAT_ENV, loiterSpot, type NavEnv } from './loiter';
 
 export const CENTRE = '@centre';
 
@@ -14,7 +15,9 @@ export type Step =
   /** inside a node, between its centre and one of its ports (either way) */
   | { k: 'node'; node: PartId; from: string; to: string }
   /** along a dock or tube; dir -1 walks it from b to a */
-  | { k: 'edge'; edge: string; dir: 1 | -1 };
+  | { k: 'edge'; edge: string; dir: 1 | -1 }
+  /** outdoors, between an airlock's ramp foot and its loiter spot (dir -1 walks back) */
+  | { k: 'out'; node: PartId; exit: string; slot: number; dir: 1 | -1 };
 
 interface Arc {
   to: string;
@@ -24,6 +27,10 @@ interface Arc {
 
 export interface Nav {
   graph: PressGraph;
+  /** the ground and keep-out mask outside the press graph (from the same solve as the graph) */
+  env: NavEnv;
+  /** loiter spots already worked out, by `node/exit/slot` */
+  spots: Map<string, Vec3>;
   edgeById: Map<string, PressEdge>;
   /** each edge's walkway capped with its two port points, so steps join without a jump */
   edgePath: Map<string, Vec3[]>;
@@ -36,7 +43,8 @@ const dist = (a: Vec3, b: Vec3): number => Math.hypot(b[0] - a[0], b[1] - a[1], 
 
 const navCache = new WeakMap<PressGraph, Nav>();
 
-export function navOf(graph: PressGraph): Nav {
+/** The nav of a graph; `env` is read the first time (graph and env come from one solve). */
+export function navOf(graph: PressGraph, env: NavEnv = FLAT_ENV): Nav {
   const hit = navCache.get(graph);
   if (hit) return hit;
   const arcs = new Map<string, Arc[]>();
@@ -54,6 +62,13 @@ export function navOf(graph: PressGraph): Nav {
       add(c, { to: v, cost: d, step: { k: 'node', node: node.id, from: CENTRE, to: port } });
       add(v, { to: c, cost: d, step: { k: 'node', node: node.id, from: port, to: CENTRE } });
     }
+    // The way out: centre <-> ramp foot, through the door.
+    for (const [exit, p] of node.exits) {
+      const v = vertex(node.id, exit);
+      const d = dist(p, node.centre);
+      add(c, { to: v, cost: d, step: { k: 'node', node: node.id, from: CENTRE, to: exit } });
+      add(v, { to: c, cost: d, step: { k: 'node', node: node.id, from: exit, to: CENTRE } });
+    }
   }
   const edgeById = new Map<string, PressEdge>();
   const edgePath = new Map<string, Vec3[]>();
@@ -69,7 +84,7 @@ export function navOf(graph: PressGraph): Nav {
     add(a, { to: b, cost: len, step: { k: 'edge', edge: e.id, dir: 1 } });
     add(b, { to: a, cost: len, step: { k: 'edge', edge: e.id, dir: -1 } });
   }
-  const nav: Nav = { graph, edgeById, edgePath, arcs };
+  const nav: Nav = { graph, env, spots: new Map(), edgeById, edgePath, arcs };
   navCache.set(graph, nav);
   return nav;
 }
@@ -77,8 +92,16 @@ export function navOf(graph: PressGraph): Nav {
 /** Shortest walk from the centre of one node to the centre of another, or null when unreachable. */
 export function route(nav: Nav, from: PartId, to: PartId): Step[] | null {
   if (from === to) return [];
-  const start = vertex(from, CENTRE);
-  const goal = vertex(to, CENTRE);
+  return walk(nav, vertex(from, CENTRE), vertex(to, CENTRE));
+}
+
+/** Shortest walk from a node's centre to one of its airlock exits (ends on the step through the door). */
+export function routeToExit(nav: Nav, from: PartId, lock: PartId, exit: string): Step[] | null {
+  return walk(nav, vertex(from, CENTRE), vertex(lock, exit));
+}
+
+function walk(nav: Nav, start: string, goal: string): Step[] | null {
+  if (start === goal) return [];
   if (!nav.arcs.has(start) || !nav.arcs.has(goal)) return null;
 
   const best = new Map<string, number>([[start, 0]]);
@@ -119,6 +142,18 @@ export function route(nav: Nav, from: PartId, to: PartId): Step[] | null {
 
 /** The polyline a step walks, resolved against the current graph; null if a piece is gone. */
 export function stepPolyline(nav: Nav, step: Step): Vec3[] | null {
+  if (step.k === 'out') {
+    const node = nav.graph.nodes.get(step.node);
+    const foot = node?.exits.get(step.exit);
+    if (!node || !foot) return null;
+    const key = `${step.node}/${step.exit}/${step.slot}`;
+    let spot = nav.spots.get(key);
+    if (!spot) {
+      spot = loiterSpot(nav.env, node.centre, foot, step.slot);
+      nav.spots.set(key, spot);
+    }
+    return step.dir === 1 ? [foot, spot] : [spot, foot];
+  }
   if (step.k === 'edge') {
     const path = nav.edgePath.get(step.edge);
     if (!path) return null;
@@ -126,7 +161,8 @@ export function stepPolyline(nav: Nav, step: Step): Vec3[] | null {
   }
   const node = nav.graph.nodes.get(step.node);
   if (!node) return null;
-  const at = (id: string): Vec3 | undefined => (id === CENTRE ? node.centre : node.ports.get(id));
+  const at = (id: string): Vec3 | undefined =>
+    id === CENTRE ? node.centre : (node.ports.get(id) ?? node.exits.get(id));
   const a = at(step.from);
   const b = at(step.to);
   return a && b ? [a, b] : null;

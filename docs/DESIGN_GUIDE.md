@@ -71,8 +71,9 @@ One library in `src/render/materials.ts`. Parts reference entries by name; they 
 | `glass` | glass teal | 0.15 | 0 | opacity 0.55 day; emissive `window warm` ramps 0 → 1.6 across dusk. No transmission (cost). |
 | `solar` | solar blue | 0.25 | 0.3 | The panel face. Tiny specular glint. |
 | `solarCell` | `#4A79B8` | 0.30 | 0.3 | The cell lines on a panel face: thin planes 4 mm above it (no texture). Same palette row as solar blue. |
-| `light` | white | 0.3 | 0 | Lamp heads (airlock lamp, light pole). Emissive warm, driven by the night glow for now; per instance in M3 task 6 (beacons, ground lights). Never dust-tinted. |
-| `plant` | plant green | 0.8 | 0 | subsurface fake via wrapped diffuse in a small shader patch. |
+| `light` | white | 0.3 | 0 | Lamp heads on the light pole. Emissive warm, driven by the night glow for now; per instance in M3 task 6 (beacons, ground lights). Never dust-tinted. |
+| `lamp` | white | 0.3 | 0 | The airlock lamp, one instanced mesh. Emissive white times the instance colour, so each lamp shows its own phase; instance colours are palette entries only. Glows brighter at night with the window glow. Never dust-tinted. |
+| `plant` | plant green | 0.8 | 0 | subsurface fake via wrapped diffuse in a small shader patch. Plant green is also the airlock lamp's "open" colour. |
 
 Until the sky environment map lands (M2), no part uses `aluminium`: a fully metallic surface renders black without an environment to reflect. Parts use `hull` and `graphite` instead.
 
@@ -142,7 +143,7 @@ The base is written in letters. Each letter is a parametric generator with ports
 | **N** | Node (junction) | size S/M/L, shape hex/sphere | `PRESS` ×6 (hex) or ×4 + top | docking lights per used port, blanking plate per unused port |
 | **D** | Dome | radius 3/4.5/6/8, kind opaque / greenhouse / observatory | `PRESS` ×4 at base collar, `STRUCT` ring | greenhouse: plants that grow, warm glow; observatory: telescope slit that opens at night; opaque: regolith-printed shell with printer texture |
 | **T** | Tube (corridor) | *derived*: from two `PRESS` ports; max span 24 m | — | flanges every 2 m, bend collars at kinks, support legs every 6 m, window strip if both ends have windows |
-| **A** | Airlock | size S/M | `PRESS` in, `EXT` out | ramp or 3-step stair to terrain, hazard chevrons, light that cycles green/red, footprint path origin |
+| **A** | Airlock | size S/M | `PRESS` in, `EXT` out | ramp or 3-step stair to terrain, hazard chevrons, lamp that cycles orange (seal), yellow (pump), green (open) and rests window-warm, footprint path origin; `EXT` is live: crew walk out of it between 08:00 and 18:00 |
 | **G** | Garage | bays 1–3 | `EXT` ×bays (roller doors), `PRESS` back | one rover per bay, tyre tracks out of the door, tool wall visible through the open door |
 | **L** | Landing pad | radius 8/12 | — | edge lights, hazard ring, scorch mark that grows per landing, windsock, blast berm |
 | **S** | Solar array | rows 1–4 × cols 2–12, tracking on/off | `POWER` at the end post | sun tracking, parked at night, cable to nearest `POWER`, dust that a drone cleans |

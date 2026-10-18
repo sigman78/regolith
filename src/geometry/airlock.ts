@@ -1,6 +1,6 @@
 /**
  * Letter A geometry: a short hab-shaped lock with a door and a ramp on its +z flank, hazard
- * chevrons on the ramp, and a lamp above the door.
+ * chevrons on the ramp. (The lamp above the door is an instance, see geometry/lamp.ts.)
  *
  * Frame matches grammar/parts/A.ts: axis along +X, origin at the centre of the axis.
  */
@@ -12,8 +12,6 @@ import {
   AIRLOCK_DOOR_H,
   AIRLOCK_DOOR_PROUD,
   AIRLOCK_DOOR_W,
-  AIRLOCK_LAMP_ANGLE_DEG,
-  AIRLOCK_LAMP_SIZE,
   AIRLOCK_RAMP_RUN,
   AIRLOCK_RAMP_THICK,
   AIRLOCK_RAMP_W,
@@ -80,11 +78,4 @@ export function buildAirlock(out: BundleBuilder, op: AirlockOp): void {
     strip.translate(0, sillY - drop * t + 0.004, z0 + run * t);
     out.add('warning', strip);
   }
-
-  // Lamp above the door, up the hull at a fixed angle, turned to face outward.
-  const turn = Math.PI / 2 - (AIRLOCK_LAMP_ANGLE_DEG * Math.PI) / 180;
-  const lamp = bevelBox(AIRLOCK_LAMP_SIZE, 0.05, AIRLOCK_LAMP_SIZE);
-  lamp.translate(0, r - 0.02, 0);
-  lamp.rotateX(turn);
-  out.add('light', lamp);
 }
