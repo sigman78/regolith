@@ -60,7 +60,9 @@ export function buildTower(out: BundleBuilder, op: TowerOp): void {
     );
   }
 
-  for (let k = 0; k < floors; k++) {
+  // The top floor's band is the accent stripe: a glass band there would share its cylinder
+  // (and z-fight with it), so it gets none.
+  for (let k = 0; k < floors - 1; k++) {
     const y = k * TOWER_FLOOR_HEIGHT + TOWER_WINDOW_Y;
     const wr = r + TOWER_WINDOW_PROUD;
     out.add(

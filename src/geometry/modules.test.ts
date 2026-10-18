@@ -17,6 +17,8 @@ import {
   TOWER_CAP_RATIO,
   TOWER_FLOOR_HEIGHT,
   TOWER_RADIUS,
+  TOWER_STRIPE_BELOW_TOP,
+  TOWER_STRIPE_HALF,
 } from './design-constants';
 import { assertValidBundle } from './validate';
 
@@ -147,6 +149,22 @@ describe('tower geometry', () => {
         expect(q.position[1]).toBeLessThan(floors * TOWER_FLOOR_HEIGHT);
       }
       for (const q of ports.filter((s) => s.type === 'STRUCT')) expect(q.position[1]).toBe(0);
+    }
+  });
+});
+
+describe('tower surface bands', () => {
+  it('never lets the glass share a cylinder and height range with the accent stripe', () => {
+    const V = getPart('V');
+    if (!V) throw new Error('V is not registered');
+    for (const floors of [2, 3, 4, 5]) {
+      const bundle = buildBundle(V.geometry(V.resolve({ floors }), { seed: 't' }));
+      const stripeY = floors * TOWER_FLOOR_HEIGHT - TOWER_STRIPE_BELOW_TOP;
+      const glass = bundle.byMaterial.glass?.positions ?? new Float32Array();
+      for (let i = 0; i < glass.length; i += 3) {
+        const y = glass[i + 1] ?? 0;
+        expect(Math.abs(y - stripeY)).toBeGreaterThan(TOWER_STRIPE_HALF);
+      }
     }
   });
 });

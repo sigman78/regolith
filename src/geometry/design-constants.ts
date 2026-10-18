@@ -145,7 +145,7 @@ export const TOWER_FLOOR_HEIGHT = 3;
 /** Dome cap depth as a fraction of radius. */
 export const TOWER_CAP_RATIO = 0.3;
 export const TOWER_CAP_STEPS = 6;
-export const TOWER_SEGMENTS = 32;
+export const TOWER_SEGMENTS = 48;
 export const TOWER_FOOTPRINT_MARGIN = 0.15;
 /** PRESS ports sit this far above their floor level. */
 export const TOWER_PORT_Y = 1;
