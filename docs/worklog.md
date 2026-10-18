@@ -85,3 +85,4 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-18 02:21 · ef7571a · Letters A, S, X static: airlock (door, ramp, chevrons, lamp, docks to a hab flank), solar array, light pole, solar/solarCell/light materials, tool keys 0 and -, golden base uses them
 - 2026-10-18 03:07 · 9672739 · Merged feat/m3-letters (airlock, solar array, light pole) into main and pushed
 - 2026-10-18 03:21 · 80ac8db · Airlock exit and cycle: crew walk out 08-18 to a loiter spot 4-8 m from the ramp, lock seal/pump/open with up to two riders, per-instance airlock lamp (orange, yellow, green), suited figure outdoors; paused 2 frames per 10 s, 4x capped at 10 Hz
+- 2026-10-18 03:31 · 42d24f3 · Merged feat/m3-exit (airlock exit and cycle, crew outdoors, airlock lamp) into main and pushed
