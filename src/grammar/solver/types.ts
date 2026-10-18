@@ -107,6 +107,36 @@ export type Diagnostic =
   /** A DESIGN_GUIDE §8.4 rule is broken. Only produced when `SolveOptions.diagnose` is set. */
   | { kind: 'invariant'; rule: InvariantRule; subject: string; detail: string };
 
+/** A part you can walk in: one floor-level point per PRESS port, plus a centre. */
+export interface PressNode {
+  id: PartId;
+  letter: Letter;
+  /** inserted by the solver (a node on a long tube) */
+  derived: boolean;
+  centre: Vec3;
+  /** port id -> floor point, world space */
+  ports: Map<string, Vec3>;
+  /** pressurised cubic metres */
+  volume: number;
+}
+
+/** A dock or tube between two PRESS ports, as a floor-level walkway. */
+export interface PressEdge {
+  id: string;
+  kind: 'dock' | 'tube';
+  a: PortRef;
+  b: PortRef;
+  path: Vec3[];
+  /** walking length in metres */
+  length: number;
+}
+
+/** The walkable network of a base (solver stage `graph`). Empty on a `lean` solve. */
+export interface PressGraph {
+  nodes: Map<PartId, PressNode>;
+  edges: PressEdge[];
+}
+
 export interface ResolvedBase {
   parts: Map<PartId, ResolvedPart>;
   /** Docks and tubes by id. */
@@ -123,6 +153,8 @@ export interface ResolvedBase {
    * when nothing is levelled. Anything that draws or samples the ground reads this, not the raw terrain.
    */
   terrain: FlatField | null;
+  /** Where crew can walk: PRESS parts and the docks and tubes between them. */
+  graph: PressGraph;
   /** Never shown to the player as errors; used by tests and the ghost preview. */
   diagnostics: Diagnostic[];
 }
@@ -135,4 +167,6 @@ export interface SolveOptions {
   movingId?: PartId;
   /** Also run the invariant checks (O(n²) in parts): tests and debug builds, not the hot path. */
   diagnose?: boolean;
+  /** Skip stages only the live base needs (the graph): ghost previews and trial solves. */
+  lean?: boolean;
 }

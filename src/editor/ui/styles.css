@@ -55,6 +55,13 @@ body {
   font-size: 11px;
 }
 
+.hud-clock {
+  margin-top: 2px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
 .hud-hint {
   margin-top: 4px;
   font-size: 11px;

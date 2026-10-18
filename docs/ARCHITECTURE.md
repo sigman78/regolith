@@ -173,6 +173,8 @@ Letters in the registry: H, N, D (opaque dome), V (tower), P (slab), M (mast), E
 
 Known limits:
 
+- `ResolvedBase.graph` (nodes = PRESS parts, edges = docks and tubes, floor-level points) exists; `cables`, `paths`, `power` and `decorators` in the sketch above are still to come (M3 tasks 8 and later, M4).
+
 - Slabs level the ground under them (a derived field, never stored); parts on legs keep the natural terrain and get a wear ring (`world/wear.ts`, a 2-channel texture the regolith shader reads; channel G is for M4's paths). Painted terrain edits still wait for M4.
 - Handles cover the range and choice params that are a length (H length and radius, C length, P width and depth, V floors, M height, D, E and N radius). Toggles, the mast head and the launcher's elevation are edited through the picker only.
 - `POWER` ports exist (M, E, C) but nothing connects to them until the power stage; beacons, dish tracking and fin glow are static.
@@ -254,8 +256,10 @@ Decorators and repeated parts (solar panels, lights, crew) are `InstancedMesh` w
 
 ## 7. Simulation (life layer)
 
-- **Clock:** `sim/clock.ts` owns sol time. Real time 1 s = 1 sol-minute by default; the player can pause, scrub, or speed to 4x.
+- **Clock:** `sim/clock.ts` owns sol time. Real time 1 s = 1 sol-minute by default; the player can pause, scrub, or speed to 4x. It is advanced from wall-clock timestamps (frames do not matter) and light and shadows follow `visualHour`, which only changes once per sol-minute, so a running clock costs one redraw per sol-minute. The loop asks for a frame when the sun moved, something is animating, input arrived, or the 5 s heartbeat is due.
 - **Tick:** sim runs at a fixed 10 Hz; render interpolates. Sim never touches three objects; it writes to typed arrays the renderer reads (positions, headings, phases).
+- **Crew:** `sim/crew.ts` + `sim/nav.ts`. An agent is a route (steps that name graph nodes and edges) and a distance along the current step, never a coordinate, so a dragged part carries its crew and a deleted one sends them home. `sim/sim.ts` is the editor's handle: fixed step plus crew, fed clock-scaled time.
+- **Silhouettes:** `sim/silhouettes.ts` maps crew to window panes (pure, matrices out); `render/crew-silhouettes.ts` draws them as one instanced mesh. The editor redraws only when the set of occupied panes changes, at most `FIGURE_MAX_HZ` times a second, on top of the sol-minute redraw.
 - **Agents:** `sim/agents/*` are small state machines (Crew, Rover, Drone, Lander, DustDevil). Navigation uses `ResolvedBase.graph` indoors and a grid flow field outdoors (recomputed lazily when the base changes).
 - **Systems:** `sim/systems/*` are stateless per-frame updaters: `solarTracking`, `nightLights`, `airlockCycles`, `plantGrowth`, `pathWear`, `dustAccumulation`, `beacon`. Each reads clock + base, writes instance attributes.
 - **Events:** the sim emits typed events (`landerArrived`, `airlockCycled`) for sound and for optional postcards.

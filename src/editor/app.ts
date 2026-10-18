@@ -24,7 +24,12 @@ import { allParts, getPart } from '@/grammar/registry';
 import { CameraRig } from '@/render/camera-rig';
 import { Lighting } from '@/render/lighting';
 import { parseQuality, PostChain } from '@/render/post';
+import { FIGURE_MAX_HZ } from '@/geometry/design-constants';
 import { QualityGovernor } from '@/render/quality-governor';
+import { SolClock } from '@/sim/clock';
+import { Sim } from '@/sim/sim';
+import { silhouetteSlots, slotsKey, type Slot } from '@/sim/silhouettes';
+import { CrewSilhouettes } from '@/render/crew-silhouettes';
 import { GRID } from '@/geometry/design-constants';
 import { wearOf } from '@/grammar/solver/wear';
 import { ScatterSync } from '@/render/scatter-sync';
@@ -59,8 +64,17 @@ const MAX_PIXEL_RATIO = 1.5;
 export function startApp(canvas: HTMLCanvasElement): void {
   const params = new URLSearchParams(window.location.search);
   const seed = params.get('seed') ?? 'olympus-07';
-  let hour = Number(params.get('hour') ?? 15.5);
-  if (!Number.isFinite(hour)) hour = 15.5;
+  // The sol clock runs by default; an explicit `?hour=`, `?shot` or `?pause` freezes it so screenshots
+  // and scripts stay deterministic.
+  const startHour = Number(params.get('hour') ?? 15.5);
+  const clock = new SolClock(
+    startHour,
+    !(params.has('hour') || params.has('shot') || params.has('pause')),
+  );
+  const sim = new Sim();
+  let simNow = Number.NaN;
+  const clockEl = document.getElementById('clock');
+  let clockText = '';
 
   // ---- rendering ---------------------------------------------------------------
   const quality = parseQuality(params.get('quality'));
@@ -101,6 +115,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
   const store = new DocumentStore(initial);
   const sync = new SceneSync(scene);
   const scatter = new ScatterSync(scene);
+  const silhouettes = new CrewSilhouettes(scene);
   const rocks = scatterCandidates(terrain, seed);
   const gridSize = Math.round((terrain.size * terrain.cell) / GRID);
   const ghost = new Ghost(scene, world, () => store.doc);
@@ -409,8 +424,13 @@ export function startApp(canvas: HTMLCanvasElement): void {
       governor.enabled = false;
       wake(true);
     }
-    if (key === '[') hour -= 0.5;
-    if (key === ']') hour += 0.5;
+    if (key === '[') clock.scrub(-0.5);
+    if (key === ']') clock.scrub(0.5);
+    if (key === ' ') {
+      clock.togglePause();
+      e.preventDefault();
+    }
+    if (key === '.') clock.cycleSpeed();
     if (key === 'q') rig.rotateStep(-1);
     if (key === 'e') rig.rotateStep(1);
   });
@@ -435,6 +455,14 @@ export function startApp(canvas: HTMLCanvasElement): void {
   // Without an explicit preset, step down by itself when the machine cannot keep up.
   const governor = new QualityGovernor(!params.has('quality'));
   let shownHour = Number.NaN;
+  // Window silhouettes: redraw only when a figure changes pane (at most FIGURE_MAX_HZ times a second).
+  let slots: Slot[] = [];
+  let slotsNow = '';
+  let slotsShown = '';
+  let slotsBase: ResolvedBase | null = null;
+  let appliedBase: ResolvedBase | null = null;
+  let slotsWake = -Infinity;
+  let slotsTick = -1;
   for (const type of ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'keydown', 'keyup']) {
     // Capture phase: handle and halo drags stop propagation and hold the pointer on their own elements.
     window.addEventListener(type, () => wake(), { passive: true, capture: true });
@@ -445,8 +473,30 @@ export function startApp(canvas: HTMLCanvasElement): void {
 
   function frame(now: number): void {
     requestAnimationFrame(frame);
+    clock.update(now);
+    // The sim ticks on its own 10 Hz step, scaled by the clock; it never asks for a frame (crew are
+    // not drawn yet, and later only a redraw per sol-minute carries them).
+    const simDt =
+      Number.isNaN(simNow) || !clock.running ? 0 : ((now - simNow) / 1000) * clock.speed;
+    simNow = now;
+    sim.update(Math.min(simDt, 0.5), resolved.graph, store.doc.seed, clock.hour);
+    if (sim.steps.tick !== slotsTick || slotsBase !== resolved) {
+      slotsTick = sim.steps.tick;
+      slots = silhouetteSlots(sim.crew, resolved);
+      slotsNow = slotsKey(slots);
+      slotsBase = resolved;
+    }
+    if (
+      (slotsNow !== slotsShown || appliedBase !== resolved) &&
+      now - slotsWake >= 1000 / FIGURE_MAX_HZ
+    ) {
+      slotsWake = now;
+      wake();
+    }
+    // A running clock asks for a frame once per sol-minute (the sun moved), nothing more.
+    const sunMoved = clock.visualHour !== shownHour;
     const gap = now - lastRender;
-    if (!dirty && gap < IDLE_FRAME_MS) return;
+    if (!dirty && !sunMoved && gap < IDLE_FRAME_MS) return;
     lastRender = now;
 
     // After an idle stretch the first frame must not jump an animation ahead by the whole gap.
@@ -457,11 +507,21 @@ export function startApp(canvas: HTMLCanvasElement): void {
     const animating = sync.animating || scatter.animating;
     again = again || animating;
 
-    if (hour !== shownHour) {
-      shownHour = hour;
+    if (sunMoved) {
+      shownHour = clock.visualHour;
       shadowDirty = true;
     }
-    lighting.apply(hour, rig.target);
+    const label = `${clock.label()} ${clock.running ? `\u25b6 ${clock.speed}x` : '\u23f8'}${sim.crewCount > 0 ? ` \u00b7 crew ${sim.crewCount}` : ''}`;
+    if (clockEl && label !== clockText) {
+      clockText = label;
+      clockEl.textContent = label;
+    }
+    if (slotsNow !== slotsShown || appliedBase !== resolved) {
+      silhouettes.set(slots);
+      slotsShown = slotsNow;
+      appliedBase = resolved;
+    }
+    lighting.apply(clock.visualHour, rig.target);
     renderer.toneMappingExposure = lighting.exposure;
     handles?.update();
     halos?.update();
@@ -489,8 +549,11 @@ export function startApp(canvas: HTMLCanvasElement): void {
       frames: () => rendered,
       quality: () => post.current,
       base: () => resolved,
+      clock,
+      sim,
+      figures: () => silhouettes.count,
       setHour: (h: number) => {
-        hour = h;
+        clock.set(h);
         wake(true);
       },
       rig,

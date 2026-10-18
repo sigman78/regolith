@@ -144,7 +144,7 @@ function verify(
   joinsComponents: boolean,
 ): Suggestion | null {
   const key = linkKey(link);
-  const trial = solve(addLink(doc, link), world);
+  const trial = solve(addLink(doc, link), world, { lean: true });
   const mineTube = `tube:${key}`;
   for (const d of trial.diagnostics) {
     if (d.kind === 'link-skipped' && linkKey(d.link) === key) return null;

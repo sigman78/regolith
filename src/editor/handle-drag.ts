@@ -49,7 +49,7 @@ export function resizeByHandle(
   const pose = keepMirror(start.pose, { x, z, yaw: snapYaw(start.pose.yaw) });
 
   const trial = cmd.edit(id, { params: edit.params, pose }).apply(doc);
-  const resolved = solve(trial, world, { movingId: id }).parts.get(id);
+  const resolved = solve(trial, world, { movingId: id, lean: true }).parts.get(id);
   if (!resolved) return null;
   if (
     Math.abs(resolved.pose.x - snap(x, GRID)) > 1e-6 ||
