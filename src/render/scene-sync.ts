@@ -28,6 +28,7 @@ import {
 import { buildBundle } from '@/geometry/build';
 import type { GeometryBundle, MaterialName } from '@/geometry/bundle';
 import { FOOT_HEIGHT, LEG_TOP_OVERLAP } from '@/geometry/design-constants';
+import type { Decal } from '@/grammar/decals';
 import type { GeometryRecipe } from '@/grammar/types';
 import { emptyBase, type Leg, type ResolvedBase } from '@/grammar/solver';
 import {
@@ -88,6 +89,8 @@ interface Entry {
   tint: number;
   recipeHash: string;
   legsKey: string;
+  decalPieces: Piece[];
+  decalsKey: string;
   /** part: its base point; tube: the first point of its centreline */
   pivot: Vector3;
   /** tube only: unit chord from the first to the last point */
@@ -105,6 +108,8 @@ interface Drawable {
   recipeHash: string;
   /** individual.ts tint (hull only); 0 for tubes */
   tint?: number;
+  /** painted-on decals, world-space matrices (batched only) */
+  decals?: readonly Decal[];
   legs: Leg[];
   /** body transform; tubes are authored in world space and have none */
   pose?: { x: number; y: number; z: number; yaw: number; mirror?: boolean };
@@ -179,6 +184,7 @@ export class SceneSync {
         recipe: p.recipe,
         recipeHash: p.recipeHash,
         tint: p.tint,
+        decals: p.decals,
         legs: p.legs,
         pose: p.pose,
       });
@@ -298,6 +304,8 @@ export class SceneSync {
       tint: 0,
       recipeHash: '',
       legsKey: '',
+      decalPieces: [],
+      decalsKey: '',
       pivot: new Vector3(),
       axis: null,
       motion: null,
@@ -353,6 +361,26 @@ export class SceneSync {
       entry.legs.clear();
       this.buildLegs(entry, d.legs);
       entry.legsKey = key;
+    }
+    if (this.batched) {
+      const decalsKey = (d.decals ?? [])
+        .map((x) => `${x.recipeHash}@${x.matrix.join(',')}`)
+        .join('|');
+      if (entry.decalsKey !== decalsKey) {
+        this.clearPieces(entry.decalPieces);
+        for (const decal of d.decals ?? []) {
+          const bundle = buildBundle(decal.recipe);
+          for (const [name, geo] of Object.entries(geometriesFor(bundle)) as [
+            MaterialName,
+            BufferGeometry,
+          ][]) {
+            entry.decalPieces.push(
+              this.piece(name, bundle.hash, geo, new Matrix4().fromArray([...decal.matrix]), false),
+            );
+          }
+        }
+        entry.decalsKey = decalsKey;
+      }
     }
     this.dirty.add(entry);
   }
@@ -470,7 +498,7 @@ export class SceneSync {
           : e.body.matrixWorld;
         p.batch.setMatrix(p.id, m);
       }
-      for (const p of e.legPieces) {
+      for (const p of [...e.legPieces, ...e.decalPieces]) {
         if (p.local) p.batch.setMatrix(p.id, scratch.multiplyMatrices(e.legs.matrixWorld, p.local));
       }
     }
@@ -480,6 +508,7 @@ export class SceneSync {
   private dispose(e: Entry): void {
     this.clearPieces(e.bodyPieces);
     this.clearPieces(e.legPieces);
+    this.clearPieces(e.decalPieces);
     this.dirty.delete(e);
     this.root.remove(e.root);
   }

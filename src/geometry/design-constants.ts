@@ -46,6 +46,10 @@ export const HAB_STRIPE_FROM_END = 1.4;
 export const HAB_STRIPE_VARIANTS = 3;
 /** Most a hull may lean from Hull white toward Hull shaded per instance (about 5% darker, a touch warmer). */
 export const INDIVIDUAL_TINT_MAX = 0.35;
+/** Stencil cell size (a glyph is 5 x 7 cells: 22 x 32 cm), how far the paint stands off the hull, and where it sits on the flank (degrees from the top; windows are at 52). */
+export const STENCIL_CELL = 0.045;
+export const STENCIL_PROUD = 0.006;
+export const STENCIL_ANGLE_DEG = 86;
 /** A side PRESS port every N metres along the hull, alternating sides. */
 export const HAB_SIDE_PORT_SPACING = 4;
 /** STRUCT ports sit this far in from each end rib. */

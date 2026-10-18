@@ -12,6 +12,7 @@
  */
 import { hashValue } from '@/core/hash';
 import type { BaseDocument } from '@/world/document';
+import { decalsFor } from '../decals';
 import { individualOf } from '../individual';
 import { diagnose } from './diagnose';
 import { dock } from './dock';
@@ -111,6 +112,9 @@ function toResolved(g: Grounded, seed: string, derived: boolean): ResolvedPart {
     legs: g.legs,
     recipe,
     tint,
+    decals: derived
+      ? []
+      : decalsFor(draft.instance.letter, draft.instance.serial, draft.params, draft.pose, variant),
     recipeHash: hashValue(recipe),
     ...(derived ? { derived: true as const } : {}),
   };

@@ -68,6 +68,8 @@ export type ParamSchema = Readonly<Record<string, ParamSpec>>;
 export type GeomOp =
   | { kind: 'hab'; length: number; radius: number; variant?: number }
   | { kind: 'node'; radius: number }
+  /** Painted serial on a hab hull, in the hull's frame (geometry/stencil.ts). */
+  | { kind: 'stencil'; text: string; radius: number }
   | { kind: 'slab'; w: number; d: number }
   | { kind: 'tower'; floors: number; radius: number }
   | { kind: 'mast'; height: number; head: number }

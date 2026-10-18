@@ -70,3 +70,26 @@ describe('individual tint in the scene', () => {
     expect(hullReds(sync)).toEqual(expected(base));
   });
 });
+
+describe('stencil decals in the scene', () => {
+  it('draw as extra graphite pieces: no new batch, gone with the part, none on the ghost path', () => {
+    const doc = addPart(createDocument({ seed: 'ind' }), hab('h0', 0));
+    const base = solve(doc, FLAT);
+    expect(base.parts.get('h0')?.decals).toHaveLength(1);
+
+    const sync = new SceneSync(new Scene());
+    sync.sync(base);
+    const graphite = sync.batchMeshes.find((m) => m.material === materials.graphite);
+    const withStencil = graphite?.instanceCount ?? 0;
+    // The decal's matrix lands in the legs group, so its instance sits at the hab, not the origin.
+    expect(withStencil).toBeGreaterThan(0);
+
+    const ghost = new SceneSync(new Scene(), { override: materials.hull });
+    ghost.sync(base);
+    expect(ghost.batchMeshes).toHaveLength(0);
+
+    sync.sync(solve(removePart(doc, 'h0'), FLAT));
+    sync.tick(5);
+    expect(graphite?.instanceCount ?? 0).toBe(0);
+  });
+});
