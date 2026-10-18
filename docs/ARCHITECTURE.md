@@ -170,7 +170,7 @@ Letters in the registry: H, N, D (opaque dome), V (tower), P (slab), M (mast), E
 Known limits:
 
 - A slab is a raised deck on short pylons, not a levelled apron: terrain flattening needs terrain edits flowing back into the mesh (M4).
-- Only H has grow handles; every letter's parameters are edited through the picker.
+- Handles cover the range and choice params that are a length (H length and radius, C length, P width and depth, V floors, M height, D, E and N radius). Toggles, the mast head and the launcher's elevation are edited through the picker only.
 - `POWER` ports exist (M, E, C) but nothing connects to them until the power stage; beacons, dish tracking and fin glow are static.
 - `aluminium` is unused until the sky environment map lands (M2).
 

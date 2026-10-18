@@ -73,6 +73,22 @@ export const E: PartDefinition<ReactorParams> = {
     return { mode: 'legs', minClearance: LEG_MIN_CLEARANCE };
   },
 
+  handles(p) {
+    const c = Math.cos(Math.PI / REACTOR_PORT_COUNT);
+    const s = Math.sin(Math.PI / REACTOR_PORT_COUNT);
+    // Between two POWER ports, so the grip never sits over a hatch.
+    return [
+      {
+        id: 'radius',
+        param: 'radius',
+        at: [p.radius * c, 0, p.radius * s],
+        axis: [c, 0, s],
+        perUnit: 1,
+        anchor: [0, 0, 0],
+      },
+    ];
+  },
+
   geometry(p) {
     return { ops: [{ kind: 'reactor', radius: p.radius }] };
   },

@@ -80,6 +80,18 @@ export const P: PartDefinition<SlabParams> = {
     return { mode: 'legs', minClearance: LEG_MIN_CLEARANCE, hostTop: SLAB_THICK };
   },
 
+  handles(p) {
+    const hw = p.w / 2;
+    const hd = p.d / 2;
+    const y = SLAB_THICK / 2;
+    return [
+      { id: 'w+', param: 'w', at: [hw, y, 0], axis: [1, 0, 0], perUnit: 1, anchor: [-hw, y, 0] },
+      { id: 'w-', param: 'w', at: [-hw, y, 0], axis: [-1, 0, 0], perUnit: 1, anchor: [hw, y, 0] },
+      { id: 'd+', param: 'd', at: [0, y, hd], axis: [0, 0, 1], perUnit: 1, anchor: [0, y, -hd] },
+      { id: 'd-', param: 'd', at: [0, y, -hd], axis: [0, 0, -1], perUnit: 1, anchor: [0, y, hd] },
+    ];
+  },
+
   geometry(p) {
     return { ops: [{ kind: 'slab', w: p.w, d: p.d }] };
   },

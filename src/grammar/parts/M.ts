@@ -77,6 +77,19 @@ export const M: PartDefinition<MastParams> = {
     return { mode: 'legs', minClearance: LEG_MIN_CLEARANCE };
   },
 
+  handles(p) {
+    return [
+      {
+        id: 'height',
+        param: 'height',
+        at: [0, p.height, 0],
+        axis: [0, 1, 0],
+        perUnit: 1,
+        anchor: [0, 0, 0],
+      },
+    ];
+  },
+
   geometry(p) {
     return { ops: [{ kind: 'mast', height: p.height, head: p.head }] };
   },

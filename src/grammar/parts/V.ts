@@ -92,6 +92,19 @@ export const V: PartDefinition<TowerParams> = {
     return { mode: 'legs', minClearance: LEG_MIN_CLEARANCE };
   },
 
+  handles(p) {
+    return [
+      {
+        id: 'floors',
+        param: 'floors',
+        at: [0, p.floors * TOWER_FLOOR_HEIGHT, 0],
+        axis: [0, 1, 0],
+        perUnit: TOWER_FLOOR_HEIGHT,
+        anchor: [0, 0, 0],
+      },
+    ];
+  },
+
   geometry(p) {
     return { ops: [{ kind: 'tower', floors: p.floors, radius: TOWER_RADIUS }] };
   },

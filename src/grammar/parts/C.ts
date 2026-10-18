@@ -84,6 +84,29 @@ export const C: PartDefinition<LauncherParams> = {
     return { mode: 'legs', minClearance: LEG_MIN_CLEARANCE };
   },
 
+  handles(p) {
+    const h = p.length / 2;
+    const y = LAUNCHER_SLED_HEIGHT / 2;
+    return [
+      {
+        id: 'length+',
+        param: 'length',
+        at: [h, y, 0],
+        axis: [1, 0, 0],
+        perUnit: 1,
+        anchor: [-h, y, 0],
+      },
+      {
+        id: 'length-',
+        param: 'length',
+        at: [-h, y, 0],
+        axis: [-1, 0, 0],
+        perUnit: 1,
+        anchor: [h, y, 0],
+      },
+    ];
+  },
+
   geometry(p) {
     return { ops: [{ kind: 'launcher', length: p.length, elevation: p.elevation }] };
   },

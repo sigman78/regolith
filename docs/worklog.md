@@ -66,3 +66,4 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-17 23:52 · 4ab2fde · Perf: every preset through the composer, capture-phase wake-ups, `?stress=200` benchmark base; 200 parts measured at about 3,300 draw calls
 - 2026-10-17 23:53 · 4f0bf7a · Docs: M2.5 Workshop (flip, gizmos, suggestions, ground contact, individuality) inserted before Life I, with Fable's task order
 - 2026-10-18 00:02 · f2849bc · Flip: mirror a part across its length (F in Select and Place), ports mirrored, links and tubes kept, one body scale, no version bump
+- 2026-10-18 00:08 · 0178b6e · Perf: one BatchedMesh per material for the whole base, legs included; 200 parts from about 3,300 draw calls to 18–46, mirrored parts draw a mirrored geometry
