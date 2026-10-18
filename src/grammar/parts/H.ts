@@ -108,4 +108,8 @@ export const H: PartDefinition<HabParams> = {
   geometry(p) {
     return { ops: [{ kind: 'hab', length: p.length, radius: p.radius }] };
   },
+
+  summary(p) {
+    return `${p.length} m`;
+  },
 };

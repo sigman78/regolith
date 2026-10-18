@@ -21,4 +21,4 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 
 ## M1 — module variety (pulled forward from M5)
 
-- 2026-10-17 21:58 · docs · Plan and design guide: tower V, slab P, mast M, power plant E pulled into M1; new letter C (launcher)
+- 2026-10-17 21:58 · 6c15313 · Plan and design guide: tower V, slab P, mast M, power plant E pulled into M1; new letter C (launcher)

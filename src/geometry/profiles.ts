@@ -3,9 +3,18 @@
  * so bevels and proportions match automatically (ARCHITECTURE §5), plus the
  * helper that stands an axis-aligned (Y-up) lathe along any direction.
  */
-import { LatheGeometry, Matrix4, Quaternion, Vector2, Vector3, type BufferGeometry } from 'three';
+import {
+  CylinderGeometry,
+  LatheGeometry,
+  Matrix4,
+  Quaternion,
+  Vector2,
+  Vector3,
+  type BufferGeometry,
+} from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import type { Vec3 } from '@/core/math';
-import { BEVEL, HAB_RIB_INSET } from './design-constants';
+import { BEVEL, BEVEL_SEGMENTS, HAB_RIB_INSET } from './design-constants';
 
 /** A beveled flange ring profile in (r, y): from the hull at `r` out to `r + flange`. */
 export function ribProfile(r: number, y: number, thick: number, flange: number): Vector2[] {
@@ -66,4 +75,39 @@ export function placeAlong<G extends BufferGeometry>(g: G, at: Vec3, dir: Vec3):
   const q = new Quaternion().setFromUnitVectors(Y_UP, new Vector3(...dir).normalize());
   g.applyMatrix4(new Matrix4().compose(new Vector3(...at), q, new Vector3(1, 1, 1)));
   return g;
+}
+
+/** Beveled box, centred in X and Z with its base at y = 0. The bevel is the one BEVEL size. */
+export function bevelBox(w: number, h: number, d: number): BufferGeometry {
+  const g = new RoundedBoxGeometry(w, h, d, BEVEL_SEGMENTS, Math.min(BEVEL, w / 2, h / 2, d / 2));
+  g.translate(0, h / 2, 0);
+  return g;
+}
+
+/** Beveled upright cylinder with its base at y = 0 (a lathe, so the poles are sound). */
+export function bevelCylinder(r: number, h: number, segments: number): LatheGeometry {
+  const b = Math.min(BEVEL, r, h / 2);
+  return lathe(
+    [
+      new Vector2(0, 0),
+      new Vector2(r - b, 0),
+      new Vector2(r, b),
+      new Vector2(r, h - b),
+      new Vector2(r - b, h),
+      new Vector2(0, h),
+    ],
+    segments,
+  );
+}
+
+/** Thin straight rod between two points (lattice members, rails, braces). */
+export function rod(a: Vec3, b: Vec3, radius: number, segments: number): BufferGeometry {
+  const dir: Vec3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+  const len = Math.hypot(...dir);
+  const g = new CylinderGeometry(radius, radius, len, segments, 1, false);
+  return placeAlong(
+    g,
+    [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2],
+    [dir[0] / len, dir[1] / len, dir[2] / len],
+  );
 }

@@ -7,7 +7,7 @@ import { BufferGeometry } from 'three';
 import type { Vec3 } from '@/core/math';
 
 /** Names in render/materials.ts. render/ asserts it has exactly these. */
-export type MaterialName = 'hull' | 'accent' | 'graphite' | 'aluminum' | 'glass';
+export type MaterialName = 'hull' | 'accent' | 'graphite' | 'aluminum' | 'glass' | 'warning';
 
 export interface MaterialBuffers {
   positions: Float32Array;

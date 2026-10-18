@@ -79,4 +79,6 @@ export interface PartDefinition<P extends ParamValues = ParamValues> {
   ports(params: P): PortSpec[];
   ground(params: P): GroundSpec;
   geometry(params: P, ctx: GeometryCtx): GeometryRecipe;
+  /** Short size note for the selection tooltip, e.g. '8 m'. */
+  summary?(params: P): string;
 }

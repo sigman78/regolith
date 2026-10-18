@@ -8,6 +8,8 @@
 
 /** The one bevel size, metres (6 cm). */
 export const BEVEL = 0.06;
+/** Rounding steps on a beveled box edge. */
+export const BEVEL_SEGMENTS = 2;
 /** Rib flange height as a fraction of hull radius. */
 export const FLANGE_RATIO = 0.1;
 /** Rib every N metres along a hab. */

@@ -46,6 +46,12 @@ export const materials = {
     roughness: 0.35,
     metalness: 1.0,
   }),
+  /** Hazard yellow: slab edges, muzzle bands, reactor rings. Used sparingly (DESIGN_GUIDE §2). */
+  warning: new MeshStandardMaterial({
+    color: new Color(PALETTE.warningYellow),
+    roughness: 0.5,
+    metalness: 0.0,
+  }),
   /** Placement preview: hull colour at half strength, never casts shadows. */
   ghost: new MeshStandardMaterial({
     color: new Color(PALETTE.hullWhite),

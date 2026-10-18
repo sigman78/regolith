@@ -18,7 +18,7 @@ import {
 } from 'three';
 import { snapYaw, type Vec3 } from '@/core/math';
 import { emptyBase, solve, type ResolvedBase, type SolverWorld } from '@/grammar/solver';
-import { getPart } from '@/grammar/registry';
+import { allParts, getPart } from '@/grammar/registry';
 import { CameraRig } from '@/render/camera-rig';
 import { Lighting } from '@/render/lighting';
 import { SceneSync } from '@/render/scene-sync';
@@ -124,8 +124,8 @@ export function startApp(canvas: HTMLCanvasElement): void {
       const part = resolved.parts.get(id);
       if (!part) return '';
       const name = getPart(part.letter)?.name ?? part.letter;
-      const length = part.params['length'];
-      const size = typeof length === 'number' ? ` · ${length} m` : '';
+      const detail = getPart(part.letter)?.summary?.(part.params);
+      const size = detail ? ` · ${detail}` : '';
       return `${part.letter}-${String(part.serial).padStart(3, '0')} ${name}${size}`;
     },
   };
@@ -137,8 +137,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
 
   const tools: Tool[] = [
     new SelectTool(host),
-    new PlaceTool(host, 'H', '1'),
-    new PlaceTool(host, 'N', '2'),
+    ...allParts().map((def, i) => new PlaceTool(host, def.letter, String(i + 1))),
     ...(halos ? [new ConnectTool(host, halos)] : []),
     new DeleteTool(host),
   ];
