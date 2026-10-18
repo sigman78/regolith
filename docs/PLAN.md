@@ -11,8 +11,10 @@ Last updated: 2026-10-17 · See also [KICKOFF.md](KICKOFF.md) · [DESIGN_GUIDE.m
 Milestones are ordered by **risk retired**, not by feature count. Each has a one-line goal, deliverables, and an exit gate that is a thing you can do or see. No dates: the team is small and agent-assisted; the gate is the schedule. Letters refer to the part alphabet in the design guide §8.
 
 ```
- M0 Bootstrap ─► M1 Alphabet I ─► M2 The Look ─► M3 Life I ─► M4 Terrain & Decor ─► M5 Alphabet II & Life II ─► M6 Ship v1
-   (done-ish)      snapping          art gate      crew/sun      brushes/paths         rovers/lander/pad        photo/share
+ M0 Bootstrap ─► M1 Alphabet I ─► M2 The Look ─► M2.5 Workshop ─► M3 Life I ─► M4 Terrain & Decor ─► M5 Alphabet II & Life II ─► M6 Ship v1
+   (done-ish)      snapping          art gate      tweaks/builder     crew/sun      brushes/paths         rovers/lander/pad        photo/share
+
+M2.5 was inserted before M3 at the user's request (2026-10-17): richer hand tools and a builder that helps come before anything starts walking around. It is numbered 2.5 so references to M3–M6 elsewhere stay valid.
 ```
 
 ## M0 — Bootstrap  ✅ mostly done (this commit)
@@ -57,7 +59,7 @@ Deliverables:
 - **Deviation — the node.** Two habs ~20 m apart with a clear way get **one plain tube and no node**: the span limit is 24 m (`TUBE_MAX_SPAN`), and a node appears from about 26 m or when the route must bend around a part. Both are tested (20 m with a hab in the way → a node on the detour; 26 m clear → a node). The constants were not tuned to fit the sentence.
 - **Deviation — performance.** The 2 ms solve target for 200 parts is **not met** (~16 ms; see `docs/PERF.md`). Router memoisation, a walled-in-pocket shortcut and a throttled ghost help; incremental solving is the next step and is scheduled with M2's worker.
 - **Moved to M2:** trim-sheet UVs (they only matter with the procedural trim sheet) and the geometry worker (needed by LOD). The brief said "worker optional here, required by M2".
-- **Not yet:** gizmos on the selected part for tweaking parameters interactively in the scene (drag a handle for length, radius, floors, mast height) — today only H has grow handles and every other letter uses the picker panel. Scheduled after the M2 art gate, as a generic handle set driven by the `ParamSpec` schema (one undo step per drag, like the picker).
+- **Not yet:** gizmos on the selected part for tweaking parameters interactively in the scene (drag a handle for length, radius, floors, mast height) — today only H has grow handles and every other letter uses the picker panel. Scheduled as M2.5 task 2, as a generic handle set driven by the `ParamSpec` schema (one undo step per drag, like the picker).
 - Not built because it never belonged to M1: letter **L** (landing pad, M5).
 
 ## M2 — The Look (art gate)
@@ -89,7 +91,28 @@ Not done, with the reason (see `docs/PERF.md`):
 - **Incremental solving.** Still owed from M1; moved to M3, with the cached-equals-fresh property test as its condition.
 - **Scatter fade on delete** is not needed: rocks only fade in. The per-instance fade-in is done.
 
+## M2.5 — Workshop: tweaks, suggestions, character
+
+**Goal:** building feels good and every base looks like *someone's* base. No crew, no airlock cycles yet.
+
+Advice folded in from a Fable review (2026-10-17). Open question for the user: "flip" is read as **mirroring** a non-symmetric part (turning by 90° already exists: R). Say if you meant something else.
+
+Tasks, in order (risk first; each is a commit with tests, 12:00 and 18:30 shots where visible):
+
+0. **Render budget.** Done: render on demand, shadow map only when it changes, no double MSAA, pixel ratio cap, F2 quality, `?stress=200`, measured draw calls (`docs/PERF.md`). Owed, because 200 parts cost about 3,300 draw calls and about 1 M triangles a frame: one `InstancedMesh` for all leg struts and one for all feet, then one batched draw per material for the whole base (per-instance matrix, so inflate and clunk still work, and per-instance attributes for task 5). Target: under 100 calls at 200 parts. Also owed: a frame counter on the debug hook so "zero frames in 10 s idle" is a Playwright check, and an auto-pick of medium when high measures slow.
+1. **Flip (mirror).** `Pose.mirror?: boolean`, `PartPose.mirror?`: mirror across the part's local Z before yaw. Footprints are symmetric, so cells and gaps are untouched. Ports negate their local z and normal.z and keep their ids, so links survive a flip and the tube re-routes. Geometry is not mirrored: SceneSync sets `body.scale.z = -1` (three flips winding), so recipe hashes and caches are shared. Decorators are placed in world space so stencils never read mirrored. Key `F` in Select and Place. Optional field, so no document version bump (rule: bump only when an old reader would misread). Tests: mirrored ports are the mirror of the originals; cells identical; every diagnose rule holds on random bases with random flips. Hazard: every `rotateY(-yaw)` call site must learn about the mirror (grep them).
+2. **Generic gizmos from the schema.** `PartDefinition.handles?(params): HandleSpec[]` with `{ param, position, axis, perUnit }` in the part's local frame; a pure `applyHandleDelta` turns a drag distance into the next schema step. Replaces the H-only grow handles; one undo step per drag; the existing rule "if the solver would move it, do not apply" stays. Radius, floors, length, mast height are handles; toggles and the mast head stay in the picker. Test: for every letter and handle, +1 step maps to the next schema value and stays inside the bundle bounds.
+3. **Auto-suggest connections.** Derived, never stored. `grammar/suggest.ts: suggestLinks(doc, base, part, world) → Suggestion[]` (`{ link, length, kinks, joinsComponents }`): free tube-capable PRESS ports on other parts within the span limit, each verified with the real router, ranked components-first then length and kinks, top 3. Runs for the selected or just-placed part on commit, never during a drag. Shown as translucent ghost tubes with an accept pill; accepting is just `cmd.addLink`, so P1 holds. Property test: an accepted suggestion never produces `tube-unroutable` or `link-skipped`.
+4. **Ground around contact.** Two derived layers, nothing stored. (a) Heights: `flattenUnder(heightfield, footprints)` flattens to the mean height under a footprint with a 1 m smoothstep skirt, run after `overlap` and before `ground`; the ghost does not flatten. Rocks re-cull on commit (already happens). (b) Wear: a 2-channel data texture at 2 texels per metre sampled in the regolith shader, with a disturbed-regolith ring around footprints and footpads; the same texture carries M4's paths. Tests: terrain under a slab flat to 1 cm, skirt monotone, rocks resettle.
+5. **Individuality.** Everything derived from `hashInts(serial, seedHash, slot)` in a solver decorator stage, nothing stored. Three mechanisms by resolution: per-instance attributes (tint shift, dust amount) read by one shader patch (needs task 0's batching); curved decals as thin lathe strips like the accent stripe (hazard chevron bands, patches); flat decals (stencil serial number, hatch marks) as one `InstancedMesh` per decorator kind, 4 mm proud with `polygonOffset`, glyphs no wider than 0.25 m so they do not sag off a hull. The glyph atlas is canvas-drawn at startup from a hand-coded 5×7 rectangle font, never `fillText` (OS rasterisation breaks "same input, same bytes"). Needs DESIGN_GUIDE rows for each decal and any new colour first. Test: two same-param habs differ, and hashes are stable across reloads.
+
+**Cut for now:** scuffs and wheel tracks (M5 with rovers, per SCATTER.md), flags, per-instance geometry, deforming terrain under legged parts (the wear ring only), dynamic resolution, a depth pre-pass, VSM shadows.
+
+**Exit:** ten seconds idle renders zero frames and a drag renders every display frame (Playwright frame counter); 200 parts under 100 draw calls; every letter is adjustable by handles with one undo step per drag; `F` moves a hab's side hatch to the other flank and its tube re-routes; two habs placed 10 m apart offer a suggestion within a frame of commit; terrain is flat under a slab; two same-param habs differ visibly; 12:00 and 18:30 shots in `docs/shots/m2.5/`.
+
 ## M3 — Life I: crew, sun, lights
+
+**Starts after M2.5.** The user wants the hand tools and the builder first; nothing here is to be started before that gate.
 
 **Goal:** the base moves on its own.
 

@@ -27,6 +27,9 @@ export class CameraRig {
   private readonly minDistance: number;
   private readonly maxDistance: number;
 
+  /** What the last `update` placed, to tell whether the view changed since. */
+  private readonly shown = { yaw: NaN, distance: NaN, target: new Vector3(NaN, NaN, NaN) };
+
   private dragging: 'none' | 'orbit' | 'pan' = 'none';
   private lastX = 0;
   private lastY = 0;
@@ -55,10 +58,15 @@ export class CameraRig {
     this.camera.updateProjectionMatrix();
   }
 
-  update(dt: number): void {
+  /** Ease toward the goals and place the camera. True while the view is still changing. */
+  update(dt: number): boolean {
     const k = 1 - Math.exp(-dt * 10);
-    this.yaw = MathUtils.lerp(this.yaw, this.yawGoal, k);
-    this.distance = MathUtils.lerp(this.distance, this.distanceGoal, k);
+    this.yaw = settle(MathUtils.lerp(this.yaw, this.yawGoal, k), this.yawGoal, 1e-4);
+    this.distance = settle(
+      MathUtils.lerp(this.distance, this.distanceGoal, k),
+      this.distanceGoal,
+      1e-3,
+    );
 
     const cp = Math.cos(this.pitch);
     const offset = new Vector3(
@@ -68,6 +76,15 @@ export class CameraRig {
     );
     this.camera.position.copy(this.target).add(offset);
     this.camera.lookAt(this.target);
+
+    const moved =
+      this.yaw !== this.shown.yaw ||
+      this.distance !== this.shown.distance ||
+      !this.target.equals(this.shown.target);
+    this.shown.yaw = this.yaw;
+    this.shown.distance = this.distance;
+    this.shown.target.copy(this.target);
+    return moved || this.yaw !== this.yawGoal || this.distance !== this.distanceGoal;
   }
 
   /** Is a camera drag in progress? Tools stand down while it is. */
@@ -146,4 +163,9 @@ export class CameraRig {
     const f = Math.exp(e.deltaY * 0.0012);
     this.distanceGoal = MathUtils.clamp(this.distanceGoal * f, this.minDistance, this.maxDistance);
   };
+}
+
+/** Snap to the goal once it is this close, so easing ends instead of creeping forever. */
+function settle(value: number, goal: number, epsilon: number): number {
+  return Math.abs(value - goal) < epsilon ? goal : value;
 }

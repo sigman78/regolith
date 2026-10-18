@@ -62,3 +62,36 @@ Measured on the dev machine; **none of this is the reference iGPU laptop, so the
 Why the geometry worker is not in this pass: the slowest uncached build is under 5 ms and bundles are cached by recipe hash, so a resize drag costs at most one build per step, inside a frame. A worker would add async plumbing for no measured gain today.
 
 Why LOD dither is not in this pass: it needs second geometry levels for H, N, V and D that do not exist yet, and its payoff is the 200-part case above, which cannot be measured here. It is the first thing to do once a number from the reference laptop says draws or triangles are the problem. Merging parts of one material into fewer draws is the cheaper first step.
+
+## Render load (after the M2 review)
+
+Measured with `EXT_disjoint_timer_query_webgl2` in Chrome (the `__regolith` debug hook exposes `renderer` and `post`), golden base, 1280×800, pixel ratio 1, dev-machine GPU. This is a strong GPU: read the ratios, not the milliseconds.
+
+| Preset | GPU ms per frame | of which shadow map |
+| --- | --- | --- |
+| low (direct) | 0.7 | 0.55 |
+| medium (MSAA + bloom + grade) | 1.2 | 0.5 |
+| high (adds half-res GTAO) | 4.3 | – (swamped by the AO pass) |
+
+What the user saw ("GPU goes brr"): the loop drew at the display's refresh rate forever, with the shadow map redrawn every frame, MSAA on the canvas and in the composer, pixel ratio up to 2 and high as the default.
+
+Done: render on demand (draw only while input, camera easing, an edit, the hour or an animation is active; 60 fps cap; 2 fps heartbeat idle), shadow map refreshed only when the hour, an edit or an animation changes it, no canvas MSAA when the composer resolves its own, pixel ratio capped at 1.5, F2 toggles medium / high. Measured idle: about 2 renders a second instead of 60+; panning leaves the shadow map alone; an edit refreshes it for the length of the animation only.
+
+Not done: dynamic resolution, merging draws per material (the 200-part case), caster culling for the shadow pass.
+
+### Draw calls: measured, 200 parts (`?stress=200`)
+
+Same method (timer queries, 1280×800, pixel ratio 1), one frame with a shadow refresh, every preset now through the composer (low = MSAA 2 + tone map only). `calls` and `tris` count the whole frame: shadow pass, colour pass, and on high the AO normal pass.
+
+| Base | Preset | Draw calls | Triangles | CPU submit ms | GPU ms | GPU ms, shadows cached |
+| --- | --- | --- | --- | --- | --- | --- |
+| golden (10 parts) | low | 255 | 171 k | 0.8 | 0.8 | 0.5 |
+| golden | medium | 269 | 171 k | 1.0 | 1.3 | 1.0 |
+| golden | high | 393 | 280 k | 1.4 | 2.4 | 2.2 |
+| stress (200 small parts) | low | 3257 | 988 k | 7.3 | 6.0 | 3.4 |
+| stress | medium | 3271 | 988 k | 7.7 | 6.6 | 4.2 |
+| stress | high | 4505 | 1377 k | 10.4 | 10.2 | 7.6 |
+
+Reading it: at 200 parts the frame is draw-call and vertex bound, not fill bound (low and high differ by 4 ms of 10). About 16 calls per part: 4 meshes, drawn in the shadow pass and again in the colour pass, plus 2 meshes per leg. Skipping the shadow refresh saves about 2.6 ms at 200 parts, which is what on-demand rendering and `autoUpdate = false` buy during orbit and pan.
+
+The next perf step is therefore fewer draws, not cheaper pixels: one `InstancedMesh` for all leg struts and one for all feet, then one batched draw per material for the whole base (per-instance matrix keeps inflate and clunk working). Target: under 100 calls for 200 parts.
