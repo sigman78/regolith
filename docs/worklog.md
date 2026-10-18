@@ -78,3 +78,4 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-18 01:32 · f627d06 · Frame counter on the debug hook, idle heartbeat 5 s, wake on focus, the preset steps down by itself on a slow machine
 - 2026-10-18 01:38 · eed0b28 · Merged feat/m25-exit into main and pushed
 - 2026-10-18 01:46 · 1a9f8e6 · Sol clock (pause, 1x/2x/4x, scrub), fixed 10 Hz step, one redraw per sol-minute, HUD time, sim layer lint rules
+- 2026-10-18 01:48 · 7e2f9f9 · Press graph stage: the walkable network of PRESS parts, docks and tubes, with volumes, skipped on lean solves

@@ -26,6 +26,7 @@ import { Lighting } from '@/render/lighting';
 import { parseQuality, PostChain } from '@/render/post';
 import { QualityGovernor } from '@/render/quality-governor';
 import { SolClock } from '@/sim/clock';
+import { Sim } from '@/sim/sim';
 import { GRID } from '@/geometry/design-constants';
 import { wearOf } from '@/grammar/solver/wear';
 import { ScatterSync } from '@/render/scatter-sync';
@@ -67,6 +68,8 @@ export function startApp(canvas: HTMLCanvasElement): void {
     startHour,
     !(params.has('hour') || params.has('shot') || params.has('pause')),
   );
+  const sim = new Sim();
+  let simNow = Number.NaN;
   const clockEl = document.getElementById('clock');
   let clockText = '';
 
@@ -459,6 +462,12 @@ export function startApp(canvas: HTMLCanvasElement): void {
   function frame(now: number): void {
     requestAnimationFrame(frame);
     clock.update(now);
+    // The sim ticks on its own 10 Hz step, scaled by the clock; it never asks for a frame (crew are
+    // not drawn yet, and later only a redraw per sol-minute carries them).
+    const simDt =
+      Number.isNaN(simNow) || !clock.running ? 0 : ((now - simNow) / 1000) * clock.speed;
+    simNow = now;
+    sim.update(Math.min(simDt, 0.5), resolved.graph, store.doc.seed, clock.hour);
     // A running clock asks for a frame once per sol-minute (the sun moved), nothing more.
     const sunMoved = clock.visualHour !== shownHour;
     const gap = now - lastRender;
@@ -477,7 +486,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
       shownHour = clock.visualHour;
       shadowDirty = true;
     }
-    const label = `${clock.label()} ${clock.running ? `\u25b6 ${clock.speed}x` : '\u23f8'}`;
+    const label = `${clock.label()} ${clock.running ? `\u25b6 ${clock.speed}x` : '\u23f8'}${sim.crewCount > 0 ? ` \u00b7 crew ${sim.crewCount}` : ''}`;
     if (clockEl && label !== clockText) {
       clockText = label;
       clockEl.textContent = label;
@@ -511,6 +520,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
       quality: () => post.current,
       base: () => resolved,
       clock,
+      sim,
       setHour: (h: number) => {
         clock.set(h);
         wake(true);
