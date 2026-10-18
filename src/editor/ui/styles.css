@@ -1,0 +1,58 @@
+:root {
+  --ink: #e8e4dc;
+  --ink-dim: #a39b8f;
+  --panel: rgba(20, 18, 24, 0.62);
+  --accent: #ff6a2a;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0b0d16;
+  color: var(--ink);
+}
+
+#view {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+#hud {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  padding: 10px 14px;
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hud-title {
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  font-size: 13px;
+}
+
+.hud-sub {
+  margin-left: 8px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.hud-hint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--ink-dim);
+}

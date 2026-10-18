@@ -1,0 +1,285 @@
+# REGOLITH — Architecture
+
+*Code structure, data model, and the rules that keep the layers honest.*
+
+Last updated: 2026-10-17 · See also [KICKOFF.md](KICKOFF.md) · [DESIGN_GUIDE.md](DESIGN_GUIDE.md) · [PLAN.md](PLAN.md)
+
+---
+
+## 1. Stack and key decisions
+
+| Decision | Choice | Why |
+|----------|--------|-----|
+| Language | TypeScript, strict, `noUncheckedIndexedAccess` | Procedural code is index-heavy; the compiler catches a class of off-by-one bugs for free. |
+| Bundler / dev | Vite 7 | Fast HMR for a shader-and-geometry iteration loop. |
+| 3D | three.js (r186+), `WebGLRenderer` for v1 | Broadest support today. All shader tweaks are isolated (see §6.4) so a move to `WebGPURenderer` + node materials is a mechanical port, not a rewrite. |
+| Post | pmndrs `postprocessing` (N8AO + bloom + grade) or three's own passes; decide at M2 | Both are WebGL. Keep the pass list in one file. |
+| UI | Plain DOM + CSS, a tiny signal store (`src/core/signal.ts`) | The UI is a tray and a rail. No framework needed; no framework to fight. |
+| Tests | Vitest | Grammar, solver and geometry are pure and fast to test headlessly. |
+| Workers | Geometry generation in a Web Worker with transferable buffers | Keep 60 fps while dragging a 16 m hab. |
+| State | Immutable document + command pattern | Undo/redo, deterministic re-derivation, cheap diffing for scene sync. |
+| Assets | None. All geometry and textures generated at runtime | Pillar P4; also zero pipeline. |
+
+## 2. Layers and dependency rules
+
+```
+ ┌────────────────────────────────────────────────────────────────┐
+ │ editor/      tools, input, UI, commands           (DOM + three) │
+ ├────────────────────────────────────────────────────────────────┤
+ │ sim/         clock, agents, events                 (pure + math)│
+ ├────────────────────────────────────────────────────────────────┤
+ │ render/      SceneSync, materials, sky, post, LOD      (three)  │
+ ├────────────────────────────────────────────────────────────────┤
+ │ geometry/    mesh builders: profiles, lathe, sweep, trim UVs    │
+ │              (three BufferGeometry math only, no scene objects) │
+ ├────────────────────────────────────────────────────────────────┤
+ │ grammar/     part definitions, ports, rules, solver   (pure)    │
+ ├────────────────────────────────────────────────────────────────┤
+ │ world/       BaseDocument, terrain heightfield        (pure)    │
+ ├────────────────────────────────────────────────────────────────┤
+ │ core/        math, rng, noise, hash, events, signal   (pure)    │
+ └────────────────────────────────────────────────────────────────┘
+```
+
+Rules:
+
+- Arrows point **down only**. `grammar/` may import `world/` and `core/`, never `render/` or `three` scene classes. `world/` and `grammar/` are testable in Node without a GPU.
+- `geometry/` may use three's math and `BufferGeometry` but never `Mesh`, `Scene` or materials. It returns `GeometryBundle`s (see §5).
+- `render/` is the **only** layer that touches `Scene`, materials, lights, textures.
+- `sim/` reads the resolved base (graph, poses) and writes **sim state** (agent positions, animation phases); it never mutates the document.
+- `editor/` is the only layer that creates commands and mutates the document through them.
+- Cross-layer communication is via the typed event bus in `core/events.ts` or explicit function calls downwards. No globals except the app shell.
+
+Enforced by an ESLint `no-restricted-imports` rule per folder (add in M0).
+
+## 3. Data model: the BaseDocument
+
+The document is the only persistent truth. Everything visible is derived from it.
+
+```ts
+interface BaseDocument {
+  version: 1;
+  seed: string;                 // terrain + decorator seed
+  terrain: {
+    size: number;               // cells
+    cell: number;               // metres
+    edits: TerrainStroke[];     // brush strokes replayed on the seeded base
+  };
+  parts: Record<PartId, PartInstance>;
+  links: Link[];                // explicit player-made connections
+  settings: { hour: number; streetLights: boolean; };
+  camera?: { target: [number, number, number]; yaw: number; distance: number };
+}
+
+interface PartInstance {
+  id: PartId;                   // stable, nanoid
+  letter: Letter;               // 'H' | 'D' | 'N' | ...
+  params: Record<string, number | string | boolean>;
+  pose: { x: number; z: number; yaw: 0 | 45 | 90 | 135 | 180 | 225 | 270 | 315; y?: number };
+  flags?: { shielded?: boolean; windows?: boolean };
+  serial: number;               // stencil number, allocated once, never reused
+}
+
+interface Link { a: PortRef; b: PortRef; kind: 'dock' | 'tube'; via?: PartId[] }
+interface PortRef { part: PartId; port: string }
+```
+
+Derived (never stored, recomputed by the solver):
+
+```ts
+interface ResolvedBase {
+  parts: Map<PartId, ResolvedPart>;   // final pose incl. y, legs, port world transforms
+  tubes: ResolvedTube[];              // polylines with flange positions, inserted nodes
+  cables: Polyline[];
+  paths: PathField;                   // 2D traffic/wear field over the grid
+  graph: PressGraph;                  // nodes = PRESS parts, edges = tubes/docks, with walk lengths
+  power: PowerGraph;
+  decorators: DecoratorInstance[];    // handrails, stencils, lights, ladders, chevrons...
+  beaconOwner?: PartId;
+  diagnostics: Diagnostic[];          // never shown as errors; used by tests and the ghost preview
+}
+```
+
+Terrain is stored as the seed plus the list of brush strokes, replayed deterministically. This keeps saves tiny (URL-shareable) and makes undo of terrain edits trivial.
+
+## 4. Grammar and solver
+
+### 4.1 Part definition
+
+Each letter is a module in `src/grammar/parts/<letter>.ts` exporting a `PartDefinition`:
+
+```ts
+interface PartDefinition<P extends ParamSchema> {
+  letter: Letter;
+  name: string;
+  params: P;                                  // schema with min/max/step/default, drives UI handles
+  footprint(params: P): Footprint;            // grid cells occupied, used for snapping/overlap
+  ports(params: P): PortSpec[];               // local-space ports: id, type, position, normal
+  ground(params: P): GroundSpec;              // which STRUCT ports need legs, pad behaviour
+  decorators(params: P, ctx: DecoratorCtx): DecoratorSpec[];
+  geometry(params: P, ctx: GeometryCtx): GeometryRecipe;   // see §5, pure description
+  lods?: number[];                            // screen-size thresholds
+}
+```
+
+Parts are **pure**. They receive a `ctx` carrying the seed, terrain sampler and neighbour information; they never reach into the document.
+
+### 4.2 Solver pipeline
+
+Runs after every command and on every ghost preview update. Target: < 2 ms for 200 parts (measured in tests).
+
+```
+document
+  │
+  ├─ 1. place      : clamp to grid, resolve pose.y from terrain / pad / host
+  ├─ 2. overlap    : footprint grid test; push to nearest free pose (spiral search ≤ 3 cells)
+  ├─ 3. dock       : PRESS ports within 0.5 m & 15° → dock links (collars)
+  ├─ 4. tubes      : for each player link of kind 'tube': route on grid (A* with 45° turn penalty,
+  │                   hull footprints blocked); insert nodes on >24 m or >2 kinks
+  ├─ 5. ground     : legs per STRUCT port; pad skirts; ladders downhill
+  ├─ 6. power      : union-find networks; cable routes (A* on grid, tubes passable via pylon hop)
+  ├─ 7. paths      : EXT ports → origins; wear field advanced by sim traffic (sim writes, solver reads)
+  ├─ 8. decorators : stencils (serial), handrails, lights, chevrons, dust side (wind dir from seed)
+  ├─ 9. beacon     : tallest part
+  └─ 10. diagnose  : invariants (§8.4 of design guide) → diagnostics, asserted in tests
+```
+
+Each stage is a pure function `(ResolvedBase, Document) → ResolvedBase` in its own file under `src/grammar/solver/`. Incremental: stages take a dirty set of part ids and only recompute affected regions (tube routing is bounded by a bbox query against a spatial hash).
+
+### 4.3 Snapping and the ghost
+
+The ghost preview runs the same solver on a scratch document with the proposed part, so what the player sees is exactly what they get. The ghost renders with the `ghost` material override (hull colour at 50%, no shadows) plus an arrow decorator when the resolved pose differs from the cursor by more than 0.25 m.
+
+## 5. Geometry pipeline
+
+Geometry never comes from files. Builders in `src/geometry/` turn a `GeometryRecipe` into a `GeometryBundle`:
+
+```ts
+interface GeometryRecipe {           // declarative, emitted by grammar; hashable
+  ops: GeomOp[];                     // lathe | sweep | box | shell | instanceRef ...
+}
+interface GeometryBundle {
+  byMaterial: Record<MaterialName, { positions: Float32Array; normals: Float32Array; uvs: Float32Array; colors?: Float32Array; indices: Uint32Array }>;
+  instances: Record<DecoratorKind, Float32Array>;   // 4x4 transforms for instanced decorators
+  bounds: AABB;
+  hash: string;
+}
+```
+
+Principles:
+
+- **Profile library** (`geometry/profiles.ts`): the hull profile, rib profile, collar, hatch ring, truss member, panel. Every part is composed from these so bevels and proportions match automatically. Design constants come from `geometry/design-constants.ts` only.
+- **Hard/soft edge flags** on profiles; normals are generated by the lathe/sweep, never recomputed by averaging later.
+- **Trim-sheet UVs**: a 1024² procedural atlas with rows for seams, stencils, hazard stripes, cell lines, rubber. Builders map edges to rows; nothing is UV-unwrapped.
+- **Vertex colour channels**: `rgb` = tint (underside darkening, dust), `a` = AO proxy. Computed analytically (distance to ground, normal·up, windward dot).
+- **Merging**: one draw per material per part; decorators are instanced across the whole base (one `InstancedMesh` per decorator kind per LOD).
+- **Workers**: `geometry/worker.ts` runs the builders. Main thread sends recipes, receives bundles with transferred buffers. A memoising cache keyed by `recipe.hash` lives on both sides.
+- **Validation** (`geometry/validate.ts`): in tests and dev builds, every bundle is checked for NaNs, degenerate triangles, outward normals (signed volume) and bounds; failures throw in dev and are logged in prod.
+
+## 6. Rendering
+
+### 6.1 SceneSync
+
+`render/scene-sync.ts` diffs the previous `ResolvedBase` against the new one and applies minimal scene changes: added/removed/changed parts (by hash), tubes, cables, decorator instance buffers, terrain patch updates. It owns the mapping `PartId → Object3D`. No other code adds to the scene.
+
+### 6.2 Terrain
+
+Heightfield mesh in 32×32-cell chunks so brush edits re-upload a small patch. Path wear and dust are a 2-channel data texture sampled in the regolith shader, not geometry. Pads cut terrain by pulling vertices (keeps the mesh single-surface).
+
+### 6.3 Lighting, sky, time
+
+`render/sky.ts` computes sun direction and palette from the hour. `render/lighting.ts` owns the directional light, rim light, hemisphere light, fog and the shadow frustum fitter. The sky dome is a shader on a sphere; its PMREM is regenerated when the hour crosses a 30-minute boundary.
+
+### 6.4 Materials and shader patches
+
+One library. Shader customisation only via `onBeforeCompile` patches collected in `render/shader-patches.ts` (dust tint, wrapped diffuse for plants, dither fade for LOD). Keeping them in one file is what makes the future WebGPU/node-material port mechanical.
+
+### 6.5 Instancing and LOD
+
+Decorators and repeated parts (solar panels, lights, crew) are `InstancedMesh` with per-instance attributes for animation phase, emissive and dust. LOD: 3 levels per letter (full, medium, silhouette) switched by projected size with a dither crossfade.
+
+### 6.6 Post
+
+`render/post.ts` builds the pass chain from the design guide §7. Quality presets: iGPU (half-res AO, FXAA), discrete (full-res AO, MSAA 4x).
+
+## 7. Simulation (life layer)
+
+- **Clock:** `sim/clock.ts` owns sol time. Real time 1 s = 1 sol-minute by default; the player can pause, scrub, or speed to 4x.
+- **Tick:** sim runs at a fixed 10 Hz; render interpolates. Sim never touches three objects; it writes to typed arrays the renderer reads (positions, headings, phases).
+- **Agents:** `sim/agents/*` are small state machines (Crew, Rover, Drone, Lander, DustDevil). Navigation uses `ResolvedBase.graph` indoors and a grid flow field outdoors (recomputed lazily when the base changes).
+- **Systems:** `sim/systems/*` are stateless per-frame updaters: `solarTracking`, `nightLights`, `airlockCycles`, `plantGrowth`, `pathWear`, `dustAccumulation`, `beacon`. Each reads clock + base, writes instance attributes.
+- **Events:** the sim emits typed events (`landerArrived`, `airlockCycled`) for sound and for optional postcards.
+
+## 8. Editor
+
+- **App shell** (`editor/app.ts`): creates renderer, document store, solver, sim, tools; runs the frame loop.
+- **Document store** (`editor/store.ts`): holds the current document, applies `Command`s, keeps undo/redo stacks. Commands are pure `(doc) → doc` with an `invert`. Drag operations coalesce into one command on release.
+- **Tools** (`editor/tools/*`): a state machine with one active tool: `Select`, `Place(letter)`, `Grow`, `Connect`, `Terrain(brush)`, `PathPaint`, `Delete`, `Photo`. Tools receive normalised pointer events with a terrain hit and a part hit (raycast against footprint proxies, not render meshes).
+- **Ghost** (`editor/ghost.ts`): scratch document + solver + override materials.
+- **UI** (`editor/ui/*`): tray, rail, parameter handles (DOM elements positioned by projecting 3D anchors), hour dial, toast. State via signals.
+- **Input** (`editor/input.ts`): pointer capture, key chords, wheel normalisation. Camera rig lives in `render/camera-rig.ts` and is driven by the input layer.
+
+## 9. Persistence and sharing
+
+- `persistence/codec.ts`: document ↔ compact binary (MessagePack-like custom) ↔ base64url. A 200-part base fits in ~2 KB, so the **URL is the save file**.
+- `persistence/local.ts`: autosave to IndexedDB every 10 s and on blur; a "recent bases" list with thumbnails.
+- `persistence/export.ts`: PNG export at 1x/2x/4x (offscreen render), optional GLTF export of the resolved base for people who want to print it.
+- Versioned schema with migrations in `persistence/migrate.ts`.
+
+## 10. Testing strategy
+
+| Layer | What | How |
+|-------|------|-----|
+| `core/` | rng determinism, noise ranges, hash stability | unit |
+| `world/` | terrain determinism, bilinear sampling, stroke replay | unit (exists) |
+| `grammar/` | every letter: ports inside footprint, port normals unit length, params schema sane | property tests over param ranges |
+| `grammar/solver` | invariants from design guide §8.4 on 50 random bases per seed set; tube routing never crosses hulls; nothing floats | property tests, golden JSON for a few hand-built bases |
+| `geometry/` | no NaNs, outward normals, bounds, bevel presence (edge angle histogram), hash stability | unit + snapshot of hashes |
+| `render/` | sky palette monotonic with sun altitude; no NaN colours | unit |
+| `sim/` | agents never leave the graph; lander schedule | unit with fake clock |
+| Visual | screenshot suite at 06:00 / 12:00 / 18:30 / 21:00 from 3 camera angles on a golden base | Playwright, compared with a tolerance; run on demand, not on every commit |
+| Perf | solver < 2 ms for 200 parts; geometry worker < 16 ms per hab; frame < 16 ms on the golden base | benchmark script, numbers tracked in `docs/PERF.md` (created at M1) |
+
+## 11. Performance budgets (golden base: 200 parts, 24 crew, 6 rovers, 300 panels)
+
+| Budget | Target |
+|--------|--------|
+| Frame (iGPU, 1080p) | ≤ 16 ms total, render ≤ 11 ms, sim ≤ 2 ms, solver ≤ 2 ms amortised |
+| Draw calls | ≤ 400 |
+| Triangles | ≤ 1.5 M on screen |
+| Shadow pass | one 2048 map |
+| Memory | ≤ 300 MB JS heap + GPU |
+| Load | interactive in < 2 s on a cold cache (three is ~135 KB gzipped) |
+
+## 12. Folder layout
+
+```
+regolith/
+├─ docs/                  KICKOFF, DESIGN_GUIDE, ARCHITECTURE, PLAN, PERF (later)
+├─ public/                favicon only
+├─ src/
+│  ├─ core/               rng, noise, math, events, signal
+│  ├─ world/              document types, terrain, strokes
+│  ├─ grammar/
+│  │  ├─ parts/           H.ts, D.ts, N.ts, ... one file per letter
+│  │  ├─ solver/          place, overlap, dock, tubes, ground, power, paths, decorators, beacon, diagnose
+│  │  ├─ ports.ts  rules.ts  types.ts
+│  ├─ geometry/           design-constants, profiles, lathe, sweep, trim, builders, validate, worker
+│  ├─ render/             renderer, scene-sync, materials, shader-patches, sky, lighting, camera-rig, post, lod, terrain-mesh
+│  ├─ sim/                clock, agents/, systems/, nav
+│  ├─ editor/             app, store, commands, tools/, ghost, input, ui/
+│  ├─ persistence/        codec, local, export, migrate
+│  └─ main.ts             boots editor/app
+├─ index.html
+├─ package.json  tsconfig.json  vite.config.ts
+└─ CLAUDE.md
+```
+
+## 13. Conventions
+
+- Files are kebab-case; types PascalCase; one letter per part file named by its letter.
+- No `any`. No default exports except Vite entry points.
+- Design constants live in `geometry/design-constants.ts` and nowhere else.
+- Every part and solver stage has a doc comment stating its invariants.
+- Commits: conventional prefixes (`feat:`, `fix:`, `art:`, `perf:`, `docs:`). `art:` is for look changes with before/after screenshots in the PR.
+- Screenshots for visual review go in `docs/shots/<milestone>/`, never in `src/`.
