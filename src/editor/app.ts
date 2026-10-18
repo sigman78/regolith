@@ -15,6 +15,7 @@ import {
   Scene,
   Timer,
   Vector2,
+  Vector3,
   WebGLRenderer,
 } from 'three';
 import { snapYaw, type Vec3 } from '@/core/math';
@@ -57,7 +58,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
   renderer.shadowMap.type = PCFShadowMap;
 
   const scene = new Scene();
-  const lighting = new Lighting(scene);
+  const lighting = new Lighting(scene, renderer);
   const rig = new CameraRig(canvas);
 
   // ---- document, terrain, solver -----------------------------------------------
@@ -78,6 +79,31 @@ export function startApp(canvas: HTMLCanvasElement): void {
   const resolve = (): void => {
     resolved = solve(store.doc, world, movingId ? { movingId } : {});
     sync.sync(resolved);
+    fitShadowToBase();
+  };
+
+  /** The shadow box covers the base (parts and their footprints), with a margin for tall parts. */
+  const fitShadowToBase = (): void => {
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    for (const p of resolved.parts.values()) {
+      const reach =
+        p.footprint.kind === 'rect' ? Math.hypot(p.footprint.hx, p.footprint.hz) : p.footprint.r;
+      minX = Math.min(minX, p.pose.x - reach);
+      maxX = Math.max(maxX, p.pose.x + reach);
+      minZ = Math.min(minZ, p.pose.z - reach);
+      maxZ = Math.max(maxZ, p.pose.z + reach);
+    }
+    if (!Number.isFinite(minX)) {
+      lighting.setBounds(new Vector3(0, 0, 0), 30);
+      return;
+    }
+    const cx = (minX + maxX) / 2;
+    const cz = (minZ + maxZ) / 2;
+    const r = Math.hypot(maxX - minX, maxZ - minZ) / 2 + 8;
+    lighting.setBounds(new Vector3(cx, 3, cz), r);
   };
 
   if (params.has('golden')) {
