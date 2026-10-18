@@ -44,6 +44,8 @@ export const CORRIDOR_SECTION = corridorSection(
 /** Plan turns below this are smooth enough to need neither a mitre nor a collar. */
 const KINK_COS = Math.cos((1 * Math.PI) / 180);
 /** Never stretch a mitre past this half-turn (a 135° corner); the router makes 45° steps. */
+/** A mitre eased for short pieces never narrows the section below this fraction. */
+const MIN_STRETCH = 0.5;
 const MAX_HALF_TURN = (67.5 * Math.PI) / 180;
 
 export function buildTube(out: BundleBuilder, op: TubeOp): void {
@@ -72,28 +74,53 @@ export function buildTube(out: BundleBuilder, op: TubeOp): void {
     total += len;
   }
 
-  // One frame per vertex: the end headings at the ends, the bisector (stretched) at a bend.
+  // Half the plan turn at each vertex (0 where the run is straight), then the mitre fitted to the
+  // pieces: a piece must be long enough for the outer corners at both its ends, or the stretched
+  // rings would cross. Short ones get a shallower mitre (a small notch, never a hole).
+  const halves: number[] = pts.map((_, i) => {
+    const before = heads[i - 1];
+    const after = heads[i];
+    if (!before || !after) return 0;
+    const cosTurn = before[0] * after[0] + before[2] * after[2];
+    if (cosTurn >= KINK_COS) return 0;
+    return Math.min(MAX_HALF_TURN, Math.acos(Math.max(-1, Math.min(1, cosTurn))) / 2);
+  });
+  const fit: number[] = halves.map(() => 1);
+  for (let i = 0; i + 1 < pts.length; i++) {
+    const a = pts[i] as Vec3;
+    const c = pts[i + 1] as Vec3;
+    const run = Math.hypot(c[0] - a[0], c[2] - a[2]);
+    const need =
+      (CORRIDOR_HALF_WIDTH + TUBE_FLANGE) *
+      (Math.tan(halves[i] ?? 0) + Math.tan(halves[i + 1] ?? 0));
+    if (need > run) {
+      const f = run / need;
+      fit[i] = Math.min(fit[i] ?? 1, f);
+      fit[i + 1] = Math.min(fit[i + 1] ?? 1, f);
+    }
+  }
+
+  // One frame per vertex: the end headings at the ends, the bisector (stretched) at a bend. On a
+  // climb the two prisms' true intersection is not a vertical plane; the shared ring skews each
+  // piece by about slope * x * tan(half turn), under 6 cm at CORRIDOR_MAX_SLOPE.
   const frames: SectionFrame[] = [];
   const bends: { s: number; turn: number; frame: SectionFrame }[] = [];
   for (let i = 0; i < pts.length; i++) {
     const at = pts[i] as Vec3;
     const before = heads[i - 1];
     const after = heads[i];
-    if (!before || !after) {
+    const half = halves[i] ?? 0;
+    if (!before || !after || half === 0) {
       frames.push({ at, lat: lateralOf((after ?? before) as Vec3), stretch: 1 });
-      continue;
-    }
-    const cosTurn = before[0] * after[0] + before[2] * after[2];
-    if (cosTurn >= KINK_COS) {
-      frames.push({ at, lat: lateralOf(after), stretch: 1 });
       continue;
     }
     const bx = before[0] + after[0];
     const bz = before[2] + after[2];
     const bl = Math.hypot(bx, bz);
     const bis: Vec3 = bl < 1e-6 ? after : [bx / bl, 0, bz / bl];
-    const half = Math.min(MAX_HALF_TURN, Math.acos(Math.max(-1, Math.min(1, cosTurn))) / 2);
-    const frame: SectionFrame = { at, lat: lateralOf(bis), stretch: 1 / Math.cos(half) };
+    // Scaling the stretch scales how far the ring slides along the pieces, so it never overruns them.
+    const stretch = Math.max(MIN_STRETCH, (fit[i] ?? 1) / Math.cos(half));
+    const frame: SectionFrame = { at, lat: lateralOf(bis), stretch };
     frames.push(frame);
     bends.push({ s: starts[i] ?? 0, turn: half, frame });
   }

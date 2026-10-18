@@ -100,6 +100,56 @@ describe('corridor geometry', () => {
     expect(hasCorner).toBe(true);
   });
 
+  it('keeps two 90° corners a metre apart from folding over: the mitre eases, the skin stays valid', () => {
+    const b = build([0, 3, 0, 8, 3, 0, 8, 3, 1, 0, 3, 1]);
+    expect(() => assertValidBundle(b)).not.toThrow();
+    // No hull vertex strays farther from the path than the full mitre corner, half-width / cos(45°).
+    const p = b.byMaterial.hull?.positions ?? new Float32Array();
+    const path: [number, number][] = [
+      [0, 0],
+      [8, 0],
+      [8, 1],
+      [0, 1],
+    ];
+    const toSeg = (
+      x: number,
+      z: number,
+      [ax, az]: [number, number],
+      [bx, bz]: [number, number],
+    ) => {
+      const t = Math.max(
+        0,
+        Math.min(
+          1,
+          ((x - ax) * (bx - ax) + (z - az) * (bz - az)) / ((bx - ax) ** 2 + (bz - az) ** 2),
+        ),
+      );
+      return Math.hypot(x - (ax + (bx - ax) * t), z - (az + (bz - az) * t));
+    };
+    for (let i = 0; i < p.length; i += 3) {
+      const d = Math.min(
+        ...[0, 1, 2].map((k) =>
+          toSeg(
+            p[i] ?? 0,
+            p[i + 2] ?? 0,
+            path[k] as [number, number],
+            path[k + 1] as [number, number],
+          ),
+        ),
+      );
+      expect(d).toBeLessThanOrEqual(CORRIDOR_HALF_WIDTH * Math.SQRT2 + 1e-6);
+    }
+  });
+
+  it('survives a U of three 90° bends on short pieces', () => {
+    for (const pts of [
+      [0, 3, 0, 1, 3, 0, 1, 3, 1, 0, 3, 1],
+      [0, 3, 0, 6, 3, 0, 6, 3, 1, 0, 3, 1, 0, 3, 2, 6, 3, 2],
+    ]) {
+      expect(() => assertValidBundle(build(pts))).not.toThrow();
+    }
+  });
+
   it('wears a collar on the mitre plane, stretched with it and standing a flange proud', () => {
     const b = build([0, 3, 0, 6, 3, 0, 10, 3, 4]);
     const p = b.byMaterial.graphite?.positions ?? new Float32Array();
