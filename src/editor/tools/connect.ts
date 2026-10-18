@@ -26,6 +26,10 @@ export class ConnectTool implements Tool {
   }
 
   docChanged(): void {}
+
+  editor(): null {
+    return null;
+  }
   move(): void {}
   down(): void {}
   up(): void {}

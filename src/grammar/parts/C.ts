@@ -33,8 +33,9 @@ const SCHEMA = {
     max: LAUNCHER_LENGTH.max,
     step: LAUNCHER_LENGTH.step,
     default: LAUNCHER_LENGTH.default,
+    unit: ' m',
   },
-  elevation: { kind: 'choice', options: LAUNCHER_ELEVATIONS, default: 20 },
+  elevation: { kind: 'choice', options: LAUNCHER_ELEVATIONS, default: 20, unit: '°' },
 } as const satisfies ParamSchema;
 
 export const C: PartDefinition<LauncherParams> = {

@@ -8,7 +8,7 @@ import { getPart } from '@/grammar/registry';
 import type { ParamValues } from '@/grammar/types';
 import type { Letter } from '@/world/letter';
 import { cmd } from '../commands';
-import type { PointerInfo, Tool, ToolHost } from './tool';
+import type { ParamEditor, PointerInfo, Tool, ToolHost } from './tool';
 
 export class PlaceTool implements Tool {
   readonly id = 'place';
@@ -17,7 +17,8 @@ export class PlaceTool implements Tool {
 
   private yaw = 0;
   private cursor: { x: number; z: number } | null = null;
-  private params: ParamValues = {};
+  /** Remembered per letter (one PlaceTool each), so Esc and back keeps your choice. */
+  private params: ParamValues;
 
   constructor(
     private readonly host: ToolHost,
@@ -26,10 +27,24 @@ export class PlaceTool implements Tool {
   ) {
     this.label = getPart(letter)?.name ?? letter;
     this.key = key;
+    this.params = getPart(letter)?.resolve({}) ?? {};
   }
 
-  activate(): void {
-    this.params = getPart(this.letter)?.resolve({}) ?? {};
+  activate(): void {}
+
+  editor(): ParamEditor | null {
+    const def = getPart(this.letter);
+    if (!def) return null;
+    return {
+      title: `New ${def.name.toLowerCase()}`,
+      schema: def.schema,
+      values: this.params,
+      set: (key, value) => {
+        this.params = def.resolve({ ...this.params, [key]: value });
+        this.refresh();
+        this.host.refreshUi();
+      },
+    };
   }
 
   deactivate(): void {

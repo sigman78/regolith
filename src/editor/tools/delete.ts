@@ -24,6 +24,10 @@ export class DeleteTool implements Tool {
 
   docChanged(): void {}
 
+  editor(): null {
+    return null;
+  }
+
   move(p: PointerInfo): void {
     const hit = this.target(p);
     this.host.tip(hit ? `Delete ${hit.label}` : null, p.clientX, p.clientY);

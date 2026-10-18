@@ -35,8 +35,9 @@ const SCHEMA = {
     max: HAB_LENGTH.max,
     step: HAB_LENGTH.step,
     default: HAB_LENGTH.default,
+    unit: ' m',
   },
-  radius: { kind: 'choice', options: HAB_RADII, default: HAB_RADII[0] },
+  radius: { kind: 'choice', options: HAB_RADII, default: HAB_RADII[0], unit: ' m' },
 } as const satisfies ParamSchema;
 
 /** Distance from the centre to a cap apex. */

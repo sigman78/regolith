@@ -5,7 +5,8 @@
  */
 import { snapYaw } from '@/core/math';
 import { cmd } from '../commands';
-import type { PointerInfo, Tool, ToolHost } from './tool';
+import { getPart } from '@/grammar/registry';
+import type { ParamEditor, PointerInfo, Tool, ToolHost } from './tool';
 import { pickPart } from '../pick';
 import type { PartId } from '@/world/document';
 
@@ -26,6 +27,30 @@ export class SelectTool implements Tool {
   }
 
   docChanged(): void {}
+
+  /** The selected part's parameters. Derived nodes are not in the document, so they have none. */
+  editor(): ParamEditor | null {
+    const { host } = this;
+    const id = host.selected;
+    const part = id ? host.store.doc.parts[id] : undefined;
+    const def = part ? getPart(part.letter) : undefined;
+    if (!id || !part || !def) return null;
+    return {
+      title: host.describe(id),
+      schema: def.schema,
+      values: def.resolve(part.params),
+      set: (key, value) => {
+        const next = def.resolve({ ...part.params, [key]: value });
+        // Grow, shrink or restyle in place, let the solver push neighbours, keep the result: one undo step.
+        host.setMoving(id);
+        host.store.beginGesture('Change part');
+        host.store.execute(cmd.setParams(id, next));
+        host.commitResolved(id);
+        host.store.endGesture();
+        host.setMoving(null);
+      },
+    };
+  }
 
   move(p: PointerInfo): void {
     const { host } = this;
@@ -53,8 +78,13 @@ export class SelectTool implements Tool {
       host.select(null);
       return;
     }
-    host.select(hit.id);
     const part = host.base().parts.get(hit.id);
+    // A node the solver inserted on a tube belongs to that tube: not selectable, not movable.
+    if (part?.derived) {
+      host.select(null);
+      return;
+    }
+    host.select(hit.id);
     if (!part || !p.ground) return;
     this.drag = { id: hit.id, dx: part.pose.x - p.ground[0], dz: part.pose.z - p.ground[2] };
     host.setMoving(hit.id);

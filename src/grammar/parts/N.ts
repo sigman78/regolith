@@ -23,7 +23,13 @@ import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 export type NodeParams = { size: number };
 
 const SCHEMA = {
-  size: { kind: 'choice', options: NODE_RADII, default: NODE_RADII[0] },
+  size: {
+    kind: 'choice',
+    options: NODE_RADII,
+    default: NODE_RADII[0],
+    label: 'Radius',
+    unit: ' m',
+  },
 } as const satisfies ParamSchema;
 
 const PRESS_IDS = ['x+', 'x-', 'z+', 'z-', 'top'] as const;

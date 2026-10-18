@@ -201,3 +201,75 @@ body {
 [hidden] {
   display: none !important;
 }
+
+#params {
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  min-width: 190px;
+  padding: 10px 12px;
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  user-select: none;
+}
+
+#params[hidden] {
+  display: none;
+}
+
+.params-title {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.params-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.params-label {
+  color: var(--ink-dim);
+}
+
+.params-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.params-value {
+  min-width: 42px;
+  text-align: center;
+}
+
+.params-controls button {
+  padding: 3px 9px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.params-controls button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.params-controls button.on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.params-controls button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}

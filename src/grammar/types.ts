@@ -40,10 +40,24 @@ export type GroundSpec =
 export type ParamValue = number | string | boolean;
 export type ParamValues = Record<string, ParamValue>;
 
+/** Display hints shared by every kind; the picker uses them, the solver never does. */
+interface ParamLook {
+  /** Shown instead of the capitalised key. */
+  label?: string;
+  /** Appended to numbers: 'm', '°'. */
+  unit?: string;
+}
+
 export type ParamSpec =
-  | { kind: 'range'; min: number; max: number; step: number; default: number }
-  | { kind: 'choice'; options: readonly number[]; default: number }
-  | { kind: 'toggle'; default: boolean };
+  | (ParamLook & { kind: 'range'; min: number; max: number; step: number; default: number })
+  | (ParamLook & {
+      kind: 'choice';
+      options: readonly number[];
+      default: number;
+      /** One name per option, instead of the number. */
+      labels?: readonly string[];
+    })
+  | (ParamLook & { kind: 'toggle'; default: boolean });
 
 export type ParamSchema = Readonly<Record<string, ParamSpec>>;
 
