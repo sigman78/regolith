@@ -215,6 +215,7 @@ Alphabet is **frozen per milestone**; see PLAN.md for which letters ship when.
 - **Place:** click the ground. The part appears in ghost form following the cursor with its resolved pose (legs, snaps). Scroll rotates in 45° steps, shift-scroll changes the primary parameter.
 - **Resize:** a selected part shows one orange disc per grip its letter declares (hab: both ends and the top; slab: all four edges; tower, mast, dome, node, reactor: one; launcher: both ends). Dragging a disc pulls that dimension along its own axis, the opposite end stays put, the value follows the pointer in a small readout and snaps to the schema. Growth stops at an obstacle. One drag is one undo step. Discs are 24 px, orange, with a 3 px white ring, floating 1.2 m off the surface along the grip axis.
 - **Connect:** drag from a port halo to another. Ghost tube previews, including inserted nodes.
+- **Suggestions:** the part you just placed or selected shows up to three ghost tubes to its best neighbours, each with a dark pill "Connect to H-002" (orange ring, fills orange on hover). One click adds the tube. They are quiet: nothing that would not route cleanly, no long detours, nothing while you drag, and Esc or another tool removes them.
 - **Terrain brushes:** 2–12 m radius, soft falloff, dust puff feedback; parts above re-ground instantly.
 - **Undo/redo:** every command, including terrain strokes, coalesced per drag.
 - **Cursor states:** default, place-valid (orange ring), place-resolved (orange ring with a tiny arrow pointing where it will snap), grab, rotate.
