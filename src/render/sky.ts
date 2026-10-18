@@ -44,17 +44,27 @@ function smoothstep(e0: number, e1: number, x: number): number {
   return t * t * (3 - 2 * t);
 }
 
+/** The sun is above the horizon for 14 of the 24 hours: up before 06:00, down after 19:00. */
+const HALF_DAY_HOURS = 7;
+/** Sun altitude at noon, degrees. */
+const NOON_ALTITUDE_DEG = 68;
+
 export function computeSky(hour: number, latitudeDeg = 18): SkyState {
   const h = ((hour % 24) + 24) % 24;
-  const dayAngle = ((h - 12) / 24) * Math.PI * 2; // 0 at noon
+  const dayAngle = ((h - 12) / 24) * Math.PI * 2; // hour angle, 0 at noon
   const lat = (latitudeDeg * Math.PI) / 180;
-  // Sun on a tilted circle; good enough for a toy, no ephemeris needed.
-  const elev = Math.cos(dayAngle) * Math.cos(lat);
-  const sunDir = new Vector3(
-    Math.sin(dayAngle),
-    elev,
-    -Math.sin(lat) * Math.cos(dayAngle) * 0.6,
-  ).normalize();
+  // sin(altitude) is zero at the sunrise and sunset hour angle and peaks at noon. That puts the
+  // sun 11 degrees up at 06:00 and 5 degrees up at 18:30 (design guide §5: dawn and the blue
+  // sunset are *light*, long and low, not night), and below the horizon by 21:00.
+  const cosEdge = Math.cos((HALF_DAY_HOURS / 24) * Math.PI * 2);
+  const sinAlt =
+    (Math.sin((NOON_ALTITUDE_DEG * Math.PI) / 180) / (1 - cosEdge)) *
+    (Math.cos(dayAngle) - cosEdge);
+  const cosAlt = Math.sqrt(Math.max(0, 1 - sinAlt * sinAlt));
+  // Azimuth: east in the morning, west in the evening, a little toward the pole at noon.
+  const horiz = new Vector3(Math.sin(dayAngle), 0, -Math.sin(lat) * Math.cos(dayAngle) * 0.6);
+  horiz.normalize().multiplyScalar(cosAlt);
+  const sunDir = new Vector3(horiz.x, sinAlt, horiz.z).normalize();
   const altitude = Math.max(0, sunDir.y);
 
   // 0 = night, 1 = full day, with a twilight band around the horizon.

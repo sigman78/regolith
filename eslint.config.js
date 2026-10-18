@@ -95,13 +95,7 @@ function restrict(layer, { pureThree = false, exceptions = {} } = {}) {
 
 export default tseslint.config(
   {
-    ignores: [
-      'dist/**',
-      'coverage/**',
-      'node_modules/**',
-      '.playwright-mcp/**',
-      'scripts/shot-sheet.js',
-    ],
+    ignores: ['dist/**', 'coverage/**', 'node_modules/**', '.playwright-mcp/**', 'scripts/*.js'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
