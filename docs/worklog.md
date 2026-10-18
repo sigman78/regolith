@@ -88,3 +88,4 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-18 03:31 · 42d24f3 · Merged feat/m3-exit (airlock exit and cycle, crew outdoors, airlock lamp) into main and pushed
 - 2026-10-18 03:44 · a5f07c0 · Night lights: pole heads and the one beacon (tallest part that offers a mount, ties by id) as instanced lamps on one material, baked light material removed; paused 2 frames per 10 s
 - 2026-10-18 03:52 · 858bb3b · Merged feat/m3-lights (night lights) into main and pushed
+- 2026-10-18 04:45 · 86a25ba · Proposal for M3.5 Human scale (flat-floor corridors, one deck height, floor-level ports, stairs) written into PLAN by Fable, to be built before M3 task 7
