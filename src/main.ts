@@ -5,6 +5,7 @@
  * the pieces it uses (terrain, sky, materials, hab) are keepers.
  */
 import {
+  ACESFilmicToneMapping,
   Color,
   DirectionalLight,
   Fog,
@@ -24,6 +25,8 @@ import { setNightGlow } from '@/render/materials';
 const canvas = document.getElementById('view') as HTMLCanvasElement;
 const renderer = new WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFShadowMap;
 

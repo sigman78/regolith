@@ -29,6 +29,8 @@ const DUSK_SKY_ZENITH = new Color('#5a3f55');
 const DUSK_SKY_HORIZON = new Color('#6f8fc9'); // the blue halo around a Martian sunset
 const NIGHT_SKY_ZENITH = new Color('#0b0d16');
 const NIGHT_SKY_HORIZON = new Color('#1a1b2a');
+// Night is not dark (design guide §5): a cool fill so the base stays readable.
+const NIGHT_AMBIENT = new Color('#5a6a8a');
 const SUN_NOON = new Color('#fff1dc');
 const SUN_LOW = new Color('#ffb070');
 const GROUND = new Color('#8a4a2a');
@@ -63,11 +65,14 @@ export function computeSky(hour: number, latitudeDeg = 18): SkyState {
   skyHorizon.lerp(DUSK_SKY_HORIZON, duskness * 0.85);
 
   const sunColor = mix(new Color(), SUN_LOW, SUN_NOON, smoothstep(0.05, 0.5, altitude));
-  const sunIntensity = altitude > 0 ? 2.2 * smoothstep(0, 0.12, altitude) + 0.6 * altitude : 0;
+  // Keep a low warm sun a little past the geometric horizon so dusk has light in it.
+  const sunIntensity = 2.4 * smoothstep(-0.06, 0.18, sunDir.y) + 0.6 * altitude;
+  if (sunDir.y < 0.05) sunDir.y = 0.05 + (sunDir.y - 0.05) * 0.2; // flatten, never below ~3 deg
+  sunDir.normalize();
 
-  const ambientSky = skyHorizon.clone().lerp(skyZenith, 0.5);
+  const ambientSky = NIGHT_AMBIENT.clone().lerp(skyHorizon.clone().lerp(skyZenith, 0.5), dayness);
   const ambientGround = GROUND.clone().multiplyScalar(0.35 + 0.65 * dayness);
-  const ambientIntensity = 0.25 + 0.9 * dayness;
+  const ambientIntensity = 0.7 + 0.5 * dayness;
 
   return {
     hour: h,

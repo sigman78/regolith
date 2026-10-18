@@ -1,4 +1,0 @@
-- generic [active] [ref=f8e1]:
-  - generic:
-    - generic: REGOLITH pre-alpha scaffold
-    - generic: "drag: orbit (snaps to 45°) · right-drag: pan · wheel: zoom · [ ] time of day · Q/E rotate"

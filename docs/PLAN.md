@@ -21,6 +21,8 @@ Milestones are ordered by **risk retired**, not by feature count. Each has a one
 
 Delivered: Vite + TS + three.js; seeded RNG and noise; terrain heightfield with craters; sky/time-of-day model; snapping camera rig; material library; first procedural hab (lathe profile with ribs and stripe); one unit test; docs.
 
+Known scaffold issues (see `docs/shots/m0/`): dusk (18:00) and night (21:00) are far darker than the design guide wants, terrain reads near-black once the sun is low, and there is faint shadow speckling on hab end caps where the rib profile meets the hull. All three are M2 work (sky dome, lifted ambient, emissives, shadow fitter), not M0 blockers.
+
 Remaining for M0:
 - [ ] ESLint with per-folder `no-restricted-imports` enforcing the layer rules.
 - [ ] Prettier config.
