@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { snapYaw } from '@/core/math';
 import { Rng } from '@/core/rng';
-import { CREW_VOLUME, PRESS_FLOOR_DROP } from '@/geometry/design-constants';
+import { CREW_VOLUME, DECK_HEIGHT } from '@/geometry/design-constants';
 import { addLink, addPart, createDocument, type BaseDocument } from '@/world/document';
 import { crossLength, graphComponents, solve, type SolverWorld } from './index';
 
@@ -41,7 +41,9 @@ describe('graph stage', () => {
     expect(g.edges.length).toBe(base.tubes.size);
     const a = g.nodes.get('a');
     const part = base.parts.get('a');
-    expect(a?.centre[1]).toBeCloseTo((part?.pose.y ?? 0) - PRESS_FLOOR_DROP, 9);
+    // The floor is one deck over the ground (flat at y = 0 here).
+    expect(a?.centre[1]).toBeCloseTo(DECK_HEIGHT, 9);
+    expect(part).toBeDefined();
     for (const e of g.edges) {
       expect(e.length).toBeGreaterThan(0);
       expect(e.path.length).toBeGreaterThanOrEqual(2);

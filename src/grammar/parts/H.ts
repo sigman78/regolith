@@ -19,12 +19,14 @@ import {
   HAB_LENGTH,
   HAB_RADII,
   HAB_SIDE_PORT_SPACING,
+  FLOOR_ABOVE_BELLY,
   HAB_STRUCT_INSET,
   LEG_MIN_CLEARANCE,
   RIB_SPACING,
 } from '@/geometry/design-constants';
 import { beaconOn } from '../lamps';
 import { readChoice, readRange } from '../params';
+import { capGap, roundGap } from '../shell-gap';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
 export type HabParams = { length: number; radius: number };
@@ -60,6 +62,11 @@ export function habSidePortXs(p: HabParams): number[] {
   return xs;
 }
 
+/** Local y of the walking floor: FLOOR_ABOVE_BELLY over the belly, which is one radius under the axis. */
+export function habFloor(p: HabParams): number {
+  return FLOOR_ABOVE_BELLY - p.radius;
+}
+
 export const H: PartDefinition<HabParams> = {
   letter: 'H',
   name: 'Hab',
@@ -80,18 +87,28 @@ export const H: PartDefinition<HabParams> = {
     };
   },
 
+  floor: habFloor,
+
+  shellGap(p, portId) {
+    const y = habFloor(p);
+    return portId.startsWith('end')
+      ? capGap(p.radius, p.radius * HAB_CAP_RATIO, y)
+      : roundGap(p.radius, y);
+  },
+
   ports(p) {
     const ext = habHalfExtent(p);
+    const y = habFloor(p);
     const ports: PortSpec[] = [
-      { id: 'end-', type: 'PRESS', position: [-ext, 0, 0], normal: [-1, 0, 0] },
-      { id: 'end+', type: 'PRESS', position: [ext, 0, 0], normal: [1, 0, 0] },
+      { id: 'end-', type: 'PRESS', position: [-ext, y, 0], normal: [-1, 0, 0] },
+      { id: 'end+', type: 'PRESS', position: [ext, y, 0], normal: [1, 0, 0] },
     ];
     habSidePortXs(p).forEach((x, i) => {
       const side = i % 2 === 0 ? 1 : -1;
       ports.push({
         id: `side-${i}`,
         type: 'PRESS',
-        position: [x, 0, side * p.radius],
+        position: [x, y, side * p.radius],
         normal: [0, 0, side],
       });
     });

@@ -3,17 +3,17 @@
  *
  * Frame: axis along local +Y, flat base at y = 0, centred in X and Z.
  * Ports:
- *   c-0..3     PRESS on the collar drum, normals +X, +Z, -X, -Z, at DOME_PORT_Y
+ *   c-0..3     PRESS on the collar drum, normals +X, +Z, -X, -Z, on the floor (FLOOR_ABOVE_BELLY)
  *   foot-0..3  STRUCT on the flat underside, DOME_FOOT_RADIAL of the radius out
  *
  * Invariants: radius is one of DOME_RADII; every PRESS port lies on the collar
  * cylinder below the shell; feet lie on the underside inside the footprint.
  */
 import {
+  FLOOR_ABOVE_BELLY,
   DOME_COLLAR_HEIGHT,
   DOME_FOOTPRINT_MARGIN,
   DOME_FOOT_RADIAL,
-  DOME_PORT_Y,
   DOME_RADII,
   FLANGE_RATIO,
   LEG_MIN_CLEARANCE,
@@ -50,11 +50,15 @@ export const D: PartDefinition<DomeParams> = {
     return { kind: 'disc', r: p.radius * (1 + FLANGE_RATIO) + DOME_FOOTPRINT_MARGIN };
   },
 
+  floor() {
+    return FLOOR_ABOVE_BELLY;
+  },
+
   ports(p) {
     const ports: PortSpec[] = DIRS.map((d, i): PortSpec => ({
       id: `c-${i}`,
       type: 'PRESS',
-      position: [d[0] * p.radius, Math.min(DOME_PORT_Y, DOME_COLLAR_HEIGHT), d[2] * p.radius],
+      position: [d[0] * p.radius, FLOOR_ABOVE_BELLY, d[2] * p.radius],
       normal: d,
     }));
     const radial = p.radius * DOME_FOOT_RADIAL;

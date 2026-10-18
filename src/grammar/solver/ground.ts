@@ -114,6 +114,7 @@ function groundOne(draft: Draft, world: SolverWorld): Grounded {
     type: p.type,
     position: localToWorld(pose, p.position),
     normal: localDirToWorld(pose, p.normal),
+    gap: def.shellGap?.(params, p.id) ?? 0,
   }));
 
   const legs: Leg[] = [];

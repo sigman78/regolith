@@ -16,7 +16,7 @@ import {
 import type { Vec3 } from '@/core/math';
 import type { PartId } from '@/world/document';
 import type { Grounded } from './ground';
-import { tubeFromPath } from './tube-path';
+import { PIPE_AXIS_LIFT, tubeFromPath } from './tube-path';
 import type { ResolvedTube, SolverWorld } from './types';
 
 const BUCKET = DOCK_RANGE * 2;
@@ -27,6 +27,8 @@ interface PortEntry {
   port: string;
   pos: Vec3;
   normal: Vec3;
+  /** the hull is this far behind the port (ResolvedPort.gap) */
+  gap: number;
 }
 
 export const portKey = (part: PartId, port: string): string => `${part}/${port}`;
@@ -47,6 +49,7 @@ export function dock(grounded: Grounded[], world: SolverWorld, used: Set<string>
         port: p.id,
         pos: p.position,
         normal: p.normal,
+        gap: p.gap,
       };
       entries.push(e);
       const [bx, bz] = bucketOf(p.position);
@@ -123,9 +126,10 @@ function dockDistance(a: PortEntry, b: PortEntry): number | null {
 }
 
 function embed(e: PortEntry): Vec3 {
+  const depth = TUBE_PORT_EMBED + e.gap;
   return [
-    e.pos[0] - e.normal[0] * TUBE_PORT_EMBED,
-    e.pos[1] - e.normal[1] * TUBE_PORT_EMBED,
-    e.pos[2] - e.normal[2] * TUBE_PORT_EMBED,
+    e.pos[0] - e.normal[0] * depth,
+    e.pos[1] + PIPE_AXIS_LIFT - e.normal[1] * depth,
+    e.pos[2] - e.normal[2] * depth,
   ];
 }

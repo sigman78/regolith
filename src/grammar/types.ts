@@ -119,6 +119,15 @@ export interface PartDefinition<P extends ParamValues = ParamValues> {
   geometry(params: P, ctx: GeometryCtx): GeometryRecipe;
   /** Grips for dragging a range or choice param on the selected part; absent = none (the picker still edits it). */
   handles?(params: P): HandleSpec[];
+  /**
+   * Local y of the walking floor. Required for every letter with a horizontal PRESS port: those
+   * ports sit on it, and the press graph walks it. One rule (FLOOR_ABOVE_BELLY over the lowest foot).
+   */
+  floor?(params: P): number;
+  /** Metres from a PRESS port back to the hull behind it along its normal; absent = 0 (on the hull). */
+  shellGap?(params: P, portId: string): number;
+  /** Local y of every walking floor, ground floor first, when a part has more than one (a tower). */
+  floors?(params: P): number[];
   /** Short size note for the selection tooltip, e.g. '8 m'. */
   summary?(params: P): string;
   /**

@@ -14,11 +14,13 @@
  * The geometry rules (watertight, outward normals, 6 cm bevel) live in
  * geometry/validate and its tests.
  */
-import { FOOT_SINK, TUBE_PORT_EMBED } from '@/geometry/design-constants';
+import { DOOR_SILL, FOOT_SINK, TUBE_PORT_EMBED } from '@/geometry/design-constants';
 import type { BaseDocument } from '@/world/document';
 import { footprintContains, footprintGap } from '../footprint';
 import { portKey } from './dock';
-import { canTakeTube } from './ports';
+import { getPart } from '../registry';
+import { canTakeTube, isHorizontal } from './ports';
+import { PIPE_AXIS_LIFT } from './tube-path';
 import type {
   Diagnostic,
   InvariantRule,
@@ -73,6 +75,28 @@ export function diagnose(
     for (const leg of tube.legs) checkLeg(leg, worlds.surface, tube.id, TUBE_ROUNDING);
   }
 
+  // port-on-floor
+  for (const part of parts) {
+    const def = getPart(part.letter);
+    const params = def?.resolve(part.params);
+    const floor = params && def?.floor?.(params);
+    const decks = (params && def?.floors?.(params)) || (floor === undefined ? [] : [floor]);
+    for (const port of part.ports) {
+      if (port.type !== 'PRESS' || !isHorizontal(port.normal)) continue;
+      if (floor === undefined) {
+        fail(out, 'port-on-floor', part.id, `${part.letter} has doors but no floor()`);
+        break;
+      }
+      const off = decks.reduce((m, y) => {
+        const o = port.position[1] - (part.pose.y + y);
+        return Math.abs(o) < Math.abs(m) ? o : m;
+      }, Infinity);
+      if (Math.abs(off) > DOOR_SILL) {
+        fail(out, 'port-on-floor', `${part.id}/${port.id}`, `door is ${off} m off the floor`);
+      }
+    }
+  }
+
   // unique-serial
   const serials = new Set<number>();
   for (const p of Object.values(doc.parts)) {
@@ -113,10 +137,10 @@ export function diagnose(
       }
       const d = Math.hypot(
         point[0] - port.position[0],
-        point[1] - port.position[1],
+        point[1] - (port.position[1] + PIPE_AXIS_LIFT),
         point[2] - port.position[2],
       );
-      if (d > TUBE_PORT_EMBED + 0.05) {
+      if (d > TUBE_PORT_EMBED + port.gap + 0.05) {
         fail(out, 'tube-free-end', tube.id, `ends ${d} m from ${ref.part}/${ref.port}`);
       }
       if (!base.usedPorts.has(portKey(ref.part, ref.port))) {

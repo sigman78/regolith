@@ -11,6 +11,7 @@
  * NODE_RADII; ids are stable for a given radius.
  */
 import {
+  FLOOR_ABOVE_BELLY,
   LEG_MIN_CLEARANCE,
   NODE_FOOTPRINT_MARGIN,
   NODE_FOOT_RADIAL,
@@ -19,6 +20,7 @@ import {
 } from '@/geometry/design-constants';
 import { beaconOn } from '../lamps';
 import { readChoice } from '../params';
+import { roundGap } from '../shell-gap';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
 export type NodeParams = { size: number };
@@ -35,6 +37,11 @@ const SCHEMA = {
 
 const PRESS_IDS = ['x+', 'x-', 'z+', 'z-', 'top'] as const;
 
+/** The feet sit sqrt(1 - NODE_FOOT_RADIAL^2) of the radius under the centre; the floor is above them. */
+function nodeFloor(p: NodeParams): number {
+  return FLOOR_ABOVE_BELLY - Math.sqrt(1 - NODE_FOOT_RADIAL ** 2) * p.size;
+}
+
 export const N: PartDefinition<NodeParams> = {
   letter: 'N',
   name: 'Node',
@@ -48,12 +55,20 @@ export const N: PartDefinition<NodeParams> = {
     return { kind: 'disc', r: p.size + NODE_FOOTPRINT_MARGIN };
   },
 
+  floor: nodeFloor,
+
+  shellGap(p, portId) {
+    return portId === 'top' ? 0 : roundGap(p.size, nodeFloor(p));
+  },
+
   ports(p) {
     const r = p.size;
+    const floor = nodeFloor(p);
+    // The side ports are doors on the floor; the top hatch stays a vertical hatch on the sphere.
     const ports: PortSpec[] = NODE_PRESS_DIRS.map((d, i) => ({
       id: PRESS_IDS[i] ?? `press-${i}`,
       type: 'PRESS',
-      position: [d[0] * r, d[1] * r, d[2] * r],
+      position: [d[0] * r, d[1] === 0 ? floor : d[1] * r, d[2] * r],
       normal: d,
     }));
     const radial = r * NODE_FOOT_RADIAL;

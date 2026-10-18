@@ -46,8 +46,6 @@ export const HAB_STRIPE_FROM_END = 1.4;
 export const HAB_STRIPE_VARIANTS = 3;
 /** Most a hull may lean from Hull white toward Hull shaded per instance (about 5% darker, a touch warmer). */
 export const INDIVIDUAL_TINT_MAX = 0.35;
-/** Walkable floor sits this far below a PRESS port or a part's origin (metres). */
-export const PRESS_FLOOR_DROP = 0.8;
 /** Pressurised cubic metres per crew member (crew = floor(volume / this), at most CREW_MAX). */
 export const CREW_VOLUME = 60;
 export const CREW_MAX = 24;
@@ -68,6 +66,22 @@ export const HAB_FOOTPRINT_MARGIN = 0.15;
 
 /** Lowest hull point stays at least this far above the highest terrain under it. */
 export const LEG_MIN_CLEARANCE = 0.5;
+/**
+ * The one floor rule (M3.5): every pressurised part's walking floor is this far above its lowest
+ * STRUCT foot, so with LEG_MIN_CLEARANCE every floor in a base is DECK_HEIGHT over the highest
+ * terrain under its part, and sills meet wherever the ground is level.
+ */
+export const FLOOR_ABOVE_BELLY = 1.0;
+export const DECK_HEIGHT = LEG_MIN_CLEARANCE + FLOOR_ABOVE_BELLY;
+/** A door's sill is a step up, never a drop: a horizontal PRESS port is within this of its floor. */
+export const DOOR_SILL = 0.05;
+/** The person everything is checked against, and the clear height kept over their head. */
+export const CREW_HEIGHT = 1.8;
+export const HEADROOM_MARGIN = 0.2;
+/** A corridor climbing more than this (rise over run, about 8 degrees) is flagged, never refused. */
+export const CORRIDOR_MAX_SLOPE = 0.14;
+/** Slope is measured over runs of at least this many metres (the short embedded ends are skipped). */
+export const CORRIDOR_SLOPE_MIN_RUN = 0.5;
 /** Footpads are sunk into the terrain by this much so nothing hovers. */
 export const FOOT_SINK = 0.05;
 export const LEG_RADIUS = 0.12;
@@ -160,8 +174,6 @@ export const TOWER_CAP_RATIO = 0.3;
 export const TOWER_CAP_STEPS = 6;
 export const TOWER_SEGMENTS = 48;
 export const TOWER_FOOTPRINT_MARGIN = 0.15;
-/** PRESS ports sit this far above their floor level. */
-export const TOWER_PORT_Y = 1;
 /** Four feet on the flat underside, radial distance as a fraction of the radius. */
 export const TOWER_FOOT_RADIAL = 0.7;
 /** Window band per floor: centre height above floor level, half height, proud of the hull. */
@@ -283,8 +295,6 @@ export const DOME_SEGMENTS = 40;
 /** Steps along the quarter arc from the collar rim to the pole. */
 export const DOME_ARC_STEPS = 14;
 export const DOME_FOOTPRINT_MARGIN = 0.15;
-/** PRESS ports on the collar, height above the floor. */
-export const DOME_PORT_Y = 0.8;
 /** Four feet on the flat underside, radial distance as a fraction of the radius. */
 export const DOME_FOOT_RADIAL = 0.85;
 /** Latitude ribs, degrees of elevation above the collar rim, and their thickness. */
@@ -456,7 +466,7 @@ export const LOCK_PUMP_TICKS = 30;
 export const LOCK_OPEN_TICKS = 15;
 export const LOCK_RIDERS = 2;
 /** Suited figure outdoors: height, and the walking bob (m). */
-export const SUIT_HEIGHT = 1.8;
+export const SUIT_HEIGHT = CREW_HEIGHT;
 export const SUIT_BOB = 0.04;
 /** Redraw rate while anyone walks outside, per second (the sim tick rate). */
 export const OUTDOOR_REDRAW_HZ = 10;
