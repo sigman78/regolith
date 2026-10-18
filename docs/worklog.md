@@ -64,3 +64,5 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 
 - 2026-10-17 23:47 · 6159a15 · Perf: render on demand, shadow map only when it changes, no double MSAA, pixel ratio cap, F2 quality; GPU timings per preset in PERF.md
 - 2026-10-17 23:52 · 4ab2fde · Perf: every preset through the composer, capture-phase wake-ups, `?stress=200` benchmark base; 200 parts measured at about 3,300 draw calls
+- 2026-10-17 23:53 · 4f0bf7a · Docs: M2.5 Workshop (flip, gizmos, suggestions, ground contact, individuality) inserted before Life I, with Fable's task order
+- 2026-10-18 00:02 · f2849bc · Flip: mirror a part across its length (F in Select and Place), ports mirrored, links and tubes kept, one body scale, no version bump
