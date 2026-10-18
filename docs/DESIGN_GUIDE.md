@@ -69,8 +69,9 @@ One library in `src/render/materials.ts`. Parts reference entries by name; they 
 | `graphite` | graphite | 0.70 | 0.2 | subtle anisotropy not needed; keep flat. |
 | `aluminium` | aluminium | 0.35 | 1.0 | env map from the sky; the only "shiny" material. |
 | `glass` | glass teal | 0.15 | 0 | opacity 0.55 day; emissive `window warm` ramps 0 → 1.6 across dusk. No transmission (cost). |
-| `solar` | solar blue | 0.25 | 0.3 | cell-line emissive 0 (day), tiny specular glint. |
-| `light` | white | 0.3 | 0 | emissive driven per instance (beacons, ground lights). |
+| `solar` | solar blue | 0.25 | 0.3 | The panel face. Tiny specular glint. |
+| `solarCell` | `#4A79B8` | 0.30 | 0.3 | The cell lines on a panel face: thin planes 4 mm above it (no texture). Same palette row as solar blue. |
+| `light` | white | 0.3 | 0 | Lamp heads (airlock lamp, light pole). Emissive warm, driven by the night glow for now; per instance in M3 task 6 (beacons, ground lights). Never dust-tinted. |
 | `plant` | plant green | 0.8 | 0 | subsurface fake via wrapped diffuse in a small shader patch. |
 
 Until the sky environment map lands (M2), no part uses `aluminium`: a fully metallic surface renders black without an environment to reflect. Parts use `hull` and `graphite` instead.
@@ -155,6 +156,8 @@ The base is written in letters. Each letter is a parametric generator with ports
 | **C** | Launcher (electromagnetic mass driver) | length 8–20 m step 4, elevation 10/20/30° | `STRUCT` ×4 under the sled, `POWER` at the breech | coil rings along the barrel, hazard band at the muzzle, trestle posts; fires a cargo capsule on a lander-less schedule (M5). Not a weapon: the fantasy is a kinder future (KICKOFF). |
 
 **M1 implementation notes (static, no sim yet).** P is a raised deck: a graphite slab on short pylons rather than a levelled apron (terrain flattening needs terrain edits flowing back into the mesh, M4). Parts whose footprint lands on a slab stand on its top; slabs only resolve overlap against other slabs. `POWER` ports exist but nothing connects to them yet. Beacons, dish tracking, hazard rings and guy wires arrive with the life layer.
+
+**M3 implementation notes (A, S, X, static).** The airlock has the hab's two radii (2 / 3) so its `PRESS` end meets a hab flank port at the same height; its footprint carries almost no margin at the ends so it can touch what it docks to, and its door and ramp face +z with the `EXT` port at the ramp foot (inert until the exit task). A solar array is rows 1-4 by cols 2-12 of 2 x 1.2 m panels tilted 25 degrees toward +z, a graphite frame slab per row, one blue face and a 6 x 3 cell grid per panel, on tilted beams and one line of posts (each post is a `STRUCT` foot, so it gets a leg); `tracking` is stored but the resting shape is the same until M3 task 7. A light pole is 3 / 4 / 6 m, stands on one short foot (every part stands on something), and its `POWER` port is inert until the power stage. Window glow and lamp glow share the one night ramp for now.
 
 Alphabet is **frozen per milestone**; see PLAN.md for which letters ship when.
 

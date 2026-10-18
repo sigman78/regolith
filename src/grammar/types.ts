@@ -72,6 +72,9 @@ export type GeomOp =
   | { kind: 'stencil'; text: string; radius: number }
   | { kind: 'slab'; w: number; d: number }
   | { kind: 'tower'; floors: number; radius: number }
+  | { kind: 'airlock'; radius: number; length: number }
+  | { kind: 'solar'; rows: number; cols: number; tracking?: boolean }
+  | { kind: 'pole'; height: number }
   | { kind: 'mast'; height: number; head: number }
   | { kind: 'reactor'; radius: number }
   | { kind: 'launcher'; length: number; elevation: number }

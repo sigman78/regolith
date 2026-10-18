@@ -50,6 +50,16 @@ export function goldenBase(): GoldenBase {
       params: { length: 16, elevation: 20 },
       pose: { x: -22, z: 24, yaw: 0 },
     },
+    // The airlock's PRESS end meets g-hab-e's first side port (x = 13, z = 2); its ramp faces -x.
+    { id: 'g-lock', letter: 'A', params: { radius: 2 }, pose: { x: 13, z: 5, yaw: 270 } },
+    {
+      id: 'g-solar',
+      letter: 'S',
+      params: { rows: 2, cols: 8, tracking: true },
+      pose: { x: 30, z: 14, yaw: 0 },
+    },
+    { id: 'g-pole-e', letter: 'X', params: { height: 4 }, pose: { x: 10, z: 11, yaw: 0 } },
+    { id: 'g-pole-w', letter: 'X', params: { height: 6 }, pose: { x: -10, z: 11, yaw: 0 } },
   ];
   const links: Link[] = [
     link('g-dome', 'c-2', 'g-hab-w', 'end+'),

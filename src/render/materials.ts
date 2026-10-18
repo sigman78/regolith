@@ -17,6 +17,8 @@ export const PALETTE = {
   aluminum: '#b9bcc2',
   glassTeal: '#7fe3d6',
   warningYellow: '#f2c230',
+  solarBlue: '#1e3550',
+  solarCell: '#4a79b8',
   windowWarm: '#ffd9a0',
   rock: '#6e4a3c',
   rockDark: '#4d3329',
@@ -64,6 +66,28 @@ export const materials = {
     metalness: 0.0,
     vertexColors: true,
   }),
+  /** Solar panel face (DESIGN_GUIDE: solar blue); the cell lines are `solarCell`. */
+  solar: new MeshStandardMaterial({
+    color: new Color(PALETTE.solarBlue),
+    roughness: 0.25,
+    metalness: 0.3,
+    vertexColors: true,
+  }),
+  solarCell: new MeshStandardMaterial({
+    color: new Color(PALETTE.solarCell),
+    roughness: 0.3,
+    metalness: 0.3,
+    vertexColors: true,
+  }),
+  /** Lamp heads: warm white, glowing at night (the same glow as windows for now). */
+  light: new MeshStandardMaterial({
+    color: new Color(0xffffff),
+    roughness: 0.3,
+    metalness: 0.0,
+    emissive: new Color(PALETTE.windowWarm),
+    emissiveIntensity: 0.0,
+    vertexColors: true,
+  }),
   /** Ambient rocks: the colour comes per instance from the rock trio; this is the white base. */
   rock: new MeshStandardMaterial({
     color: new Color(0xffffff),
@@ -103,4 +127,5 @@ void _complete;
 /** Windows warm up at dusk and glow at night. Called from the sky update. */
 export function setNightGlow(amount: number): void {
   materials.glass.emissiveIntensity = amount * 1.6;
+  materials.light.emissiveIntensity = amount * 2.2;
 }
