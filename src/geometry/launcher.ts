@@ -1,13 +1,15 @@
 /**
  * Letter C geometry: an electromagnetic launcher. A graphite sled carries a
- * breech block and trestle posts; an aluminum barrel hinges at the rear and
+ * breech block and trestle posts; a graphite barrel hinges at the rear and
  * rises at the chosen elevation, ringed by coils and ending in a hazard band.
  *
  * Frame matches grammar/parts/C.ts: barrel points along +X, sled underside at y = 0.
  */
+import { Vector2, type LatheGeometry } from 'three';
 import type { BundleBuilder } from './bundle';
 import type { Vec3 } from '@/core/math';
 import {
+  BEVEL,
   LAUNCHER_BARREL_RADIUS,
   LAUNCHER_BREECH,
   LAUNCHER_COIL_END,
@@ -27,7 +29,7 @@ import {
   LAUNCHER_SLED_HEIGHT,
   LAUNCHER_SLED_WIDTH,
 } from './design-constants';
-import { bevelBox, bevelCylinder, placeAlong, rod } from './profiles';
+import { bevelBox, bevelCylinder, lathe, placeAlong, rod } from './profiles';
 import { translated } from './transform';
 
 export interface LauncherOp {
@@ -52,6 +54,22 @@ function along(hinge: Vec3, dir: Vec3, s: number): Vec3 {
   return [hinge[0] + dir[0] * s, hinge[1] + dir[1] * s, hinge[2] + dir[2] * s];
 }
 
+/** Hollow collar around the barrel: the bore stays open at the muzzle. */
+function muzzleRing(rIn: number, rOut: number, h: number): LatheGeometry {
+  const b = Math.min(BEVEL, h / 2, (rOut - rIn) / 2);
+  return lathe(
+    [
+      new Vector2(rIn, 0),
+      new Vector2(rOut - b, 0),
+      new Vector2(rOut, b),
+      new Vector2(rOut, h - b),
+      new Vector2(rOut - b, h),
+      new Vector2(rIn, h),
+    ],
+    LAUNCHER_SEGMENTS,
+  );
+}
+
 export function buildLauncher(out: BundleBuilder, op: LauncherOp): void {
   const { hinge, dir, length: barrel } = barrelFrame(op);
 
@@ -70,7 +88,7 @@ export function buildLauncher(out: BundleBuilder, op: LauncherOp): void {
   );
 
   out.add(
-    'aluminum',
+    'graphite',
     rod(hinge, along(hinge, dir, barrel), LAUNCHER_BARREL_RADIUS, LAUNCHER_SEGMENTS),
   );
 
@@ -90,12 +108,11 @@ export function buildLauncher(out: BundleBuilder, op: LauncherOp): void {
   out.add(
     'warning',
     placeAlong(
-      bevelCylinder(LAUNCHER_MUZZLE_BAND_RADIUS, LAUNCHER_MUZZLE_BAND, LAUNCHER_SEGMENTS),
+      muzzleRing(LAUNCHER_BARREL_RADIUS, LAUNCHER_MUZZLE_BAND_RADIUS, LAUNCHER_MUZZLE_BAND),
       along(hinge, dir, barrel - LAUNCHER_MUZZLE_BAND),
       dir,
     ),
   );
-
   // Trestle posts from the sled up to just under the barrel.
   for (const f of LAUNCHER_POSTS) {
     const c = along(hinge, dir, barrel * f);

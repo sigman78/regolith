@@ -64,7 +64,7 @@ export function buildMast(out: BundleBuilder, op: MastOp): void {
   // Legs, one rod each from the plate to the top.
   for (let k = 0; k < 3; k++) {
     out.add(
-      'aluminum',
+      'hull',
       rod(
         legPoint(k, MAST_BASE_THICK, height),
         legPoint(k, height, height),
@@ -81,7 +81,7 @@ export function buildMast(out: BundleBuilder, op: MastOp): void {
     for (let k = 0; k < 3; k++) {
       const next = (k + 1) % 3;
       out.add(
-        'aluminum',
+        'hull',
         rod(
           legPoint(k, y, height),
           legPoint(next, y, height),
@@ -92,7 +92,7 @@ export function buildMast(out: BundleBuilder, op: MastOp): void {
       if (i < sections) {
         const yUp = MAST_BASE_THICK + ((height - MAST_BASE_THICK) * (i + 1)) / sections;
         out.add(
-          'aluminum',
+          'hull',
           rod(
             legPoint(k, y, height),
             legPoint(next, yUp, height),
@@ -110,7 +110,7 @@ export function buildMast(out: BundleBuilder, op: MastOp): void {
       break;
     case MAST_HEAD_WHIP:
       out.add(
-        'aluminum',
+        'graphite',
         rod([0, height, 0], [0, height + MAST_WHIP_LENGTH, 0], MAST_WHIP_RADIUS, MAST_ROD_SEGMENTS),
       );
       beacon(out, [0, height + MAST_WHIP_LENGTH, 0]);
@@ -151,7 +151,7 @@ function buildDish(out: BundleBuilder, height: number): void {
   const tilt = (MAST_DISH_TILT_DEG * Math.PI) / 180;
   const dish = lathe(profile, 24);
   dish.applyMatrix4(new Matrix4().makeRotationZ(-tilt));
-  out.add('aluminum', translated(dish, centre[0], centre[1], centre[2]));
+  out.add('hull', translated(dish, centre[0], centre[1], centre[2]));
 
   // Feed horn along the dish axis, tipped with the beacon.
   const axis: Vec3 = [Math.sin(tilt), Math.cos(tilt), 0];

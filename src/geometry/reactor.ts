@@ -84,7 +84,7 @@ export function buildReactor(out: BundleBuilder, op: ReactorOp): void {
     const angle = (k * Math.PI * 2) / REACTOR_FIN_COUNT;
     const fin = bevelBox(reach + REACTOR_FIN_EMBED, finH, REACTOR_FIN_THICK);
     out.add(
-      'aluminum',
+      'hull',
       turnedY(
         translated(fin, r + (reach - REACTOR_FIN_EMBED) / 2, h - finH - cap * 0.2, 0),
         -angle,

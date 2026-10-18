@@ -67,6 +67,8 @@ One library in `src/render/materials.ts`. Parts reference entries by name; they 
 | `light` | white | 0.3 | 0 | emissive driven per instance (beacons, ground lights). |
 | `plant` | plant green | 0.8 | 0 | subsurface fake via wrapped diffuse in a small shader patch. |
 
+Until the sky environment map lands (M2), no part uses `aluminium`: a fully metallic surface renders black without an environment to reflect. Parts use `hull` and `graphite` instead.
+
 Texture policy: **no texture files in the repo.** Trim sheets (seams, stencils, hazard stripes, cell lines) are rendered at startup to canvas/offscreen textures from deterministic code. Everything stays coherent because it comes from the same pixel-space rules (e.g., seam width always 1.5 cm equivalent).
 
 ## 5. Lighting and time of day
