@@ -78,6 +78,17 @@ Deliverables:
 
 **Exit:** a 4-angle × 4-hour screenshot sheet of the golden base reviewed against the design guide; 60 fps on the reference iGPU laptop; zero z-fighting or acne in the sheet.
 
+**Status (M2, waiting for review):** the sheet is in `docs/shots/m2/final/` and the exit is **not ticked**: it needs your eyes, and the 60 fps line needs the reference laptop.
+
+Done: sky dome, sun path, fog, rim light, shadow fitter and per-half-hour sky environment; post chain with presets; windows with night glow; baked vertex tints (underside, contact, windward dust); scatter S1 (rocks); inflate / deflate, telescoping tubes, docking clunk; a z-fight and acne pass on close-ups at 06:00 and 18:30 (one real fault found and fixed: the tower's top glass band shared a cylinder with the accent stripe).
+
+Not done, with the reason (see `docs/PERF.md`):
+- **Procedural trim sheet and trim UVs.** A seam texture needs metric UVs on every lathe, because a hab and a dome do not share an arc length per texture repeat. The seams are carried by ribs for now. Decide whether the sheet matters for the gate before spending the time.
+- **LOD with dither fade.** There are no second geometry levels yet and the need only shows at about 200 parts (about 0.75 M triangles by extrapolation), which cannot be measured here.
+- **Geometry worker.** The slowest uncached bundle is under 5 ms and bundles are cached, so there is no measured gain.
+- **Incremental solving.** Still owed from M1; moved to M3, with the cached-equals-fresh property test as its condition.
+- **Scatter fade on delete** is not needed: rocks only fade in. The per-instance fade-in is done.
+
 ## M3 — Life I: crew, sun, lights
 
 **Goal:** the base moves on its own.
