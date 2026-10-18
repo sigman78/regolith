@@ -3,7 +3,11 @@
   --ink-dim: #a39b8f;
   --panel: rgba(20, 18, 24, 0.62);
   --accent: #ff6a2a;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family:
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 html,
@@ -27,7 +31,7 @@ body {
 #hud {
   position: fixed;
   left: 16px;
-  bottom: 16px;
+  top: 16px;
   padding: 10px 14px;
   background: var(--panel);
   backdrop-filter: blur(8px);
@@ -55,4 +59,144 @@ body {
   margin-top: 4px;
   font-size: 11px;
   color: var(--ink-dim);
+}
+
+#tray {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+.tray-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.tray-row button {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 12px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.tray-row button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tray-row button.active {
+  border-color: var(--accent);
+  background: rgba(255, 106, 42, 0.16);
+}
+
+.tray-row button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.tray-row kbd {
+  font: inherit;
+  font-size: 10px;
+  color: var(--ink-dim);
+}
+
+.tray-sep {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.tray-hint {
+  padding: 3px 10px;
+  font-size: 11px;
+  color: var(--ink-dim);
+  background: var(--panel);
+  border-radius: 8px;
+}
+
+#tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding: 4px 8px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  background: var(--panel);
+  border-radius: 6px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#handles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+
+.handle:active {
+  cursor: grabbing;
+}
+
+#halos {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.halo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  background: rgba(255, 255, 255, 0.25);
+  pointer-events: auto;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.halo:hover,
+.halo.armed {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85);
+}
+
+[hidden] {
+  display: none !important;
 }

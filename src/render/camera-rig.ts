@@ -32,7 +32,10 @@ export class CameraRig {
   private lastY = 0;
   private dragYaw = 0;
 
-  constructor(private readonly el: HTMLElement, opts: CameraRigOptions = {}) {
+  constructor(
+    private readonly el: HTMLElement,
+    opts: CameraRigOptions = {},
+  ) {
     this.pitch = MathUtils.degToRad(opts.pitchDeg ?? 38);
     this.yawStep = (Math.PI * 2) / (opts.yawSteps ?? 8);
     this.minDistance = opts.minDistance ?? 12;
@@ -67,18 +70,27 @@ export class CameraRig {
     this.camera.lookAt(this.target);
   }
 
+  /** Is a camera drag in progress? Tools stand down while it is. */
+  get busy(): boolean {
+    return this.dragging !== 'none';
+  }
+
   rotateStep(dir: 1 | -1): void {
     this.yawGoal += this.yawStep * dir;
   }
 
+  /** Left button belongs to the editor tools; Alt+left is the laptop fallback for orbit. */
   private onDown = (e: PointerEvent): void => {
+    const orbit = e.button === 1 || (e.button === 0 && e.altKey);
+    const pan = e.button === 2;
+    if (!orbit && !pan) return;
     this.el.setPointerCapture(e.pointerId);
     this.lastX = e.clientX;
     this.lastY = e.clientY;
-    if (e.button === 0 || e.button === 1) {
+    if (orbit) {
       this.dragging = 'orbit';
       this.dragYaw = this.yawGoal;
-    } else if (e.button === 2) {
+    } else {
       this.dragging = 'pan';
     }
   };
@@ -103,6 +115,7 @@ export class CameraRig {
   };
 
   private onUp = (e: PointerEvent): void => {
+    if (this.dragging === 'none') return;
     if (this.dragging === 'orbit') {
       this.yawGoal = Math.round(this.yawGoal / this.yawStep) * this.yawStep;
     }
