@@ -107,6 +107,11 @@ export interface ResolvedBase {
   tubes: Map<string, ResolvedTube>;
   /** `part/port` of every PRESS port a dock or tube is using. */
   usedPorts: Set<string>;
+  /**
+   * Cells (1 m grid, `j * size + i`, see keepout.ts) that ambient decoration must stay out of:
+   * parts including slab hosts, and tube corridors.
+   */
+  keepOut: Uint8Array;
   /** Never shown to the player as errors; used by tests and the ghost preview. */
   diagnostics: Diagnostic[];
 }

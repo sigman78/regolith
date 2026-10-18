@@ -8,15 +8,38 @@
  * are added, removed and updated by id; a body is only rebuilt when its recipe
  * hash changes, legs only when their numbers do.
  */
-import { BufferAttribute, BufferGeometry, Group, Mesh, type Material, type Scene } from 'three';
+import {
+  BufferAttribute,
+  BufferGeometry,
+  Group,
+  Matrix4,
+  Mesh,
+  Vector3,
+  type Material,
+  type Scene,
+} from 'three';
 import { buildBundle } from '@/geometry/build';
 import type { GeometryBundle, MaterialName } from '@/geometry/bundle';
 import { FOOT_HEIGHT, LEG_TOP_OVERLAP } from '@/geometry/design-constants';
 import type { GeometryRecipe } from '@/grammar/types';
-import type { Leg, ResolvedBase } from '@/grammar/solver';
+import { emptyBase, type Leg, type ResolvedBase } from '@/grammar/solver';
+import {
+  CLUNK_SECONDS,
+  clunkScale,
+  DEFLATE_SECONDS,
+  deflateScale,
+  extendFraction,
+  INFLATE_SECONDS,
+  inflateScale,
+  TUBE_EXTEND_SECONDS,
+} from './inflate';
 import { materials } from './materials';
 
 const DEG = Math.PI / 180;
+
+/** A tube extends from its first point along its chord; a part inflates about its base. */
+type Motion =
+  { kind: 'inflate'; t: number } | { kind: 'deflate'; t: number } | { kind: 'extend'; t: number };
 
 interface Entry {
   root: Group;
@@ -24,6 +47,13 @@ interface Entry {
   legs: Group;
   recipeHash: string;
   legsKey: string;
+  /** part: its base point; tube: the first point of its centreline */
+  pivot: Vector3;
+  /** tube only: unit chord from the first to the last point */
+  axis: Vector3 | null;
+  motion: Motion | null;
+  /** seconds into a docking clunk, or -1 when idle */
+  clunk: number;
 }
 
 /** What SceneSync needs from a part or a tube. */
@@ -35,6 +65,8 @@ interface Drawable {
   legs: Leg[];
   /** body transform; tubes are authored in world space and have none */
   pose?: { x: number; y: number; z: number; yaw: number };
+  /** tube only: its centreline, world space */
+  path?: readonly (readonly [number, number, number])[];
 }
 
 export interface SceneSyncOptions {
@@ -44,7 +76,9 @@ export interface SceneSyncOptions {
 
 const geometryCache = new Map<string, Partial<Record<MaterialName, BufferGeometry>>>();
 
-function geometriesFor(bundle: GeometryBundle): Partial<Record<MaterialName, BufferGeometry>> {
+export function geometriesFor(
+  bundle: GeometryBundle,
+): Partial<Record<MaterialName, BufferGeometry>> {
   const hit = geometryCache.get(bundle.hash);
   if (hit) return hit;
   const out: Partial<Record<MaterialName, BufferGeometry>> = {};
@@ -56,6 +90,7 @@ function geometriesFor(bundle: GeometryBundle): Partial<Record<MaterialName, Buf
     g.setAttribute('position', new BufferAttribute(b.positions, 3));
     g.setAttribute('normal', new BufferAttribute(b.normals, 3));
     g.setAttribute('uv', new BufferAttribute(b.uvs, 2));
+    g.setAttribute('color', new BufferAttribute(b.colors, 3));
     g.setIndex(new BufferAttribute(b.indices, 1));
     g.computeBoundingSphere();
     out[name] = g;
@@ -66,7 +101,11 @@ function geometriesFor(bundle: GeometryBundle): Partial<Record<MaterialName, Buf
 
 export class SceneSync {
   private readonly entries = new Map<string, Entry>();
+  /** Removed entries still shrinking away. */
+  private readonly dying = new Set<Entry>();
   private readonly root = new Group();
+  /** The first sync loads the document as it is; only later changes animate. */
+  private primed = false;
 
   constructor(
     scene: Scene,
@@ -74,6 +113,13 @@ export class SceneSync {
   ) {
     this.root.name = opts.override ? 'ghost' : 'base';
     scene.add(this.root);
+  }
+
+  /** Anything still animating (tests, and the frame loop can skip work when false). */
+  get animating(): boolean {
+    if (this.dying.size > 0) return true;
+    for (const e of this.entries.values()) if (e.motion || e.clunk >= 0) return true;
+    return false;
   }
 
   sync(base: ResolvedBase): void {
@@ -95,14 +141,22 @@ export class SceneSync {
         recipe: t.recipe,
         recipeHash: t.recipeHash,
         legs: t.legs,
+        path: t.path,
       });
     }
 
+    const tubeParts = new Map<string, string[]>();
+    for (const t of base.tubes.values()) tubeParts.set(`tube:${t.id}`, [t.a.part, t.b.part]);
+    const animate = this.primed && !this.opts.override;
     const live = new Set(drawables.map((d) => d.id));
     for (const [id, entry] of this.entries) {
-      if (!live.has(id)) {
+      if (live.has(id)) continue;
+      this.entries.delete(id);
+      if (animate && !entry.axis) {
+        entry.motion = { kind: 'deflate', t: 0 };
+        this.dying.add(entry);
+      } else {
         this.root.remove(entry.root);
-        this.entries.delete(id);
       }
     }
     for (const d of drawables) {
@@ -110,14 +164,64 @@ export class SceneSync {
       if (!entry) {
         entry = this.create(d);
         this.entries.set(d.id, entry);
+        if (animate) entry.motion = { kind: entry.axis ? 'extend' : 'inflate', t: 0 };
       }
+      const ends = tubeParts.get(d.id);
+      if (ends) this.tubeEnds.set(entry, ends);
       this.update(entry, d);
+      if (entry.motion) this.applyMotion(entry);
     }
+    this.primed = true;
   }
 
   clear(): void {
-    this.sync({ parts: new Map(), tubes: new Map(), usedPorts: new Set(), diagnostics: [] });
+    this.sync(emptyBase());
   }
+
+  /** Advance inflation, deflation, tube extension and docking clunks by `dt` seconds. */
+  tick(dt: number): void {
+    for (const e of this.dying) {
+      if (e.motion) e.motion.t += dt / DEFLATE_SECONDS;
+      if (!e.motion || e.motion.t >= 1) {
+        this.root.remove(e.root);
+        this.dying.delete(e);
+      } else this.applyMotion(e);
+    }
+    for (const e of this.entries.values()) {
+      if (e.motion) {
+        const length =
+          e.motion.kind === 'extend'
+            ? TUBE_EXTEND_SECONDS
+            : e.motion.kind === 'inflate'
+              ? INFLATE_SECONDS
+              : DEFLATE_SECONDS;
+        e.motion.t += dt / length;
+        if (e.motion.t >= 1) {
+          const wasTube = e.motion.kind === 'extend';
+          e.motion = null;
+          this.applyMotion(e);
+          if (wasTube) this.startClunk(e);
+        } else this.applyMotion(e);
+      }
+      if (e.clunk >= 0) {
+        e.clunk += dt;
+        if (e.clunk >= CLUNK_SECONDS) e.clunk = -1;
+        this.applyMotion(e);
+      }
+    }
+  }
+
+  /** A finished tube nudges the parts it joins. */
+  private startClunk(tube: Entry): void {
+    const ends = this.tubeEnds.get(tube);
+    if (!ends) return;
+    for (const id of ends) {
+      const part = this.entries.get(`part:${id}`);
+      if (part && !part.motion) part.clunk = 0;
+    }
+  }
+
+  private readonly tubeEnds = new WeakMap<Entry, string[]>();
 
   private create(d: Drawable): Entry {
     const root = new Group();
@@ -126,7 +230,34 @@ export class SceneSync {
     const legs = new Group();
     root.add(body, legs);
     this.root.add(root);
-    return { root, body, legs, recipeHash: '', legsKey: '' };
+    const entry: Entry = {
+      root,
+      body,
+      legs,
+      recipeHash: '',
+      legsKey: '',
+      pivot: new Vector3(),
+      axis: null,
+      motion: null,
+      clunk: -1,
+    };
+    if (d.path) {
+      root.matrixAutoUpdate = false;
+      this.setChord(entry, d.path);
+    }
+    return entry;
+  }
+
+  /** A tube extends from its first point toward its last. */
+  private setChord(entry: Entry, path: NonNullable<Drawable['path']>): void {
+    const first = path[0];
+    const last = path[path.length - 1];
+    if (!first || !last) return;
+    entry.pivot.set(first[0], first[1], first[2]);
+    const axis = entry.axis ?? new Vector3();
+    axis.set(last[0] - first[0], last[1] - first[1], last[2] - first[2]);
+    if (axis.lengthSq() < 1e-8) axis.set(1, 0, 0);
+    entry.axis = axis.normalize();
   }
 
   private update(entry: Entry, d: Drawable): void {
@@ -135,8 +266,12 @@ export class SceneSync {
       this.fill(entry.body, buildBundle(d.recipe));
       entry.recipeHash = d.recipeHash;
     }
+    if (d.path) this.setChord(entry, d.path);
     if (d.pose) {
-      entry.body.position.set(d.pose.x, d.pose.y, d.pose.z);
+      // The root sits at the part's base so inflation grows it from the ground; legs stay in world space.
+      entry.pivot.set(d.pose.x, d.pose.y, d.pose.z);
+      entry.root.position.copy(entry.pivot);
+      entry.legs.position.set(-d.pose.x, -d.pose.y, -d.pose.z);
       entry.body.rotation.y = d.pose.yaw * DEG;
     }
 
@@ -146,6 +281,34 @@ export class SceneSync {
       this.buildLegs(entry.legs, d.legs);
       entry.legsKey = key;
     }
+  }
+
+  /** Write the entry's current scale (parts) or stretch along its chord (tubes). */
+  private applyMotion(e: Entry): void {
+    if (e.axis) {
+      const f = e.motion ? Math.max(0.02, extendFraction(e.motion.t)) : 1;
+      const a = e.axis;
+      const k = f - 1;
+      // M = T(p) * (I + (f - 1) a a^T) * T(-p): scale along the chord only, about the first point.
+      // prettier-ignore
+      const m = new Matrix4().set(
+        1 + k * a.x * a.x, k * a.x * a.y, k * a.x * a.z, 0,
+        k * a.x * a.y, 1 + k * a.y * a.y, k * a.y * a.z, 0,
+        k * a.x * a.z, k * a.y * a.z, 1 + k * a.z * a.z, 0,
+        0, 0, 0, 1,
+      );
+      const p = e.pivot;
+      const t = new Matrix4().makeTranslation(p.x, p.y, p.z);
+      const ti = new Matrix4().makeTranslation(-p.x, -p.y, -p.z);
+      e.root.matrix.copy(t).multiply(m).multiply(ti);
+      e.root.matrixWorldNeedsUpdate = true;
+      return;
+    }
+    let s = 1;
+    if (e.motion?.kind === 'inflate') s = inflateScale(e.motion.t);
+    else if (e.motion?.kind === 'deflate') s = deflateScale(e.motion.t);
+    const dip = e.clunk >= 0 ? clunkScale(e.clunk / CLUNK_SECONDS) : 1;
+    e.root.scale.set(s, s * dip, s);
   }
 
   private fill(group: Group, bundle: GeometryBundle): void {

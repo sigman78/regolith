@@ -5,14 +5,18 @@
  */
 import { BufferGeometry } from 'three';
 import type { Vec3 } from '@/core/math';
+import { bakeTints } from './tint';
 
 /** Names in render/materials.ts. render/ asserts it has exactly these. */
-export type MaterialName = 'hull' | 'accent' | 'graphite' | 'aluminum' | 'glass' | 'warning';
+export type MaterialName =
+  'hull' | 'accent' | 'graphite' | 'aluminum' | 'glass' | 'warning' | 'rock';
 
 export interface MaterialBuffers {
   positions: Float32Array;
   normals: Float32Array;
   uvs: Float32Array;
+  /** rgb multiplier per vertex (tint.ts), applied to the material colour */
+  colors: Float32Array;
   indices: Uint32Array;
 }
 
@@ -44,7 +48,7 @@ export class BundleBuilder {
     const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
 
     for (const [name, geos] of this.parts) {
-      const buffers = merge(geos);
+      const buffers = merge(geos, name);
       byMaterial[name] = buffers;
       const p = buffers.positions;
       for (let i = 0; i < p.length; i += 3) {
@@ -62,7 +66,7 @@ export class BundleBuilder {
   }
 }
 
-function merge(geos: BufferGeometry[]): MaterialBuffers {
+function merge(geos: BufferGeometry[], name: MaterialName): MaterialBuffers {
   let vertexCount = 0;
   let indexCount = 0;
   for (const g of geos) {
@@ -100,5 +104,5 @@ function merge(geos: BufferGeometry[]): MaterialBuffers {
     }
     vOffset += pos.count;
   }
-  return { positions, normals, uvs, indices };
+  return { positions, normals, uvs, colors: bakeTints(name, positions, normals), indices };
 }

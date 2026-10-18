@@ -273,3 +273,13 @@ body {
   opacity: 0.3;
   cursor: default;
 }
+
+/* Screenshot mode (?shot): the scene alone. */
+body.shot #hud,
+body.shot #tray,
+body.shot #params,
+body.shot #tip,
+body.shot #handles,
+body.shot #halos {
+  display: none;
+}

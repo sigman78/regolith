@@ -11,6 +11,7 @@ function tri(indices: number[], normalZ = 1, x = 0): GeometryBundle {
         positions: new Float32Array([0, 0, 0, 1, 0, 0, x, 1, 0]),
         normals: new Float32Array([0, 0, normalZ, 0, 0, normalZ, 0, 0, normalZ]),
         uvs: new Float32Array(6),
+        colors: new Float32Array(9).fill(1),
         indices: new Uint32Array(indices),
       },
     },

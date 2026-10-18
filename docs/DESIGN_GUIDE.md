@@ -37,8 +37,13 @@ The palette is a closed set. New colours are added here first, with a role.
 | Regolith base | `#B5582F` | Mid ochre. Vertex-tinted ±12% by height and noise. |
 | Regolith dark | `#7A3A1E` | Crater bowls, shadows under modules. |
 | Regolith light | `#D98C5A` | Crater rims, dune crests, worn paths. |
+| Rock base | `#6E4A3C` | Ambient rocks and boulders: basalt-tinted regolith. Per instance, tinted between rock dark and rock light. |
+| Rock dark | `#4D3329` | Darkest rocks. |
+| Rock light | `#94705C` | Lightest rocks; never lighter than the regolith around them. |
 | Hull white | `#E8E4DC` | Warm off-white. All pressurized skins. |
 | Hull shaded | `#CFC8BB` | Underside tint baked into vertex colour on habs. |
+| Underside shade | `#9A9088` (multiplier) | Vertex tint on down-facing surfaces and the lowest 0.8 m of any part (`tintUnderside`). Multiplies the material colour; never a paint colour. |
+| Dust tint | `#D9B38C` (multiplier) | Vertex tint on the lowest 1.4 m of a part, thickest to windward (`tintDust`, wind from 215°). Not applied to glass. |
 | Accent orange | `#FF6A2A` | One stripe per module, hatch rings, rover body, flags. The brand colour. |
 | Graphite | `#2B2F36` | Ribs, flanges, trusses, legs, cables, rubber. Never pure black. |
 | Aluminium | `#B9BCC2` | Tanks, radiator backs, dish. Metal 1.0. |
@@ -58,6 +63,7 @@ One library in `src/render/materials.ts`. Parts reference entries by name; they 
 | Material | Base colour | Roughness | Metalness | Extras |
 |----------|-------------|-----------|-----------|--------|
 | `regolith` | regolith base | 0.95 | 0 | vertex colours; macro normal from heightfield; micro detail normal tiling 2 m; dust tint mask. |
+| `rock` | white (colour per instance from the rock trio) | 0.95 | 0 | instanced; underside shade from vertex colour; shadows only from rocks over 0.6 m. |
 | `hull` | hull white | 0.55 | 0 | panel-seam normal map from procedural trim sheet; AO baked into vertex colour on undersides; dust mask in vertex alpha. |
 | `accent` | accent orange | 0.50 | 0 | same seams as hull. |
 | `graphite` | graphite | 0.70 | 0.2 | subtle anisotropy not needed; keep flat. |
@@ -83,6 +89,8 @@ A sol is scrubbed 0 → 24 h. Default start 15:30 (long warm shadows).
 | 15:30 | `#FFEBD0`, int 2.6 | as noon | warm | **Default.** |
 | 18:30 | setting, `#FFB070` | `#5A3F55` → `#6F8FC9` | cool | The blue sunset. Windows start to warm. |
 | 21:00 | none | `#0B0D16` → `#1A1B2A` | 0.25 | Night: lights, beacons, Phobos, stars. |
+
+**Sun path (as built in M2).** The sun is above the horizon for 14 of the 24 hours: 11° up at 06:00, 68° at noon, 5° up at 18:30, gone by 21:00. Twilight colours (blue halo, cool ambient) follow the sun's altitude, not the clock. The light never comes in lower than about 9° (the sun *disc* still sets), so low sun lights the ground with long shadows instead of grazing black. Exposure rises a little at twilight and more at night so the base stays readable. The terrain fades into the horizon colour over its outer 20 m, so the edge of the world is haze, not a cliff.
 
 Rules:
 

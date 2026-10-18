@@ -4,6 +4,7 @@
  */
 import { Color, DoubleSide, MeshStandardMaterial } from 'three';
 import type { MaterialName } from '@/geometry/bundle';
+import { patchEdgeFade } from './shader-patches';
 
 export const PALETTE = {
   regolith: '#b5582f',
@@ -17,11 +18,17 @@ export const PALETTE = {
   glassTeal: '#7fe3d6',
   warningYellow: '#f2c230',
   windowWarm: '#ffd9a0',
+  rock: '#6e4a3c',
+  rockDark: '#4d3329',
+  rockLight: '#94705c',
 } as const;
 
+// Part materials carry vertex colours too: geometry/tint.ts bakes underside shade and dust into
+// the bundle as multipliers of the material colour.
 export const materials = {
+  // The palette lives in the vertex colours (terrain-mesh.ts); a tinted base colour would square it.
   regolith: new MeshStandardMaterial({
-    color: new Color(PALETTE.regolith),
+    color: new Color(0xffffff),
     roughness: 0.95,
     metalness: 0.0,
     vertexColors: true,
@@ -30,27 +37,39 @@ export const materials = {
     color: new Color(PALETTE.hullWhite),
     roughness: 0.55,
     metalness: 0.0,
+    vertexColors: true,
   }),
   accent: new MeshStandardMaterial({
     color: new Color(PALETTE.accentOrange),
     roughness: 0.5,
     metalness: 0.0,
+    vertexColors: true,
   }),
   graphite: new MeshStandardMaterial({
     color: new Color(PALETTE.graphite),
     roughness: 0.7,
     metalness: 0.2,
+    vertexColors: true,
   }),
   aluminum: new MeshStandardMaterial({
     color: new Color(PALETTE.aluminum),
     roughness: 0.35,
     metalness: 1.0,
+    vertexColors: true,
   }),
   /** Hazard yellow: slab edges, muzzle bands, reactor rings. Used sparingly (DESIGN_GUIDE §2). */
   warning: new MeshStandardMaterial({
     color: new Color(PALETTE.warningYellow),
     roughness: 0.5,
     metalness: 0.0,
+    vertexColors: true,
+  }),
+  /** Ambient rocks: the colour comes per instance from the rock trio; this is the white base. */
+  rock: new MeshStandardMaterial({
+    color: new Color(0xffffff),
+    roughness: 0.95,
+    metalness: 0.0,
+    vertexColors: true,
   }),
   /** Placement preview: hull colour at half strength, never casts shadows. */
   ghost: new MeshStandardMaterial({
@@ -71,8 +90,11 @@ export const materials = {
     emissive: new Color(PALETTE.windowWarm),
     emissiveIntensity: 0.0,
     side: DoubleSide,
+    vertexColors: true,
   }),
 };
+
+patchEdgeFade(materials.regolith);
 
 // Compile-time check: every material name geometry/ may emit exists in the library.
 const _complete: MaterialName extends keyof typeof materials ? true : never = true;

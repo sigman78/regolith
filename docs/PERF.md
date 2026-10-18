@@ -35,3 +35,30 @@ The 2 ms target for 200 parts is **not met**; the target stays as it is.
 1. Incremental solving: take a dirty set of part ids, re-run `overlap` only for parts near them (spatial hash), reuse unchanged `ResolvedPart`s by reference. If this lands, add the equality property: across random edit sequences (including `movingId`) the cached result deep-equals a fresh full solve.
 2. Re-route only the tube links whose endpoints or corridor changed.
 3. Move `solve` and `buildBundle` into a worker (needed by M2 anyway).
+
+## M2 — scatter (rocks)
+
+Measured with `vite-node` on the dev machine (Node, warm), 96 m world, seed `olympus-07`.
+
+| What | Target (SCATTER §4) | Measured |
+| --- | --- | --- |
+| `scatterCandidates` (generate every rock) | < 20 ms | 2.0 ms, 618 rocks |
+| `cullScatter` against the keep-out | < 1 ms | 0.17 ms |
+| `keepOut` solver stage, golden base | – | inside the full solve; not separated yet |
+
+Draw calls for rocks: at most 4 (2 variants × shadow casters / non-casters). Only rocks over 0.6 m cast shadows.
+
+## M2 — render and geometry cost
+
+Measured on the dev machine; **none of this is the reference iGPU laptop, so the 60 fps exit line is unverified.**
+
+| What | Result |
+| --- | --- |
+| Golden base (10 parts, 5 tubes) | 37.7 k triangles, 42 meshes (about 3.8 k triangles and 4 meshes per part) |
+| Extrapolated to 200 parts | about 0.75 M triangles and 800+ draw calls before any instancing or LOD: the likely first cost on an iGPU |
+| Uncached `buildBundle`, default params | H 3.9 ms, E 4.8 ms, C 2.3 ms, P 2.0 ms, M 1.5 ms, V 0.8 ms, D 0.8 ms, N 0.6 ms; cached by recipe hash |
+| Frame time, golden base, 1280×800, low / medium / high | 6.1 / 6.1 / 6.1 ms in headless Chrome. This is the browser's refresh interval, not GPU cost: it cannot tell the presets apart. |
+
+Why the geometry worker is not in this pass: the slowest uncached build is under 5 ms and bundles are cached by recipe hash, so a resize drag costs at most one build per step, inside a frame. A worker would add async plumbing for no measured gain today.
+
+Why LOD dither is not in this pass: it needs second geometry levels for H, N, V and D that do not exist yet, and its payoff is the 200-part case above, which cannot be measured here. It is the first thing to do once a number from the reference laptop says draws or triangles are the problem. Merging parts of one material into fewer draws is the cheaper first step.

@@ -42,3 +42,20 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-17 22:43 · 48df4fb · M1 exit criteria as headless tests: 20 m tube and node, drag-through, 30 parts and undo all
 - 2026-10-17 22:45 · cb3bc9d · Screenshots for the picker, dome and snap arrow; 30-part and connect shots driven by real mouse input
 - 2026-10-17 22:46 · 4259f5d · Docs: M1 finished in PLAN and ARCHITECTURE (two honest deviations), gizmos for interactive params listed as not yet
+- 2026-10-17 22:48 · e27d59d · Docs: automatic terrain decoration added to the M4 plan
+- 2026-10-17 22:53 · 8f901ad · Docs: SCATTER.md design for rocks, formations, tracks and debris, staged into M2, M4 and M5
+
+## M2 — The Look
+
+- 2026-10-17 22:57 · 14fe81c · Golden base, `?golden` / `?shot`, screenshot-sheet script and the baseline sheet (18:30 and 21:00 near black, flat sky, terrain edge as a cliff)
+- 2026-10-17 22:59 · 13858dd · Sun path with 14 daylight hours: dawn and 18:30 are low, warm and lit
+- 2026-10-17 23:03 · 1de3cb4 · Sky dome with sun disc, blue aureole and stars; terrain fades into the horizon; twilight by altitude; hour-based exposure; terrain tint no longer squared
+- 2026-10-17 23:05 · 6d0c91b · Shadow box fitted to the base and texel-snapped, rim light, sky environment per half hour for aluminium and glass
+- 2026-10-17 23:07 · 886df99 · Post chain: MSAA, half-res GTAO, bloom, ACES, grade; low / medium / high presets
+- 2026-10-17 23:08 · 07619f7 · Window panes on the hab flanks, glowing at night through the glass material
+- 2026-10-17 23:11 · 0f1723f · Fix: tower top glass band shared a cylinder with the accent stripe (red hatching in close-ups); 48 tower segments
+- 2026-10-17 23:13 · badec13 · Baked vertex tints through `tintUnderside` and `tintDust`; palette rows for both
+- 2026-10-17 23:18 · 5e7c85b · Scatter S1: solver keep-out stage, `world/scatter.ts`, instanced rocks, `rock` material and palette rows
+- 2026-10-17 23:21 · f47cfe9 · Inflate and deflate, tubes extend from their first port, docking clunk
+- 2026-10-17 23:24 · 4d41c4a · Docs: M2 status in PLAN (exit left unticked), worklog, PERF numbers, final 4×4 sheet in `docs/shots/m2/final/`
+- 2026-10-17 23:26 · 5191326 · Fix: camera pan inverted vertically and too fast; now grab-the-ground, tested at every yaw stop
