@@ -24,12 +24,16 @@ import { allParts, getPart } from '@/grammar/registry';
 import { CameraRig } from '@/render/camera-rig';
 import { Lighting } from '@/render/lighting';
 import { parseQuality, PostChain } from '@/render/post';
-import { FIGURE_MAX_HZ } from '@/geometry/design-constants';
+import { FIGURE_MAX_HZ, OUTDOOR_REDRAW_HZ } from '@/geometry/design-constants';
 import { QualityGovernor } from '@/render/quality-governor';
 import { SolClock } from '@/sim/clock';
-import { Sim } from '@/sim/sim';
+import { CREW_STRIDE, Sim } from '@/sim/sim';
+import type { CrewWorld } from '@/sim/crew';
 import { silhouetteSlots, slotsKey, type Slot } from '@/sim/silhouettes';
 import { CrewSilhouettes } from '@/render/crew-silhouettes';
+import { CrewOutdoors } from '@/render/crew-outdoors';
+import { Lamps } from '@/render/lamps';
+import { airlockLamps, lampsKey, type LampSlot } from '@/sim/lamps';
 import { GRID } from '@/geometry/design-constants';
 import { wearOf } from '@/grammar/solver/wear';
 import { ScatterSync } from '@/render/scatter-sync';
@@ -116,6 +120,8 @@ export function startApp(canvas: HTMLCanvasElement): void {
   const sync = new SceneSync(scene);
   const scatter = new ScatterSync(scene);
   const silhouettes = new CrewSilhouettes(scene);
+  const outdoors = new CrewOutdoors(scene);
+  const lamps = new Lamps(scene);
   const rocks = scatterCandidates(terrain, seed);
   const gridSize = Math.round((terrain.size * terrain.cell) / GRID);
   const ghost = new Ghost(scene, world, () => store.doc);
@@ -126,6 +132,19 @@ export function startApp(canvas: HTMLCanvasElement): void {
   /** The ground as drawn: natural terrain, levelled under the parts. */
   const groundAt = (): ((x: number, z: number) => number) =>
     resolved.terrain?.heightAt ?? world.heightAt;
+  // What the crew walk on, rebuilt only when the solve produced a new base.
+  let crewWorld: CrewWorld = { graph: resolved.graph };
+  let crewWorldOf: ResolvedBase | null = null;
+  const crewWorldNow = (): CrewWorld => {
+    if (crewWorldOf !== resolved) {
+      crewWorldOf = resolved;
+      crewWorld = {
+        graph: resolved.graph,
+        env: { keepOut: resolved.keepOut, heightAt: groundAt() },
+      };
+    }
+    return crewWorld;
+  };
   const resolve = (): void => {
     resolved = solve(store.doc, world, movingId ? { movingId } : {});
     sync.sync(resolved);
@@ -465,6 +484,15 @@ export function startApp(canvas: HTMLCanvasElement): void {
   let appliedBase: ResolvedBase | null = null;
   let slotsWake = -Infinity;
   let slotsTick = -1;
+  // Airlock lamps change colour with the cycle (an event); crew walking outside redraw at the tick rate.
+  let lampList: LampSlot[] = [];
+  let lampsNow = '';
+  let lampsShown = '';
+  let outPoints: Float32Array = new Float32Array(0);
+  let outNow = '';
+  let outShown = '';
+  let outWalking = false;
+  let outWake = -Infinity;
   for (const type of ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'keydown', 'keyup']) {
     // Capture phase: handle and halo drags stop propagation and hold the pointer on their own elements.
     window.addEventListener(type, () => wake(), { passive: true, capture: true });
@@ -481,12 +509,30 @@ export function startApp(canvas: HTMLCanvasElement): void {
     const simDt =
       Number.isNaN(simNow) || !clock.running ? 0 : ((now - simNow) / 1000) * clock.speed;
     simNow = now;
-    sim.update(Math.min(simDt, 0.5), resolved.graph, store.doc.seed, clock.hour);
+    sim.update(Math.min(simDt, 0.5), crewWorldNow(), store.doc.seed, clock.hour);
     if (sim.steps.tick !== slotsTick || slotsBase !== resolved) {
       slotsTick = sim.steps.tick;
       slots = silhouetteSlots(sim.crew, resolved);
       slotsNow = slotsKey(slots);
       slotsBase = resolved;
+      lampList = airlockLamps(sim.crew, resolved);
+      lampsNow = lampsKey(lampList);
+      outPoints = sim.points(crewWorldNow());
+      let out = 0;
+      let walking = 0;
+      for (let i = 0; i + CREW_STRIDE <= outPoints.length; i += CREW_STRIDE) {
+        if (outPoints[i + 6] !== 1) continue;
+        out++;
+        if (outPoints[i + 5] === 1) walking++;
+      }
+      outWalking = walking > 0;
+      outNow = `${out}|${walking}`;
+    }
+    // A lamp changing phase or someone arriving or leaving is one frame; walking is tick-rate frames.
+    if (lampsNow !== lampsShown || outNow !== outShown) wake();
+    if (outWalking && clock.running && now - outWake >= 1000 / OUTDOOR_REDRAW_HZ) {
+      outWake = now;
+      wake();
     }
     if (
       (slotsNow !== slotsShown || appliedBase !== resolved) &&
@@ -523,6 +569,12 @@ export function startApp(canvas: HTMLCanvasElement): void {
       slotsShown = slotsNow;
       appliedBase = resolved;
     }
+    if (lampsNow !== lampsShown || appliedBase !== resolved) {
+      lamps.set(lampList);
+      lampsShown = lampsNow;
+    }
+    outdoors.set(outPoints);
+    outShown = outNow;
     lighting.apply(clock.visualHour, rig.target);
     renderer.toneMappingExposure = lighting.exposure;
     handles?.update();
@@ -554,6 +606,8 @@ export function startApp(canvas: HTMLCanvasElement): void {
       clock,
       sim,
       figures: () => silhouettes.count,
+      lamps: () => lamps.count,
+      outdoors: () => outdoors.count,
       setHour: (h: number) => {
         clock.set(h);
         wake(true);

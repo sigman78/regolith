@@ -22,6 +22,12 @@ function agent(index: number, at: string, partial: Partial<Agent> = {}): Agent {
     stopsHour: -1,
     stops: [],
     stop: 0,
+    outside: false,
+    lock: '',
+    exit: '',
+    slot: 0,
+    waiting: false,
+    cleared: false,
     ...partial,
   };
 }

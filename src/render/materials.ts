@@ -4,7 +4,7 @@
  */
 import { Color, DoubleSide, MeshStandardMaterial } from 'three';
 import type { MaterialName } from '@/geometry/bundle';
-import { patchRegolith } from './shader-patches';
+import { patchLampEmissive, patchRegolith } from './shader-patches';
 
 export const PALETTE = {
   regolith: '#b5582f',
@@ -17,6 +17,7 @@ export const PALETTE = {
   aluminum: '#b9bcc2',
   glassTeal: '#7fe3d6',
   warningYellow: '#f2c230',
+  plantGreen: '#5fbf6a',
   solarBlue: '#1e3550',
   solarCell: '#4a79b8',
   windowWarm: '#ffd9a0',
@@ -27,6 +28,9 @@ export const PALETTE = {
 
 // Part materials carry vertex colours too: geometry/tint.ts bakes underside shade and dust into
 // the bundle as multipliers of the material colour.
+/** A lamp head glows a little even by day, so its colour reads. */
+const LAMP_BASE_GLOW = 0.9;
+
 export const materials = {
   // The palette lives in the vertex colours (terrain-mesh.ts); a tinted base colour would square it.
   regolith: new MeshStandardMaterial({
@@ -88,6 +92,17 @@ export const materials = {
     emissiveIntensity: 0.0,
     vertexColors: true,
   }),
+  /**
+   * Lamp heads drawn as instances (render/lamps.ts): the instance colour is both paint and glow
+   * (shader-patches.ts), so the airlock lamp can cycle through palette colours.
+   */
+  lamp: new MeshStandardMaterial({
+    color: new Color(0xffffff),
+    roughness: 0.3,
+    metalness: 0.0,
+    emissive: new Color(0xffffff),
+    emissiveIntensity: LAMP_BASE_GLOW,
+  }),
   /** Ambient rocks: the colour comes per instance from the rock trio; this is the white base. */
   rock: new MeshStandardMaterial({
     color: new Color(0xffffff),
@@ -119,6 +134,7 @@ export const materials = {
 };
 
 patchRegolith(materials.regolith, PALETTE.regolithDark);
+patchLampEmissive(materials.lamp);
 
 // Compile-time check: every material name geometry/ may emit exists in the library.
 const _complete: MaterialName extends keyof typeof materials ? true : never = true;
@@ -128,4 +144,5 @@ void _complete;
 export function setNightGlow(amount: number): void {
   materials.glass.emissiveIntensity = amount * 1.6;
   materials.light.emissiveIntensity = amount * 2.2;
+  materials.lamp.emissiveIntensity = LAMP_BASE_GLOW + amount * 1.4;
 }

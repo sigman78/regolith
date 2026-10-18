@@ -116,6 +116,8 @@ export interface PressNode {
   centre: Vec3;
   /** port id -> floor point, world space */
   ports: Map<string, Vec3>;
+  /** EXT port id -> ground point (the foot of a ramp), world space; where crew step outside */
+  exits: Map<string, Vec3>;
   /** pressurised cubic metres */
   volume: number;
 }

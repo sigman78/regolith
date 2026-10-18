@@ -123,7 +123,7 @@ export function silhouetteSlots(crew: CrewState, base: ResolvedBase): Slot[] {
   for (const a of crew.agents) {
     const step = a.route[a.step];
     // On a tube or dock there is no pane; otherwise the node is the step's, or where it stands about.
-    if (step && step.k === 'edge') continue;
+    if (a.outside || (step && step.k !== 'node')) continue;
     const id = step ? step.node : a.at;
     const part = base.parts.get(id);
     const node = base.graph.nodes.get(id);
@@ -133,8 +133,14 @@ export function silhouetteSlots(crew: CrewState, base: ResolvedBase): Slot[] {
       let along: number | null = null;
       if (step) {
         // Walking inside: where along the axis? Use the step's current point projected onto it.
-        const from = step.from === '@centre' ? node.centre : node.ports.get(step.from);
-        const to = step.to === '@centre' ? node.centre : node.ports.get(step.to);
+        const from =
+          step.from === '@centre'
+            ? node.centre
+            : (node.ports.get(step.from) ?? node.exits.get(step.from));
+        const to =
+          step.to === '@centre'
+            ? node.centre
+            : (node.ports.get(step.to) ?? node.exits.get(step.to));
         if (from && to) {
           const len = Math.hypot(to[0] - from[0], to[2] - from[2]);
           const t = len > 1e-9 ? Math.min(1, a.s / len) : 0;

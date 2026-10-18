@@ -42,12 +42,16 @@ export function buildGraph(
     if (press.length === 0) continue;
     const ports = new Map<string, Vec3>();
     for (const p of press) ports.set(p.id, down(p.position));
+    // An EXT port sits on the ground already (the foot of a ramp): no floor drop.
+    const exits = new Map<string, Vec3>();
+    for (const p of part.ports) if (p.type === 'EXT') exits.set(p.id, p.position);
     nodes.set(part.id, {
       id: part.id,
       letter: part.letter as Letter,
       derived: part.derived === true,
       centre: down([part.pose.x, part.pose.y, part.pose.z]),
       ports,
+      exits,
       volume: pressVolume(part.letter, part.params),
     });
   }

@@ -33,7 +33,7 @@ const graphOf = (doc: BaseDocument): PressGraph => solve(doc, FLAT).graph;
 function run(doc: BaseDocument, ticks: number, hour = 9) {
   const graph = graphOf(doc);
   const crew = emptyCrew();
-  for (let t = 0; t < ticks; t++) stepCrew(crew, graph, doc.seed, t, hour);
+  for (let t = 0; t < ticks; t++) stepCrew(crew, { graph: graph }, doc.seed, t, hour);
   return { crew, graph };
 }
 
@@ -79,8 +79,8 @@ describe('crew walk', () => {
   it('is byte-identical for the same base, seed and ticks', () => {
     const a = run(base(), 600);
     const b = run(base(), 600);
-    expect(Array.from(crewPoints(a.crew, a.graph))).toEqual(
-      Array.from(crewPoints(b.crew, b.graph)),
+    expect(Array.from(crewPoints(a.crew, { graph: a.graph }))).toEqual(
+      Array.from(crewPoints(b.crew, { graph: b.graph })),
     );
     expect(JSON.stringify(a.crew.agents)).toBe(JSON.stringify(b.crew.agents));
   });
@@ -92,7 +92,7 @@ describe('crew walk', () => {
     const crew = emptyCrew();
     let moved = 0;
     for (let t = 0; t < 1500; t++) {
-      stepCrew(crew, graph, doc.seed, t, 9);
+      stepCrew(crew, { graph: graph }, doc.seed, t, 9);
       for (const a of crew.agents) {
         const st = a.route[a.step];
         if (!st) continue;
@@ -105,7 +105,7 @@ describe('crew walk', () => {
     }
     expect(crew.agents.length).toBeGreaterThan(0);
     expect(moved).toBeGreaterThan(0);
-    const pts = crewPoints(crew, graph);
+    const pts = crewPoints(crew, { graph: graph });
     expect(pts.length).toBe(crew.agents.length * CREW_STRIDE);
     for (const v of pts) expect(Number.isFinite(v)).toBe(true);
   });
@@ -117,8 +117,8 @@ describe('crew walk', () => {
     let prev: Float32Array | null = null;
     let worst = 0;
     for (let t = 0; t < 800; t++) {
-      stepCrew(crew, graph, doc.seed, t, 9);
-      const p = crewPoints(crew, graph);
+      stepCrew(crew, { graph: graph }, doc.seed, t, 9);
+      const p = crewPoints(crew, { graph: graph });
       if (prev && prev.length === p.length) {
         for (let i = 0; i < p.length; i += CREW_STRIDE) {
           const d = Math.hypot(
@@ -139,31 +139,31 @@ describe('crew walk', () => {
     const doc = base(3);
     const g1 = graphOf(doc);
     const crew = emptyCrew();
-    for (let t = 0; t < 400; t++) stepCrew(crew, g1, doc.seed, t, 9);
+    for (let t = 0; t < 400; t++) stepCrew(crew, { graph: g1 }, doc.seed, t, 9);
     const cut = removePart(doc, 'h1');
     const g2 = graphOf(cut);
     for (let t = 400; t < 900; t++) {
-      stepCrew(crew, g2, doc.seed, t, 9);
+      stepCrew(crew, { graph: g2 }, doc.seed, t, 9);
       for (const a of crew.agents) {
         expect(g2.nodes.has(a.at)).toBe(true);
         expect(g2.nodes.has(a.home)).toBe(true);
       }
     }
-    for (const v of crewPoints(crew, g2)) expect(Number.isFinite(v)).toBe(true);
+    for (const v of crewPoints(crew, { graph: g2 })) expect(Number.isFinite(v)).toBe(true);
     // Everyone gone: no agents, no crash.
     const g3 = graphOf(createDocument({ seed: 'crew' }));
-    stepCrew(crew, g3, doc.seed, 901, 9);
+    stepCrew(crew, { graph: g3 }, doc.seed, 901, 9);
     expect(crew.agents).toHaveLength(0);
-    expect(crewPoints(crew, g3)).toHaveLength(0);
+    expect(crewPoints(crew, { graph: g3 })).toHaveLength(0);
   });
 
   it('replans errands when the sol hour changes', () => {
     const doc = base();
     const graph = graphOf(doc);
     const crew = emptyCrew();
-    stepCrew(crew, graph, doc.seed, 0, 9.0);
+    stepCrew(crew, { graph: graph }, doc.seed, 0, 9.0);
     const first = crew.agents.map((a) => a.stopsHour);
-    for (let t = 1; t < 3000; t++) stepCrew(crew, graph, doc.seed, t, 10.2);
+    for (let t = 1; t < 3000; t++) stepCrew(crew, { graph: graph }, doc.seed, t, 10.2);
     const second = crew.agents.map((a) => a.stopsHour);
     expect(first.every((h) => h === 9)).toBe(true);
     expect(second.every((h) => h === 10)).toBe(true);
