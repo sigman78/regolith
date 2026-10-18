@@ -134,7 +134,7 @@ Deliverables:
 
 ## First ten tasks for the next agent (M0 tail → M1 start)
 
-**Status: all ten done** (screenshots in `docs/shots/m1/`). What M1 still owes: letters D and P, the `diagnose` stage, the worker, incremental solving (see `docs/PERF.md`), and the known limits listed in ARCHITECTURE §4.3.
+**Status: all ten done** (screenshots in `docs/shots/m1/`). What M1 still owes: letter D (and L), a parameter picker for the new letters, the `diagnose` stage, the worker, incremental solving (see `docs/PERF.md`), and the known limits listed in ARCHITECTURE §4.3.
 
 1. Add ESLint + Prettier with the layer import rule from ARCHITECTURE §2; fix any findings.
 2. Create `src/geometry/design-constants.ts` (BEVEL 0.06, FLANGE_RATIO 0.10, RIB_SPACING 2, HAB_RADII [2, 3], DOME_RADII [3, 4.5, 6, 8]) and use it in `hab.ts`.

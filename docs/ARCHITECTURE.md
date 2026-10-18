@@ -158,7 +158,16 @@ Each stage is a pure function `(ResolvedBase, Document) → ResolvedBase` in its
 
 Implemented: place, overlap, ground, dock, tubes (with node insertion and a wider-clearance retry that rolls back cleanly). Not yet: power, paths, decorators, beacon, diagnose. The `Diagnostic` kinds in use are `unknown-letter`, `moved`, `unplaceable`, `link-skipped`, `tube-unroutable`, `tube-too-long`; a failed route falls back to a tight tube plus a diagnostic, never an error (P1).
 
+Letters in the registry: H, N, V (tower), P (slab), M (mast), E (power plant), C (launcher).
+
+**Hosts.** A part whose `ground()` has `hostTop` (the slab) is grounded on bare terrain first. Every other part, and the dock and tube stages, then see a `surface`: the terrain, or a host's top wherever one is underfoot. Hosts only resolve overlap against other hosts and do not block tube routing; tubes and their legs clear a slab top instead.
+
 Known limits:
+
+- A slab is a raised deck on short pylons, not a levelled apron: terrain flattening needs terrain edits flowing back into the mesh (M4).
+- Only H has grow handles; the other letters take their parameters from the schema defaults (the Place tool does not offer a parameter picker yet).
+- `POWER` ports exist (M, E, C) but nothing connects to them until the power stage; beacons, dish tracking and fin glow are static.
+- `aluminium` is unused until the sky environment map lands (M2).
 
 - Tubes leave horizontal-normal PRESS ports only; the node's `top` port cannot take a tube yet.
 - Growing a hab on a 45° yaw can drift the fixed end by a grid step (poses snap to 1 m).
