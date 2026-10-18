@@ -23,6 +23,7 @@ import {
   ROCK_VARIANTS,
   SCATTER_FADE_SECONDS,
 } from '@/geometry/design-constants';
+import type { FlatField } from '@/world/flatten';
 import { cullScatter, SCATTER_STRIDE, type ScatterSet } from '@/world/scatter';
 import { materials, PALETTE } from './materials';
 import { geometriesFor } from './scene-sync';
@@ -60,9 +61,9 @@ export class ScatterSync {
     return this.set.count;
   }
 
-  update(all: ScatterSet, keepOut: Uint8Array, size: number): void {
+  update(all: ScatterSet, keepOut: Uint8Array, size: number, field: FlatField | null = null): void {
     const mask = keepOut.length === size * size ? keepOut : new Uint8Array(size * size);
-    this.set = cullScatter(all, mask, size);
+    this.set = cullScatter(all, mask, size, field);
 
     const now = new Set<number>();
     for (let n = 0; n < this.set.count; n++) {

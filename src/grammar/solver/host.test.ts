@@ -27,7 +27,7 @@ function habAt(id: string, x: number, z: number, yaw = 0, length = 8) {
 
 /** The standable surface under (x, z), computed independently of the solver. */
 function surfaceAt(base: ResolvedBase, world: SolverWorld, x: number, z: number): number {
-  let h = world.heightAt(x, z);
+  let h = (base.terrain?.heightAt ?? world.heightAt)(x, z);
   for (const p of base.parts.values()) {
     if (p.letter !== 'P' || p.footprint.kind !== 'rect') continue;
     const [lx, , lz] = rotateY([x - p.pose.x, 0, z - p.pose.z], -p.pose.yaw);
@@ -47,7 +47,9 @@ describe('slab hosting', () => {
     if (!slab) return;
     let highest = -Infinity;
     for (let x = -6; x <= 6; x += 0.5)
-      for (let z = -6; z <= 6; z += 0.5) highest = Math.max(highest, world.heightAt(x, z));
+      for (let z = -6; z <= 6; z += 0.5) {
+        highest = Math.max(highest, (base.terrain?.heightAt ?? world.heightAt)(x, z));
+      }
     // Terrain is sampled per 1 m cell, so allow it to be finer than that: no clipping at least.
     expect(slab.pose.y).toBeGreaterThanOrEqual(highest);
     expect(slab.legs.length).toBeGreaterThanOrEqual(4);
@@ -119,7 +121,7 @@ describe('slab hosting', () => {
         for (const leg of part.legs) {
           const ground =
             part.letter === 'P'
-              ? world.heightAt(leg.bottom[0], leg.bottom[2])
+              ? (base.terrain?.heightAt ?? world.heightAt)(leg.bottom[0], leg.bottom[2])
               : surfaceAt(base, world, leg.bottom[0], leg.bottom[2]);
           expect(leg.bottom[1]).toBeCloseTo(ground - FOOT_SINK, 9);
         }

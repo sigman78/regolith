@@ -7,6 +7,18 @@ import type { Heightfield } from '@/world/terrain';
 import { fbm2 } from '@/core/noise';
 import { materials, PALETTE } from './materials';
 
+/**
+ * Re-seat the mesh on `height` (the levelled terrain under the parts). Colours stay on the natural
+ * height so a levelled pad keeps the shade of the ground it was cut from.
+ */
+export function levelTerrainMesh(mesh: Mesh, height: (x: number, z: number) => number): void {
+  const pos = mesh.geometry.attributes['position'];
+  if (!pos) return;
+  for (let i = 0; i < pos.count; i++) pos.setY(i, height(pos.getX(i), pos.getZ(i)));
+  pos.needsUpdate = true;
+  mesh.geometry.computeVertexNormals();
+}
+
 export function buildTerrainMesh(hf: Heightfield): Mesh {
   const n = hf.size + 1;
   const extent = hf.size * hf.cell;

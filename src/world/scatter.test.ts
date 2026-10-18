@@ -10,6 +10,7 @@ import {
   ROCK_VARIANTS,
 } from '@/geometry/design-constants';
 import { cullScatter, scatterCandidates, SCATTER_STRIDE } from './scatter';
+import { buildFlatField } from './flatten';
 import { generateTerrain, heightAt } from './terrain';
 
 const hf = generateTerrain({ seed: 'olympus-07' });
@@ -132,5 +133,31 @@ describe('cullScatter', () => {
         expect(kept.has(r[7])).toBe(true);
       }
     }
+  });
+});
+
+describe('cullScatter on levelled ground', () => {
+  it('re-seats rocks the skirt reaches and leaves the others alone', () => {
+    const all = scatterCandidates(hf, 'olympus-07');
+    const raw = (x: number, z: number): number => heightAt(hf, x, z);
+    const field = buildFlatField(raw, [{ id: 'p', shape: { kind: 'disc', x: 0, z: 0, r: 14 } }], {
+      half: 48,
+      cell: 1,
+    });
+    const mask = new Uint8Array(96 * 96);
+    const plain = rows(cullScatter(all, mask, 96));
+    const levelled = rows(cullScatter(all, mask, 96, field));
+    expect(levelled).toHaveLength(plain.length);
+    let moved = 0;
+    plain.forEach((p, n) => {
+      const l = levelled[n] ?? [];
+      const reached = field.touches(p[0] ?? 0, p[2] ?? 0, (p[3] ?? 0) * 0.5 + 0.3);
+      if (reached) {
+        if (Math.abs((l[1] ?? 0) - (p[1] ?? 0)) > 1e-6) moved++;
+      } else {
+        expect(l).toEqual(p);
+      }
+    });
+    expect(moved).toBeGreaterThan(0);
   });
 });

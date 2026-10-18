@@ -68,3 +68,4 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-18 00:02 · f2849bc · Flip: mirror a part across its length (F in Select and Place), ports mirrored, links and tubes kept, one body scale, no version bump
 - 2026-10-18 00:08 · 0178b6e · Perf: one BatchedMesh per material for the whole base, legs included; 200 parts from about 3,300 draw calls to 18–46, mirrored parts draw a mirrored geometry
 - 2026-10-18 00:25 · 35c0068 · Generic drag handles from each part's schema (length, radius, width, depth, floors, height), anchored opposite end, blocked by neighbours, readout while dragging, one undo step per drag
+- 2026-10-18 00:44 · c9b5865 · Suggested connections for the placed or selected part, verified by trial solves, ghost tubes with accept pills

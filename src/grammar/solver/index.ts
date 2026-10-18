@@ -4,8 +4,9 @@
  *
  * Stages (docs/ARCHITECTURE.md §4.2; power, paths, decorators and the beacon
  * arrive with their milestones):
- *   place -> overlap -> ground -> dock -> tubes -> keep-out
- * `ground` runs before `dock` and `tubes` because both need final port
+ *   place -> overlap -> flatten -> ground -> dock -> tubes -> keep-out
+ * `flatten` levels the terrain under the footprints that `overlap` settled, so everything after it
+ * stands on the levelled ground. `ground` runs before `dock` and `tubes` because both need final port
  * heights; derived nodes inserted by `tubes` are grounded inside that stage.
  * Pure: the same (document, world, options) always yields the same result.
  */
@@ -13,6 +14,7 @@ import { hashValue } from '@/core/hash';
 import type { BaseDocument } from '@/world/document';
 import { diagnose } from './diagnose';
 import { dock } from './dock';
+import { flattenStage } from './flatten';
 import { keepOut } from './keepout';
 import { ground, isHost, type Grounded } from './ground';
 import { overlap } from './overlap';
@@ -37,6 +39,7 @@ export function emptyBase(): ResolvedBase {
     tubes: new Map(),
     usedPorts: new Set(),
     keepOut: new Uint8Array(0),
+    terrain: null,
     diagnostics: [],
   };
 }
@@ -49,7 +52,8 @@ export function solve(
   const diagnostics: Diagnostic[] = [];
   const placed = place(doc, world, diagnostics);
   const resolved = overlap(placed, world, opts, diagnostics);
-  const { grounded, surface } = ground(resolved, world);
+  const { world: levelled, field } = flattenStage(resolved, world, opts.movingId);
+  const { grounded, surface } = ground(resolved, levelled);
 
   // Tubes route around hulls but not over slabs (they clear a slab's top instead).
   const taken = new Set<number>();
@@ -74,8 +78,15 @@ export function solve(
   for (const t of [...docks, ...linked.tubes]) tubes.set(t.id, t);
 
   const mask = keepOut([...grounded, ...linked.nodes], [...tubes.values()], world.halfSize);
-  const base: ResolvedBase = { parts, tubes, usedPorts: used, keepOut: mask, diagnostics };
-  if (opts.diagnose) diagnostics.push(...diagnose(doc, base, { terrain: world, surface }));
+  const base: ResolvedBase = {
+    parts,
+    tubes,
+    usedPorts: used,
+    keepOut: mask,
+    terrain: field,
+    diagnostics,
+  };
+  if (opts.diagnose) diagnostics.push(...diagnose(doc, base, { terrain: levelled, surface }));
   return base;
 }
 

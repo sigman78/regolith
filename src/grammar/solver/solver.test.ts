@@ -46,7 +46,7 @@ describe('solver: nothing floats', () => {
           const port = structs.find((p) => p.id === leg.portId);
           expect(port?.position).toEqual(leg.top);
           expect(leg.bottom[1]).toBeCloseTo(
-            world.heightAt(leg.bottom[0], leg.bottom[2]) - FOOT_SINK,
+            (base.terrain?.heightAt ?? world.heightAt)(leg.bottom[0], leg.bottom[2]) - FOOT_SINK,
             9,
           );
           expect(leg.top[1] - leg.bottom[1]).toBeGreaterThanOrEqual(
@@ -68,7 +68,9 @@ describe('solver: nothing floats', () => {
         for (let s = -ext; s <= ext; s += 0.25) {
           const x = part.pose.x + s * Math.cos(yaw);
           const z = part.pose.z - s * Math.sin(yaw);
-          expect(part.pose.y - p.radius).toBeGreaterThan(world.heightAt(x, z));
+          expect(part.pose.y - p.radius).toBeGreaterThan(
+            (base.terrain?.heightAt ?? world.heightAt)(x, z),
+          );
         }
       }
     }

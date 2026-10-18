@@ -27,7 +27,7 @@ import { parseQuality, PostChain } from '@/render/post';
 import { GRID } from '@/geometry/design-constants';
 import { ScatterSync } from '@/render/scatter-sync';
 import { SceneSync } from '@/render/scene-sync';
-import { buildTerrainMesh } from '@/render/terrain-mesh';
+import { buildTerrainMesh, levelTerrainMesh } from '@/render/terrain-mesh';
 import { createDocument, keepMirror, type PartId } from '@/world/document';
 import { raycastTerrain, type Ray } from '@/world/raycast';
 import { scatterCandidates } from '@/world/scatter';
@@ -88,7 +88,8 @@ export function startApp(canvas: HTMLCanvasElement): void {
   // ---- document, terrain, solver -----------------------------------------------
   const initial = createDocument({ seed });
   const terrain = generateTerrain({ seed, size: initial.terrain.size, cell: initial.terrain.cell });
-  scene.add(buildTerrainMesh(terrain));
+  const terrainMesh = buildTerrainMesh(terrain);
+  scene.add(terrainMesh);
   const world: SolverWorld = {
     halfSize: (terrain.size * terrain.cell) / 2,
     heightAt: (x, z) => heightAt(terrain, x, z),
@@ -103,12 +104,23 @@ export function startApp(canvas: HTMLCanvasElement): void {
 
   let movingId: PartId | null = null;
   let resolved: ResolvedBase = emptyBase();
+  let terrainKey = '';
+  /** The ground as drawn: natural terrain, levelled under the parts. */
+  const groundAt = (): ((x: number, z: number) => number) =>
+    resolved.terrain?.heightAt ?? world.heightAt;
   const resolve = (): void => {
     resolved = solve(store.doc, world, movingId ? { movingId } : {});
     sync.sync(resolved);
     wake(true);
+    // The mesh follows the solver's ground, but only when a slab changed it. A dragged slab floats
+    // on the natural terrain and settles when it is dropped.
+    const key = resolved.terrain?.key ?? '';
+    if (key !== terrainKey) {
+      terrainKey = key;
+      levelTerrainMesh(terrainMesh, groundAt());
+    }
     // Rocks yield to the base but stay put while a part is being dragged (SCATTER §4).
-    if (!movingId) scatter.update(rocks, resolved.keepOut, gridSize);
+    if (!movingId) scatter.update(rocks, resolved.keepOut, gridSize, resolved.terrain);
     fitShadowToBase();
   };
 
@@ -328,7 +340,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
 
   function pointer(e: PointerEvent): PointerInfo {
     const ray = rayAt(e.clientX, e.clientY);
-    const ground: Vec3 | null = raycastTerrain(ray, world.heightAt);
+    const ground: Vec3 | null = raycastTerrain(ray, groundAt());
     return {
       ray,
       ground,
