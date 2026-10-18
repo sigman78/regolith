@@ -42,3 +42,5 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-17 22:43 · 48df4fb · M1 exit criteria as headless tests: 20 m tube and node, drag-through, 30 parts and undo all
 - 2026-10-17 22:45 · cb3bc9d · Screenshots for the picker, dome and snap arrow; 30-part and connect shots driven by real mouse input
 - 2026-10-17 22:46 · 4259f5d · Docs: M1 finished in PLAN and ARCHITECTURE (two honest deviations), gizmos for interactive params listed as not yet
+- 2026-10-17 22:48 · e27d59d · Docs: automatic terrain decoration added to the M4 plan
+- 2026-10-17 22:53 · 8f901ad · Docs: SCATTER.md design for rocks, formations, tracks and debris, staged into M2, M4 and M5
