@@ -8,7 +8,8 @@ import type { Vec3 } from '@/core/math';
 import { bakeTints } from './tint';
 
 /** Names in render/materials.ts. render/ asserts it has exactly these. */
-export type MaterialName = 'hull' | 'accent' | 'graphite' | 'aluminum' | 'glass' | 'warning';
+export type MaterialName =
+  'hull' | 'accent' | 'graphite' | 'aluminum' | 'glass' | 'warning' | 'rock';
 
 export interface MaterialBuffers {
   positions: Float32Array;

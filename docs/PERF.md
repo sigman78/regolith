@@ -35,3 +35,15 @@ The 2 ms target for 200 parts is **not met**; the target stays as it is.
 1. Incremental solving: take a dirty set of part ids, re-run `overlap` only for parts near them (spatial hash), reuse unchanged `ResolvedPart`s by reference. If this lands, add the equality property: across random edit sequences (including `movingId`) the cached result deep-equals a fresh full solve.
 2. Re-route only the tube links whose endpoints or corridor changed.
 3. Move `solve` and `buildBundle` into a worker (needed by M2 anyway).
+
+## M2 — scatter (rocks)
+
+Measured with `vite-node` on the dev machine (Node, warm), 96 m world, seed `olympus-07`.
+
+| What | Target (SCATTER §4) | Measured |
+| --- | --- | --- |
+| `scatterCandidates` (generate every rock) | < 20 ms | 2.0 ms, 618 rocks |
+| `cullScatter` against the keep-out | < 1 ms | 0.17 ms |
+| `keepOut` solver stage, golden base | – | inside the full solve; not separated yet |
+
+Draw calls for rocks: at most 4 (2 variants × shadow casters / non-casters). Only rocks over 0.6 m cast shadows.

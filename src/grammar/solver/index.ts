@@ -4,7 +4,7 @@
  *
  * Stages (docs/ARCHITECTURE.md §4.2; power, paths, decorators and the beacon
  * arrive with their milestones):
- *   place -> overlap -> ground -> dock -> tubes
+ *   place -> overlap -> ground -> dock -> tubes -> keep-out
  * `ground` runs before `dock` and `tubes` because both need final port
  * heights; derived nodes inserted by `tubes` are grounded inside that stage.
  * Pure: the same (document, world, options) always yields the same result.
@@ -13,6 +13,7 @@ import { hashValue } from '@/core/hash';
 import type { BaseDocument } from '@/world/document';
 import { diagnose } from './diagnose';
 import { dock } from './dock';
+import { keepOut } from './keepout';
 import { ground, isHost, type Grounded } from './ground';
 import { overlap } from './overlap';
 import { place } from './place';
@@ -31,7 +32,13 @@ export { linkKey } from './tubes';
 export { canTakeTube } from './ports';
 
 export function emptyBase(): ResolvedBase {
-  return { parts: new Map(), tubes: new Map(), usedPorts: new Set(), diagnostics: [] };
+  return {
+    parts: new Map(),
+    tubes: new Map(),
+    usedPorts: new Set(),
+    keepOut: new Uint8Array(0),
+    diagnostics: [],
+  };
 }
 
 export function solve(
@@ -66,7 +73,8 @@ export function solve(
   const tubes = new Map<string, ResolvedTube>();
   for (const t of [...docks, ...linked.tubes]) tubes.set(t.id, t);
 
-  const base: ResolvedBase = { parts, tubes, usedPorts: used, diagnostics };
+  const mask = keepOut([...grounded, ...linked.nodes], [...tubes.values()], world.halfSize);
+  const base: ResolvedBase = { parts, tubes, usedPorts: used, keepOut: mask, diagnostics };
   if (opts.diagnose) diagnostics.push(...diagnose(doc, base, { terrain: world, surface }));
   return base;
 }

@@ -316,3 +316,36 @@ export const DUST_HEIGHT = 1.4;
 export const DUST_MAX = 0.6;
 /** Direction the prevailing wind blows from, degrees in the plan (x toward z). */
 export const WIND_FROM_DEG = 215;
+
+// ---- Rocks and scatter (docs/SCATTER.md) ------------------------------------------
+export const ROCK_VARIANTS = 2;
+/** Radial lump of a rock vertex, fraction of the radius. */
+export const ROCK_LUMP = 0.22;
+/** Rocks are squashed to this height ratio. */
+export const ROCK_FLATTEN = 0.7;
+/** Candidate grid for ambient rocks, metres. */
+export const SCATTER_CELL = 2;
+/** Smallest rock; smaller reads as shimmer at the camera's distance. */
+export const ROCK_MIN_SIZE = 0.25;
+export const ROCK_MAX_SIZE = 1.7;
+/** Power-law exponent of the size distribution (higher = more small rocks). */
+export const ROCK_SIZE_EXPONENT = 2.2;
+/** Rocks bigger than this are boulders: capped, and kept off slopes. */
+export const BOULDER_MIN_SIZE = 0.8;
+export const BOULDER_MAX_SLOPE_DEG = 30;
+export const ROCK_CAP = 2500;
+export const BOULDER_CAP = 200;
+/** Only rocks bigger than this cast shadows (smaller ones would speckle at 06:00 / 18:30). */
+export const ROCK_SHADOW_MIN_SIZE = 0.6;
+/** A rock sinks this fraction of its height into the ground. */
+export const ROCK_SINK = 0.3;
+/** Rocks yield to the base: the keep-out around hulls and tubes, in whole cells. */
+export const KEEPOUT_PART_MARGIN = 1;
+/** Extra clearance around a tube or dock path on top of its radius, metres. */
+export const KEEPOUT_TUBE_MARGIN = 0.5;
+/** Rock density drops to this factor at the world centre, where the base is built. */
+export const SCATTER_CENTRE_DAMPING = 0.35;
+export const SCATTER_CENTRE_RADIUS = 18;
+export const SCATTER_FADE_RADIUS = 45;
+/** Scale-in time of a rock that appears after a commit, seconds. */
+export const SCATTER_FADE_SECONDS = 0.15;

@@ -18,6 +18,9 @@ export const PALETTE = {
   glassTeal: '#7fe3d6',
   warningYellow: '#f2c230',
   windowWarm: '#ffd9a0',
+  rock: '#6e4a3c',
+  rockDark: '#4d3329',
+  rockLight: '#94705c',
 } as const;
 
 // Part materials carry vertex colours too: geometry/tint.ts bakes underside shade and dust into
@@ -58,6 +61,13 @@ export const materials = {
   warning: new MeshStandardMaterial({
     color: new Color(PALETTE.warningYellow),
     roughness: 0.5,
+    metalness: 0.0,
+    vertexColors: true,
+  }),
+  /** Ambient rocks: the colour comes per instance from the rock trio; this is the white base. */
+  rock: new MeshStandardMaterial({
+    color: new Color(0xffffff),
+    roughness: 0.95,
     metalness: 0.0,
     vertexColors: true,
   }),

@@ -37,6 +37,9 @@ The palette is a closed set. New colours are added here first, with a role.
 | Regolith base | `#B5582F` | Mid ochre. Vertex-tinted ±12% by height and noise. |
 | Regolith dark | `#7A3A1E` | Crater bowls, shadows under modules. |
 | Regolith light | `#D98C5A` | Crater rims, dune crests, worn paths. |
+| Rock base | `#6E4A3C` | Ambient rocks and boulders: basalt-tinted regolith. Per instance, tinted between rock dark and rock light. |
+| Rock dark | `#4D3329` | Darkest rocks. |
+| Rock light | `#94705C` | Lightest rocks; never lighter than the regolith around them. |
 | Hull white | `#E8E4DC` | Warm off-white. All pressurized skins. |
 | Hull shaded | `#CFC8BB` | Underside tint baked into vertex colour on habs. |
 | Underside shade | `#9A9088` (multiplier) | Vertex tint on down-facing surfaces and the lowest 0.8 m of any part (`tintUnderside`). Multiplies the material colour; never a paint colour. |
@@ -60,6 +63,7 @@ One library in `src/render/materials.ts`. Parts reference entries by name; they 
 | Material | Base colour | Roughness | Metalness | Extras |
 |----------|-------------|-----------|-----------|--------|
 | `regolith` | regolith base | 0.95 | 0 | vertex colours; macro normal from heightfield; micro detail normal tiling 2 m; dust tint mask. |
+| `rock` | white (colour per instance from the rock trio) | 0.95 | 0 | instanced; underside shade from vertex colour; shadows only from rocks over 0.6 m. |
 | `hull` | hull white | 0.55 | 0 | panel-seam normal map from procedural trim sheet; AO baked into vertex colour on undersides; dust mask in vertex alpha. |
 | `accent` | accent orange | 0.50 | 0 | same seams as hull. |
 | `graphite` | graphite | 0.70 | 0.2 | subtle anisotropy not needed; keep flat. |

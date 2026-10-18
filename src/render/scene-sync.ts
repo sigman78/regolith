@@ -13,7 +13,7 @@ import { buildBundle } from '@/geometry/build';
 import type { GeometryBundle, MaterialName } from '@/geometry/bundle';
 import { FOOT_HEIGHT, LEG_TOP_OVERLAP } from '@/geometry/design-constants';
 import type { GeometryRecipe } from '@/grammar/types';
-import type { Leg, ResolvedBase } from '@/grammar/solver';
+import { emptyBase, type Leg, type ResolvedBase } from '@/grammar/solver';
 import { materials } from './materials';
 
 const DEG = Math.PI / 180;
@@ -44,7 +44,9 @@ export interface SceneSyncOptions {
 
 const geometryCache = new Map<string, Partial<Record<MaterialName, BufferGeometry>>>();
 
-function geometriesFor(bundle: GeometryBundle): Partial<Record<MaterialName, BufferGeometry>> {
+export function geometriesFor(
+  bundle: GeometryBundle,
+): Partial<Record<MaterialName, BufferGeometry>> {
   const hit = geometryCache.get(bundle.hash);
   if (hit) return hit;
   const out: Partial<Record<MaterialName, BufferGeometry>> = {};
@@ -117,7 +119,7 @@ export class SceneSync {
   }
 
   clear(): void {
-    this.sync({ parts: new Map(), tubes: new Map(), usedPorts: new Set(), diagnostics: [] });
+    this.sync(emptyBase());
   }
 
   private create(d: Drawable): Entry {

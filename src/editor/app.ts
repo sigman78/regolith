@@ -25,10 +25,13 @@ import { allParts, getPart } from '@/grammar/registry';
 import { CameraRig } from '@/render/camera-rig';
 import { Lighting } from '@/render/lighting';
 import { parseQuality, PostChain } from '@/render/post';
+import { GRID } from '@/geometry/design-constants';
+import { ScatterSync } from '@/render/scatter-sync';
 import { SceneSync } from '@/render/scene-sync';
 import { buildTerrainMesh } from '@/render/terrain-mesh';
 import { createDocument, type PartId } from '@/world/document';
 import { raycastTerrain, type Ray } from '@/world/raycast';
+import { scatterCandidates } from '@/world/scatter';
 import { generateTerrain, heightAt } from '@/world/terrain';
 import { cmd } from './commands';
 import { demoParts } from './demo-base';
@@ -75,6 +78,9 @@ export function startApp(canvas: HTMLCanvasElement): void {
 
   const store = new DocumentStore(initial);
   const sync = new SceneSync(scene);
+  const scatter = new ScatterSync(scene);
+  const rocks = scatterCandidates(terrain, seed);
+  const gridSize = Math.round((terrain.size * terrain.cell) / GRID);
   const ghost = new Ghost(scene, world, () => store.doc);
 
   let movingId: PartId | null = null;
@@ -82,6 +88,8 @@ export function startApp(canvas: HTMLCanvasElement): void {
   const resolve = (): void => {
     resolved = solve(store.doc, world, movingId ? { movingId } : {});
     sync.sync(resolved);
+    // Rocks yield to the base but stay put while a part is being dragged (SCATTER §4).
+    if (!movingId) scatter.update(rocks, resolved.keepOut, gridSize);
     fitShadowToBase();
   };
 
@@ -339,6 +347,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
     timer.update();
     const dt = Math.min(timer.getDelta(), 0.1);
     rig.update(dt);
+    scatter.tick(dt);
     lighting.apply(hour, rig.target);
     renderer.toneMappingExposure = lighting.exposure;
     handles?.update();

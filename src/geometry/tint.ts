@@ -29,6 +29,8 @@ const WIND = [Math.cos((WIND_FROM_DEG * Math.PI) / 180), Math.sin((WIND_FROM_DEG
 
 /** Materials that stay clean: glass reads as glass, not as dusty hull. */
 const UNTINTED: ReadonlySet<MaterialName> = new Set(['glass']);
+/** Rocks are already dust-coloured and small: underside shade only, no contact band or dust. */
+const SHADE_ONLY: ReadonlySet<MaterialName> = new Set(['rock']);
 
 function smoothstep(a: number, b: number, x: number): number {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -71,6 +73,11 @@ export function bakeTints(
     const nx = normals[i] ?? 0;
     const ny = normals[i + 1] ?? 0;
     const nz = normals[i + 2] ?? 0;
+    if (SHADE_ONLY.has(material)) {
+      const u = tintUnderside(ny, CONTACT_HEIGHT);
+      for (let c = 0; c < 3; c++) out[i + c] = u[c] ?? 1;
+      continue;
+    }
     const u = tintUnderside(ny, y);
     const d = tintDust(nx, ny, nz, y);
     for (let c = 0; c < 3; c++) out[i + c] = (u[c] ?? 1) * (d[c] ?? 1);
