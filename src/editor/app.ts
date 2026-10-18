@@ -44,6 +44,7 @@ import { PlaceTool } from './tools/place';
 import { SelectTool } from './tools/select';
 import type { PointerInfo, Tool, ToolHost, ToolId } from './tools/tool';
 import { Handles } from './ui/handles';
+import { Suggestions } from './ui/suggestions';
 import { Halos } from './ui/halos';
 import { ParamsPanel } from './ui/params-panel';
 import { Tray } from './ui/tray';
@@ -157,6 +158,16 @@ export function startApp(canvas: HTMLCanvasElement): void {
   // ---- tools ---------------------------------------------------------------------
   let selected: PartId | null = null;
   let counter = 0;
+
+  // Suggested connections follow the part you just placed or selected (ui/suggestions.ts).
+  let suggest: Suggestions | null = null;
+  let focus: PartId | null = null;
+  let knownParts = new Set<PartId>(Object.keys(store.doc.parts));
+  const suggestFor = (): void => {
+    const tool = active.id;
+    const offer = !movingId && (tool === 'select' || tool === 'place');
+    suggest?.request(offer && focus && store.doc.parts[focus] ? focus : null);
+  };
   const tipEl = document.getElementById('tip');
 
   const host: ToolHost = {
@@ -170,11 +181,14 @@ export function startApp(canvas: HTMLCanvasElement): void {
     setTool: (id) => setTool(id),
     select: (id) => {
       selected = id;
+      focus = id;
+      suggestFor();
       refreshUi();
     },
     refreshUi: () => refreshUi(),
     setMoving: (id) => {
       movingId = id;
+      suggestFor();
     },
     commitResolved: (id) => {
       const part = resolved.parts.get(id);
@@ -210,6 +224,15 @@ export function startApp(canvas: HTMLCanvasElement): void {
     ? new Halos({ store, ghost, camera: rig.camera, base: () => resolved }, halosEl)
     : null;
 
+  const suggestEl = document.getElementById('suggest');
+  suggest = suggestEl
+    ? new Suggestions(
+        scene,
+        { store, world, camera: rig.camera, base: () => resolved, wake: () => wake(true) },
+        suggestEl,
+      )
+    : null;
+
   const tools: Tool[] = [
     new SelectTool(host),
     ...allParts().map((def, i) => new PlaceTool(host, def.letter, String(i + 1))),
@@ -228,6 +251,8 @@ export function startApp(canvas: HTMLCanvasElement): void {
     active.deactivate();
     active = next;
     active.activate();
+    if (next.id !== 'select' && next.id !== 'place') focus = null;
+    suggestFor();
     refreshUi();
   }
 
@@ -277,6 +302,14 @@ export function startApp(canvas: HTMLCanvasElement): void {
     if (selected && !store.doc.parts[selected]) selected = null;
     resolve();
     active.docChanged();
+    // A part that just appeared (placed, redone) becomes the focus; otherwise the selection does.
+    const ids = Object.keys(store.doc.parts);
+    const added = ids.filter((id) => !knownParts.has(id));
+    knownParts = new Set(ids);
+    if (added.length === 1 && added[0]) focus = added[0];
+    else if (selected) focus = selected;
+    else if (focus && !store.doc.parts[focus]) focus = null;
+    suggestFor();
     refreshUi();
   });
   refreshUi();
@@ -349,6 +382,8 @@ export function startApp(canvas: HTMLCanvasElement): void {
     }
     if (key === 'escape') {
       selected = null;
+      focus = null;
+      suggestFor();
       refreshUi();
     }
     if (key === 'f2') {
@@ -406,6 +441,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
     renderer.toneMappingExposure = lighting.exposure;
     handles?.update();
     halos?.update();
+    suggest?.update();
     post.setBloomThreshold(lighting.bloomThreshold);
     if (shadowDirty || animating) renderer.shadowMap.needsUpdate = true;
     shadowDirty = false;
@@ -429,8 +465,11 @@ export function startApp(canvas: HTMLCanvasElement): void {
       rig,
       select: (id: PartId | null) => {
         selected = id;
+        focus = id;
+        suggestFor();
         refreshUi();
       },
+      suggestions: () => suggest?.current ?? [],
     };
   }
 }

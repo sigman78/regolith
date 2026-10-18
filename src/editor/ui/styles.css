@@ -195,6 +195,34 @@ body {
   pointer-events: none;
 }
 
+#suggest {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* A suggested connection: a small pill on its ghost tube. */
+.suggest {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 4px 12px;
+  border-radius: 14px;
+  border: 2px solid var(--accent);
+  background: rgba(30, 24, 22, 0.86);
+  color: #fff;
+  font:
+    600 12px/1.4 system-ui,
+    sans-serif;
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.suggest:hover {
+  background: var(--accent);
+}
+
 .halo {
   position: absolute;
   left: 0;
@@ -297,6 +325,7 @@ body.shot #tray,
 body.shot #params,
 body.shot #tip,
 body.shot #handles,
-body.shot #halos {
+body.shot #halos,
+body.shot #suggest {
   display: none;
 }
