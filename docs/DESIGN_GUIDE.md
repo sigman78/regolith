@@ -142,6 +142,9 @@ The base is written in letters. Each letter is a parametric generator with ports
 | **B** | Berm (regolith wall) | spline, height 1–3 | — | drawn with the terrain brush; soft ridge with a crest path |
 | **X** | Light pole | height 4 | `POWER` | warm pool of light at night; auto-placed along paths if the player enables "street lights" |
 | **P** | Pad (foundation slab) | w × d 2–12 m | `STRUCT` top (anything placed on it inherits the pad as ground) | levelled regolith apron, chamfered edge, drain grooves |
+| **C** | Launcher (electromagnetic mass driver) | length 8–20 m step 4, elevation 10/20/30° | `STRUCT` ×4 under the sled, `POWER` at the breech | coil rings along the barrel, hazard band at the muzzle, trestle posts; fires a cargo capsule on a lander-less schedule (M5). Not a weapon: the fantasy is a kinder future (KICKOFF). |
+
+**M1 implementation notes (static, no sim yet).** P is a raised deck: a graphite slab on short pylons rather than a levelled apron (terrain flattening needs terrain edits flowing back into the mesh, M4). Parts whose footprint lands on a slab stand on its top; slabs only resolve overlap against other slabs. `POWER` ports exist but nothing connects to them yet. Beacons, dish tracking, hazard rings and guy wires arrive with the life layer.
 
 Alphabet is **frozen per milestone**; see PLAN.md for which letters ship when.
 

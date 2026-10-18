@@ -17,4 +17,8 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-17 21:31 · cd9b4ee · Grow handles for hab length; first screenshot sheet in `docs/shots/m1/` (task 10)
 - 2026-10-17 21:36 · 733840e · Letter N (sphere node) and the dock stage (task 9a)
 - 2026-10-17 21:40 · 4c5b013 · Grid A* tube routing, node insertion, Connect tool, "tubes never cross hulls" tests (task 9b)
-- 2026-10-17 21:49 · (this commit) · Docs: ARCHITECTURE solver order, snapshot undo and design-constants exception; PERF.md; PLAN ticks; this worklog
+- 2026-10-17 21:49 · a9073aa · Docs: ARCHITECTURE solver order, snapshot undo and design-constants exception; PERF.md; PLAN ticks; this worklog
+
+## M1 — module variety (pulled forward from M5)
+
+- 2026-10-17 21:58 · docs · Plan and design guide: tower V, slab P, mast M, power plant E pulled into M1; new letter C (launcher)

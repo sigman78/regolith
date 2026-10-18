@@ -46,6 +46,8 @@ Deliverables:
 - Editor: Select, Place, Grow (handles), Connect (drag port to port), Delete. Ghost preview using the real solver.
 - Property tests: nothing floats, hulls never intersect, tubes never cross hulls, all bundles valid.
 
+**Pulled forward at the user's request (2026-10-17):** more module variety in M1 instead of waiting for M5 — **V** (tower), **P** (slab, as a raised deck), **M** (radio mast), **E** (power plant) and a new letter **C** (electromagnetic launcher, DESIGN_GUIDE §8.2). Static geometry, ports and grounding only; their animation and power links stay in M3/M5. Letters **D**, **L** and the rest remain where they were.
+
 **Exit:** build a 30-part base in under 3 minutes with no visible glitch; drag a hab through another and watch it resolve; connect two habs 20 m apart and get a routed tube with a node; undo everything.
 
 ## M2 — The Look (art gate)
