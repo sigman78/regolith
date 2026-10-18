@@ -24,10 +24,10 @@ Delivered: Vite + TS + three.js; seeded RNG and noise; terrain heightfield with 
 Known scaffold issues (see `docs/shots/m0/`): dusk (18:00) and night (21:00) are far darker than the design guide wants, terrain reads near-black once the sun is low, and there is faint shadow speckling on hab end caps where the rib profile meets the hull. All three are M2 work (sky dome, lifted ambient, emissives, shadow fitter), not M0 blockers.
 
 Remaining for M0:
-- [ ] ESLint with per-folder `no-restricted-imports` enforcing the layer rules.
-- [ ] Prettier config.
-- [ ] GitHub Actions: typecheck + test + build on push.
-- [ ] `src/geometry/design-constants.ts` and move the bevel/flange numbers there.
+- [x] ESLint with per-folder `no-restricted-imports` enforcing the layer rules.
+- [x] Prettier config.
+- [x] GitHub Actions: typecheck + lint + format + test + build on push (`.github/workflows/ci.yml`).
+- [x] `src/geometry/design-constants.ts` and move the bevel/flange numbers there.
 
 **Exit:** `npm run dev` shows terrain, three habs, shadows; `[`/`]` scrub the sol; CI green.
 
@@ -45,6 +45,8 @@ Deliverables:
 - `SceneSync` diffing the resolved base into the scene.
 - Editor: Select, Place, Grow (handles), Connect (drag port to port), Delete. Ghost preview using the real solver.
 - Property tests: nothing floats, hulls never intersect, tubes never cross hulls, all bundles valid.
+
+**Pulled forward at the user's request (2026-10-17):** more module variety in M1 instead of waiting for M5 — **V** (tower), **P** (slab, as a raised deck), **M** (radio mast), **E** (power plant) and a new letter **C** (electromagnetic launcher, DESIGN_GUIDE §8.2). Static geometry, ports and grounding only; their animation and power links stay in M3/M5. Letters **D**, **L** and the rest remain where they were.
 
 **Exit:** build a 30-part base in under 3 minutes with no visible glitch; drag a hab through another and watch it resolve; connect two habs 20 m apart and get a routed tube with a node; undo everything.
 
@@ -131,6 +133,8 @@ Deliverables:
 **Exit:** five outside players build a base, share a link, and the link opens the same base on another machine.
 
 ## First ten tasks for the next agent (M0 tail → M1 start)
+
+**Status: all ten done** (screenshots in `docs/shots/m1/`). What M1 still owes: letter D (and L), a parameter picker for the new letters, the `diagnose` stage, the worker, incremental solving (see `docs/PERF.md`), and the known limits listed in ARCHITECTURE §4.3.
 
 1. Add ESLint + Prettier with the layer import rule from ARCHITECTURE §2; fix any findings.
 2. Create `src/geometry/design-constants.ts` (BEVEL 0.06, FLANGE_RATIO 0.10, RIB_SPACING 2, HAB_RADII [2, 3], DOME_RADII [3, 4.5, 6, 8]) and use it in `hab.ts`.

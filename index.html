@@ -10,9 +10,15 @@
   <body>
     <canvas id="view"></canvas>
     <div id="hud">
-      <div class="hud-title">REGOLITH <span class="hud-sub">pre-alpha scaffold</span></div>
-      <div class="hud-hint">drag: orbit (snaps to 45°) · right-drag: pan · wheel: zoom · [ ] time of day · Q/E rotate</div>
+      <div class="hud-title">REGOLITH <span class="hud-sub">pre-alpha</span></div>
+      <div class="hud-hint">
+        middle-drag or Alt+drag: orbit · right-drag: pan · wheel: zoom · [ ] time · Q/E turn view
+      </div>
     </div>
+    <div id="handles"></div>
+    <div id="halos"></div>
+    <div id="tip" hidden></div>
+    <div id="tray"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

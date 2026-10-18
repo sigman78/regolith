@@ -50,7 +50,11 @@ export function computeSky(hour: number, latitudeDeg = 18): SkyState {
   const lat = (latitudeDeg * Math.PI) / 180;
   // Sun on a tilted circle; good enough for a toy, no ephemeris needed.
   const elev = Math.cos(dayAngle) * Math.cos(lat);
-  const sunDir = new Vector3(Math.sin(dayAngle), elev, -Math.sin(lat) * Math.cos(dayAngle) * 0.6).normalize();
+  const sunDir = new Vector3(
+    Math.sin(dayAngle),
+    elev,
+    -Math.sin(lat) * Math.cos(dayAngle) * 0.6,
+  ).normalize();
   const altitude = Math.max(0, sunDir.y);
 
   // 0 = night, 1 = full day, with a twilight band around the horizon.

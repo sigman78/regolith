@@ -61,7 +61,13 @@ export function generateTerrain(params: TerrainParams): Heightfield {
   return { size, cell, heights, craters };
 }
 
-function sampleHeight(x: number, z: number, seed: number, amplitude: number, craters: Crater[]): number {
+function sampleHeight(
+  x: number,
+  z: number,
+  seed: number,
+  amplitude: number,
+  craters: Crater[],
+): number {
   // Broad dunes + fine ripples.
   let h = fbm2(x * 0.012, z * 0.012, { octaves: 4, seed }) * amplitude;
   h += fbm2(x * 0.09, z * 0.09, { octaves: 2, seed: seed + 7 }) * 0.12;
