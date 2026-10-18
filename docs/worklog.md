@@ -81,3 +81,5 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-18 01:48 · 7e2f9f9 · Press graph stage: the walkable network of PRESS parts, docks and tubes, with volumes, skipped on lean solves
 - 2026-10-18 01:53 · 05ac512 · Crew: routes over the press graph, errands per sol-hour, agents as (step, s) not coordinates, Sim handle with clock-scaled fixed step, HUD crew count
 - 2026-10-18 02:01 · 1ced0d2 · Window silhouettes: crew show as a flat figure on hab and tower panes, snapped bay to bay, one instanced draw, redraws capped at 4 Hz; shared window-bay layout
+- 2026-10-18 02:11 · 074f655 · Merged feat/m3 (clock, press graph, crew, window silhouettes) into main and pushed
+- 2026-10-18 02:21 · ef7571a · Letters A, S, X static: airlock (door, ramp, chevrons, lamp, docks to a hab flank), solar array, light pole, solar/solarCell/light materials, tool keys 0 and -, golden base uses them
