@@ -372,3 +372,67 @@ export const FIGURE_PROUD = 0.008;
 export const FIGURE_CAPACITY = CREW_MAX * 2;
 /** Silhouette redraws are coalesced to at most this many per second. */
 export const FIGURE_MAX_HZ = 4;
+
+// ---- Letter A: airlock ----------------------------------------------------------------
+/** Same radii as a hab, so its PRESS port meets a hab's at the same height and docks. */
+export const AIRLOCK_RADII = HAB_RADII;
+/** Cylinder section between the end caps, metres. */
+export const AIRLOCK_LENGTH = 2.4;
+/** Sideways margin (around the ramp); the ends carry almost none so the lock can touch what it docks to. */
+export const AIRLOCK_FOOTPRINT_MARGIN = 0.3;
+export const AIRLOCK_END_MARGIN = 0.05;
+/** The door on the +z flank: width, height, how far it stands off the hull. */
+export const AIRLOCK_DOOR_W = 1;
+export const AIRLOCK_DOOR_H = 1.8;
+export const AIRLOCK_DOOR_PROUD = 0.04;
+/** Ramp from the door sill to the ground: run along +z, width, thickness. */
+export const AIRLOCK_RAMP_RUN = 2.6;
+export const AIRLOCK_RAMP_W = 1.3;
+export const AIRLOCK_RAMP_THICK = 0.14;
+/** Hazard chevrons on the ramp: strips, width and spacing. */
+export const AIRLOCK_CHEVRONS = 3;
+export const AIRLOCK_CHEVRON_W = 0.16;
+/** Lamp above the door, degrees up the hull from the +z side, and its size. */
+export const AIRLOCK_LAMP_ANGLE_DEG = 48;
+export const AIRLOCK_LAMP_SIZE = 0.22;
+export const AIRLOCK_RIB_THICK = 0.18;
+
+// ---- Letter S: solar array ----------------------------------------------------------
+export const SOLAR_COLS = [2, 4, 6, 8, 10, 12] as const;
+export const SOLAR_ROWS = [1, 2, 3, 4] as const;
+/** One panel (x by down-slope depth), its frame thickness, the gap between panels and rows. */
+export const SOLAR_PANEL_W = 2;
+export const SOLAR_PANEL_D = 1.2;
+export const SOLAR_PANEL_THICK = 0.06;
+export const SOLAR_COL_GAP = 0.08;
+export const SOLAR_ROW_GAP = 0.3;
+/** Resting tilt toward +z, degrees, and the height of the panel centres above the posts' feet. */
+export const SOLAR_TILT_DEG = 25;
+export const SOLAR_CENTRE_Y = 1.3;
+/** Frame border around the blue face, and the cell grid on it. */
+export const SOLAR_BORDER = 0.05;
+export const SOLAR_CELLS_X = 6;
+export const SOLAR_CELLS_Z = 3;
+export const SOLAR_FACE_PROUD = 0.004;
+export const SOLAR_CELL_PROUD = 0.008;
+export const SOLAR_CELL_LINE = 0.014;
+/** Posts under every second column boundary, and the cross beams carrying each row. */
+export const SOLAR_POST_RADIUS = 0.07;
+export const SOLAR_BEAM = 0.09;
+export const SOLAR_POST_SEGMENTS = 10;
+export const SOLAR_FOOTPRINT_MARGIN = 0.4;
+
+// ---- Letter X: light pole -----------------------------------------------------------
+export const POLE_HEIGHTS = [3, 4, 6] as const;
+export const POLE_BASE_RADIUS = 0.32;
+export const POLE_BASE_THICK = 0.12;
+export const POLE_RADIUS_BOTTOM = 0.08;
+export const POLE_RADIUS_TOP = 0.05;
+export const POLE_SEGMENTS = 14;
+/** The lamp head: an arm reaching along +x, a hood and the light under it. */
+export const POLE_ARM = 0.4;
+export const POLE_HOOD = [0.4, 0.06, 0.26] as const;
+export const POLE_LIGHT = [0.34, 0.03, 0.2] as const;
+export const POLE_FOOTPRINT_MARGIN = 0.3;
+/** The pole stands on its base plate with a single short foot (every part stands on something). */
+export const POLE_CLEARANCE = 0.1;

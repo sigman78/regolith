@@ -31,6 +31,8 @@ describe('golden base, flipped', () => {
     const base = solve(doc, FLAT, { diagnose: true });
     expect(base.diagnostics.filter((d) => d.kind === 'invariant')).toEqual([]);
     expect(base.parts.size).toBeGreaterThanOrEqual(g.parts.length);
-    expect([...base.parts.values()].filter((p) => p.pose.mirror).length).toBe(5);
+    expect([...base.parts.values()].filter((p) => p.pose.mirror).length).toBe(
+      Math.ceil(g.parts.length / 2),
+    );
   });
 });

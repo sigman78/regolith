@@ -265,9 +265,11 @@ export function startApp(canvas: HTMLCanvasElement): void {
       )
     : null;
 
+  // Digits 1-9, then 0 and - (x is the delete tool).
+  const toolKey = (i: number): string => (i < 9 ? String(i + 1) : (['0', '-'][i - 9] ?? ''));
   const tools: Tool[] = [
     new SelectTool(host),
-    ...allParts().map((def, i) => new PlaceTool(host, def.letter, String(i + 1))),
+    ...allParts().map((def, i) => new PlaceTool(host, def.letter, toolKey(i))),
     ...(halos ? [new ConnectTool(host, halos)] : []),
     new DeleteTool(host),
   ];

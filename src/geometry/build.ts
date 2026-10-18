@@ -6,7 +6,10 @@ import { hashValue } from '@/core/hash';
 import type { GeometryRecipe } from '@/grammar/types';
 import { BundleBuilder, type GeometryBundle } from './bundle';
 import { buildDome } from './dome';
+import { buildAirlock } from './airlock';
 import { buildHab } from './hab';
+import { buildPole } from './pole';
+import { buildSolar } from './solar';
 import { buildLegFoot, buildLegStrut } from './leg';
 import { buildLauncher } from './launcher';
 import { buildMast } from './mast';
@@ -58,6 +61,15 @@ export function buildBundle(recipe: GeometryRecipe): GeometryBundle {
         break;
       case 'tower':
         buildTower(out, op);
+        break;
+      case 'airlock':
+        buildAirlock(out, op);
+        break;
+      case 'solar':
+        buildSolar(out, op);
+        break;
+      case 'pole':
+        buildPole(out, op);
         break;
       case 'tube':
         buildTube(out, op);

@@ -35,7 +35,7 @@ export interface HabOp {
 }
 
 /** Lathe profile in (r, y) with y along the module axis. */
-function hullProfile(length: number, r: number): Vector2[] {
+export function habHullProfile(length: number, r: number): Vector2[] {
   const half = length / 2;
   const cap = r * HAB_CAP_RATIO;
   const pts: Vector2[] = [new Vector2(0, -half - cap)];
@@ -52,7 +52,7 @@ function hullProfile(length: number, r: number): Vector2[] {
 }
 
 /** The lathe is built along +Y; turn it so the hab lies along +X. */
-function layDown(g: LatheGeometry): LatheGeometry {
+export function layDown(g: LatheGeometry): LatheGeometry {
   g.rotateZ(-Math.PI / 2);
   return g;
 }
@@ -60,7 +60,7 @@ function layDown(g: LatheGeometry): LatheGeometry {
 export function buildHab(out: BundleBuilder, op: HabOp): void {
   const { length, radius } = op;
 
-  out.add('hull', layDown(lathe(hullProfile(length, radius), HAB_SEGMENTS)));
+  out.add('hull', layDown(lathe(habHullProfile(length, radius), HAB_SEGMENTS)));
 
   const count = Math.max(1, Math.round(length / RIB_SPACING));
   for (let i = 0; i <= count; i++) {

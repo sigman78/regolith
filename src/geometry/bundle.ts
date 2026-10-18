@@ -9,7 +9,16 @@ import { bakeTints } from './tint';
 
 /** Names in render/materials.ts. render/ asserts it has exactly these. */
 export type MaterialName =
-  'hull' | 'accent' | 'graphite' | 'aluminum' | 'glass' | 'warning' | 'rock';
+  | 'hull'
+  | 'accent'
+  | 'graphite'
+  | 'aluminum'
+  | 'glass'
+  | 'warning'
+  | 'rock'
+  | 'solar'
+  | 'solarCell'
+  | 'light';
 
 export interface MaterialBuffers {
   positions: Float32Array;
