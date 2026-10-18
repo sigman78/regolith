@@ -50,7 +50,11 @@ Rules:
 - `editor/` is the only layer that creates commands and mutates the document through them.
 - Cross-layer communication is via the typed event bus in `core/events.ts` or explicit function calls downwards. No globals except the app shell.
 
-Enforced by an ESLint `no-restricted-imports` rule per folder (add in M0).
+Enforced by an ESLint `no-restricted-imports` rule per folder (`eslint.config.js`). It bans both the `@/layer/**` alias and relative imports.
+
+**One deliberate exception:** `geometry/design-constants.ts` has no imports and is importable from `world/` and `grammar/`. Parts need the same numbers the geometry uses (radii, port spacing, margins), and moving them into `core/` would break CLAUDE.md's rule that design numbers live in that one file. Nothing else under `geometry/` may be imported from below.
+
+`Letter` lives in `world/letter.ts` (not `grammar/`) because the document stores it.
 
 ## 3. Data model: the BaseDocument
 
@@ -79,6 +83,8 @@ interface PartInstance {
   flags?: { shielded?: boolean; windows?: boolean };
   serial: number;               // stencil number, allocated once, never reused
 }
+// BaseDocument also carries `nextSerial: number`; addPart takes serial = nextSerial++,
+// so serials survive deletes and undo/redo restores them with the snapshot.
 
 interface Link { a: PortRef; b: PortRef; kind: 'dock' | 'tube'; via?: PartId[] }
 interface PortRef { part: PartId; port: string }
@@ -131,12 +137,14 @@ Runs after every command and on every ghost preview update. Target: < 2 ms for 2
 ```
 document
   │
-  ├─ 1. place      : clamp to grid, resolve pose.y from terrain / pad / host
-  ├─ 2. overlap    : footprint grid test; push to nearest free pose (spiral search ≤ 3 cells)
-  ├─ 3. dock       : PRESS ports within 0.5 m & 15° → dock links (collars)
-  ├─ 4. tubes      : for each player link of kind 'tube': route on grid (A* with 45° turn penalty,
-  │                   hull footprints blocked); insert nodes on >24 m or >2 kinks
-  ├─ 5. ground     : legs per STRUCT port; pad skirts; ladders downhill
+  ├─ 1. place      : clamp to grid, snap yaw to 45°
+  ├─ 2. overlap    : footprint grid test; push to nearest free pose (expanding ring search);
+  │                   the part being edited (`movingId`) is placed last and yields
+  ├─ 3. ground     : pose.y from terrain, legs per STRUCT port (runs before dock: ports need final heights)
+  ├─ 4. dock       : opposing PRESS ports within 1.5 m, ±15°, lateral ≤ 0.5 m → a short tube bridge
+  ├─ 5. tubes      : for each player link of kind 'tube': route on a 1 m lattice (A*, 8 headings,
+  │                   turn penalty, hull footprints blocked); insert nodes on >24 m or >2 kinks;
+  │                   derived nodes are grounded here
   ├─ 6. power      : union-find networks; cable routes (A* on grid, tubes passable via pylon hop)
   ├─ 7. paths      : EXT ports → origins; wear field advanced by sim traffic (sim writes, solver reads)
   ├─ 8. decorators : stencils (serial), handrails, lights, chevrons, dust side (wind dir from seed)
@@ -146,7 +154,18 @@ document
 
 Each stage is a pure function `(ResolvedBase, Document) → ResolvedBase` in its own file under `src/grammar/solver/`. Incremental: stages take a dirty set of part ids and only recompute affected regions (tube routing is bounded by a bbox query against a spatial hash).
 
-### 4.3 Snapping and the ghost
+### 4.3 State of the solver (M1) and known limits
+
+Implemented: place, overlap, ground, dock, tubes (with node insertion and a wider-clearance retry that rolls back cleanly). Not yet: power, paths, decorators, beacon, diagnose. The `Diagnostic` kinds in use are `unknown-letter`, `moved`, `unplaceable`, `link-skipped`, `tube-unroutable`, `tube-too-long`; a failed route falls back to a tight tube plus a diagnostic, never an error (P1).
+
+Known limits:
+
+- Tubes leave horizontal-normal PRESS ports only; the node's `top` port cannot take a tube yet.
+- Growing a hab on a 45° yaw can drift the fixed end by a grid step (poses snap to 1 m).
+- The terrain edge is visible when zoomed out far.
+- Solving 200 parts takes ~13–16 ms against the 2 ms target; it needs incremental solving (`docs/PERF.md`).
+
+### 4.4 Snapping and the ghost
 
 The ghost preview runs the same solver on a scratch document with the proposed part, so what the player sees is exactly what they get. The ghost renders with the `ghost` material override (hull colour at 50%, no shadows) plus an arrow decorator when the resolved pose differs from the cursor by more than 0.25 m.
 
@@ -213,7 +232,7 @@ Decorators and repeated parts (solar panels, lights, crew) are `InstancedMesh` w
 ## 8. Editor
 
 - **App shell** (`editor/app.ts`): creates renderer, document store, solver, sim, tools; runs the frame loop.
-- **Document store** (`editor/store.ts`): holds the current document, applies `Command`s, keeps undo/redo stacks. Commands are pure `(doc) → doc` with an `invert`. Drag operations coalesce into one command on release.
+- **Document store** (`editor/store.ts`): holds the current document, applies `Command`s, keeps undo/redo stacks. Commands are pure `(doc) → doc`; undo is **snapshot-based** (the document is immutable, so a history entry is just the previous document, 200 deep). `beginGesture`/`endGesture` coalesce a drag into one entry. Undo/redo keys are Ctrl+Z and Ctrl+Shift+Z / Ctrl+Y (Q/E/`[`/`]` belong to the camera and clock).
 - **Tools** (`editor/tools/*`): a state machine with one active tool: `Select`, `Place(letter)`, `Grow`, `Connect`, `Terrain(brush)`, `PathPaint`, `Delete`, `Photo`. Tools receive normalised pointer events with a terrain hit and a part hit (raycast against footprint proxies, not render meshes).
 - **Ghost** (`editor/ghost.ts`): scratch document + solver + override materials.
 - **UI** (`editor/ui/*`): tray, rail, parameter handles (DOM elements positioned by projecting 3D anchors), hour dial, toast. State via signals.
