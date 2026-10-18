@@ -20,8 +20,8 @@ export class CameraRig {
 
   private yaw = Math.PI / 4;
   private yawGoal = Math.PI / 4;
-  private distance = 42;
-  private distanceGoal = 42;
+  private distance = 70;
+  private distanceGoal = 70;
   private readonly pitch: number;
   private readonly yawStep: number;
   private readonly minDistance: number;
@@ -36,7 +36,7 @@ export class CameraRig {
     this.pitch = MathUtils.degToRad(opts.pitchDeg ?? 38);
     this.yawStep = (Math.PI * 2) / (opts.yawSteps ?? 8);
     this.minDistance = opts.minDistance ?? 12;
-    this.maxDistance = opts.maxDistance ?? 90;
+    this.maxDistance = opts.maxDistance ?? 120;
     this.camera = new PerspectiveCamera(opts.fovDeg ?? 22, 1, 0.5, 400);
 
     el.addEventListener('pointerdown', this.onDown);

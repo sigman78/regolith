@@ -5,13 +5,13 @@
  * the pieces it uses (terrain, sky, materials, hab) are keepers.
  */
 import {
-  Clock,
   Color,
   DirectionalLight,
   Fog,
   HemisphereLight,
-  PCFSoftShadowMap,
+  PCFShadowMap,
   Scene,
+  Timer,
   WebGLRenderer,
 } from 'three';
 import { generateTerrain, heightAt } from '@/world/terrain';
@@ -25,7 +25,7 @@ const canvas = document.getElementById('view') as HTMLCanvasElement;
 const renderer = new WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = PCFSoftShadowMap;
+renderer.shadowMap.type = PCFShadowMap;
 
 const scene = new Scene();
 scene.fog = new Fog(new Color('#e8c39a'), 60, 220);
@@ -46,8 +46,8 @@ sun.shadow.camera.left = -50;
 sun.shadow.camera.right = 50;
 sun.shadow.camera.top = 50;
 sun.shadow.camera.bottom = -50;
-sun.shadow.normalBias = 0.03;
-sun.shadow.bias = -0.0005;
+sun.shadow.normalBias = 0.06;
+sun.shadow.bias = -0.0002;
 scene.add(sun);
 scene.add(sun.target);
 const hemi = new HemisphereLight(0xffffff, 0x000000, 1);
@@ -100,9 +100,10 @@ function resize(): void {
 window.addEventListener('resize', resize);
 resize();
 
-const clock = new Clock();
+const timer = new Timer();
 function frame(): void {
-  const dt = Math.min(clock.getDelta(), 0.1);
+  timer.update();
+  const dt = Math.min(timer.getDelta(), 0.1);
   rig.update(dt);
   applySky();
   renderer.render(scene, rig.camera);
