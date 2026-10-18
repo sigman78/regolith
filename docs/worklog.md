@@ -24,3 +24,4 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-17 21:58 · 6c15313 · Plan and design guide: tower V, slab P, mast M, power plant E pulled into M1; new letter C (launcher)
 - 2026-10-17 21:59 · f4e469e · Shared plumbing: `warning` material, bevel box/cylinder/rod helpers, part summaries, tray and hotkeys built from the registry
 - 2026-10-17 22:01 · cdc1539 · Letter P slab as a raised deck; solver stands parts on slab tops, slabs only collide with slabs, tubes clear slab tops
+- 2026-10-17 22:03 · b390d1c · Letter V tower: 2–5 floors, ground and upper-floor PRESS ports, tube from an upper port tested

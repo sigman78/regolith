@@ -160,3 +160,42 @@ export const TOWER_STRIPE_HALF = 0.25;
 export const TOWER_STRIPE_BELOW_TOP = 0.6;
 /** Rib thickness between floors and at the top rim. */
 export const TOWER_RIB_THICK = 0.2;
+
+// ---- Mast (letter M) --------------------------------------------------------
+
+/** Lattice height options, metres. */
+export const MAST_HEIGHTS = [6, 12, 20] as const;
+/** Head kinds as numbers (params are numeric): 0 dish, 1 whip, 2 relay. */
+export const MAST_HEADS = [0, 1, 2] as const;
+export const MAST_HEAD_DISH = 0;
+export const MAST_HEAD_WHIP = 1;
+export const MAST_HEAD_RELAY = 2;
+export const MAST_BASE_RADIUS = 1.1;
+export const MAST_BASE_THICK = 0.18;
+export const MAST_FOOTPRINT_MARGIN = 0.15;
+/** Feet sit this fraction of the base radius out from the axis. */
+export const MAST_FOOT_RADIAL = 0.8;
+/** Circumradius of the three-leg lattice at the base and at the top, metres. */
+export const MAST_LATTICE_R0 = 0.8;
+export const MAST_LATTICE_R1 = 0.35;
+export const MAST_LEG_RADIUS = 0.06;
+export const MAST_BRACE_RADIUS = 0.035;
+/** Target lattice section height, metres. */
+export const MAST_SECTION = 2;
+export const MAST_ROD_SEGMENTS = 6;
+export const MAST_BASE_SEGMENTS = 24;
+export const MAST_DISH_RADIUS = 1.1;
+/** Dish depth as a fraction of its radius, shell thickness, and tilt away from vertical. */
+export const MAST_DISH_DEPTH = 0.3;
+export const MAST_DISH_THICK = 0.05;
+export const MAST_DISH_TILT_DEG = 35;
+export const MAST_DISH_STEPS = 8;
+export const MAST_DISH_LIFT = 0.8;
+export const MAST_FEED_LENGTH = 1;
+export const MAST_WHIP_LENGTH = 3;
+export const MAST_WHIP_RADIUS = 0.035;
+export const MAST_RELAY_BOX = { w: 0.9, h: 0.7, d: 0.9 } as const;
+export const MAST_RELAY_LIFT = 0.6;
+/** Beacon ball on every head. */
+export const MAST_BEACON_RADIUS = 0.15;
+export const MAST_BEACON_SEGMENTS = 12;

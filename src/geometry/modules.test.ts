@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { allParts, getPart } from '@/grammar/registry';
 import type { ParamSchema, ParamValues } from '@/grammar/types';
 import { buildBundle } from './build';
-import { SLAB_THICK, TOWER_CAP_RATIO, TOWER_FLOOR_HEIGHT, TOWER_RADIUS } from './design-constants';
+import {
+  MAST_BASE_RADIUS,
+  MAST_HEADS,
+  MAST_HEIGHTS,
+  SLAB_THICK,
+  TOWER_CAP_RATIO,
+  TOWER_FLOOR_HEIGHT,
+  TOWER_RADIUS,
+} from './design-constants';
 import { assertValidBundle } from './validate';
 
 /** Every combination of choice/toggle values and the min / default / max of each range. */
@@ -132,6 +140,42 @@ describe('tower geometry', () => {
         expect(q.position[1]).toBeLessThan(floors * TOWER_FLOOR_HEIGHT);
       }
       for (const q of ports.filter((s) => s.type === 'STRUCT')) expect(q.position[1]).toBe(0);
+    }
+  });
+});
+
+describe('mast geometry', () => {
+  const M = getPart('M');
+
+  it('is as tall as asked plus its head, whatever the head', () => {
+    if (!M) throw new Error('M is not registered');
+    for (const height of MAST_HEIGHTS) {
+      const heights: number[] = [];
+      for (const head of MAST_HEADS) {
+        const { bounds } = buildBundle(M.geometry(M.resolve({ height, head }), { seed: 't' }));
+        expect(bounds.min[1]).toBeCloseTo(0, 5);
+        expect(bounds.max[1]).toBeGreaterThan(height);
+        expect(bounds.max[1]).toBeLessThan(height + 4);
+        heights.push(bounds.max[1]);
+      }
+      // The three heads differ, so the head param is visible.
+      expect(new Set(heights.map((h) => h.toFixed(3))).size).toBe(3);
+    }
+  });
+
+  it('puts the POWER port on the base plate rim and the feet under the plate', () => {
+    if (!M) throw new Error('M is not registered');
+    const ports = M.ports(M.resolve({}));
+    const power = ports.find((q) => q.type === 'POWER');
+    expect(power && Math.hypot(power.position[0], power.position[2])).toBeCloseTo(
+      MAST_BASE_RADIUS,
+      9,
+    );
+    const feet = ports.filter((q) => q.type === 'STRUCT');
+    expect(feet).toHaveLength(3);
+    for (const f of feet) {
+      expect(f.position[1]).toBe(0);
+      expect(Math.hypot(f.position[0], f.position[2])).toBeLessThan(MAST_BASE_RADIUS);
     }
   });
 });

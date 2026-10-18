@@ -148,10 +148,10 @@ describe('solver: resolves instead of rejecting (P1)', () => {
   it('reports unknown letters instead of throwing', () => {
     const world = worldFor('unknown');
     let doc = createDocument({ seed: 'unknown' });
-    doc = addPart(doc, { id: 'x', letter: 'M', pose: { x: 0, z: 0, yaw: 0 } });
+    doc = addPart(doc, { id: 'x', letter: 'B', pose: { x: 0, z: 0, yaw: 0 } });
     const base = solve(doc, world);
     expect(base.parts.size).toBe(0);
-    expect(base.diagnostics).toEqual([{ kind: 'unknown-letter', part: 'x', letter: 'M' }]);
+    expect(base.diagnostics).toEqual([{ kind: 'unknown-letter', part: 'x', letter: 'B' }]);
   });
 });
 
