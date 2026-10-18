@@ -113,3 +113,39 @@ export function polygonGap(a: [number, number][], b: [number, number][]): number
   }
   return best;
 }
+
+/**
+ * Exact distance between two footprints at their poses (negative when they
+ * overlap). Used by the diagnose stage and tests, not by the hot path.
+ */
+export function footprintGap(
+  a: { fp: Footprint; pose: Pose },
+  b: { fp: Footprint; pose: Pose },
+): number {
+  if (a.fp.kind === 'disc' && b.fp.kind === 'disc') {
+    return Math.hypot(a.pose.x - b.pose.x, a.pose.z - b.pose.z) - a.fp.r - b.fp.r;
+  }
+  if (a.fp.kind === 'rect' && b.fp.kind === 'rect') {
+    return polygonGap(rectCorners(a.fp.hx, a.fp.hz, a.pose), rectCorners(b.fp.hx, b.fp.hz, b.pose));
+  }
+  const [disc, rect] = a.fp.kind === 'disc' ? [a, b] : [b, a];
+  if (disc.fp.kind !== 'disc' || rect.fp.kind !== 'rect') return Infinity;
+  // Disc centre in the rect's frame, then its distance to the box.
+  const [lx, , lz] = rotateY(
+    [disc.pose.x - rect.pose.x, 0, disc.pose.z - rect.pose.z],
+    -rect.pose.yaw,
+  );
+  const dx = Math.max(Math.abs(lx) - rect.fp.hx, 0);
+  const dz = Math.max(Math.abs(lz) - rect.fp.hz, 0);
+  if (dx === 0 && dz === 0) {
+    return -Math.min(rect.fp.hx - Math.abs(lx), rect.fp.hz - Math.abs(lz)) - disc.fp.r;
+  }
+  return Math.hypot(dx, dz) - disc.fp.r;
+}
+
+/** Whether (x, z) lies inside the footprint placed at `pose`. */
+export function footprintContains(fp: Footprint, pose: Pose, x: number, z: number): boolean {
+  if (fp.kind === 'disc') return Math.hypot(x - pose.x, z - pose.z) <= fp.r;
+  const [lx, , lz] = rotateY([x - pose.x, 0, z - pose.z], -pose.yaw);
+  return Math.abs(lx) <= fp.hx && Math.abs(lz) <= fp.hz;
+}
