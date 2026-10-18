@@ -20,13 +20,15 @@ import {
   TUBE_MAX_KINKS,
   TUBE_MAX_SPAN,
   TUBE_PORT_EMBED,
+  TUBE_RADIUS,
 } from '@/geometry/design-constants';
 import { snapYaw, type Pose, type Yaw } from '@/core/math';
 import type { BaseDocument, Link, PartInstance } from '@/world/document';
-import { cellKey, footprintCells } from '../footprint';
+import { cellKey, cellOf, footprintCells } from '../footprint';
 import { getPart } from '../registry';
 import { portKey } from './dock';
 import { ground, type Grounded } from './ground';
+import { isHorizontal } from './ports';
 import { corners, DIRS, route, type Lattice } from './route';
 import { profileXZ, tubeFromPath } from './tube-path';
 import type { Diagnostic, Draft, ResolvedPort, ResolvedTube, SolverWorld } from './types';
@@ -58,6 +60,8 @@ export function tubesStage(
     for (const p of g.ports) ports.set(portKey(g.draft.instance.id, p.id), p);
   }
 
+  const cellsOf = new Map<string, number[]>();
+  for (const g of grounded) cellsOf.set(g.draft.instance.id, g.draft.cells);
   const result: TubesResult = { tubes: [], nodes: [] };
   const tubePoints = new Set<number>();
 
@@ -107,13 +111,17 @@ export function tubesStage(
       journal: { taken: [], used: [], points: [] },
     };
     const ends = { a: { ref: link.a, port: pa }, b: { ref: link.b, port: pb } };
+    const own = {
+      a: new Set(cellsOf.get(link.a.part)),
+      b: new Set(cellsOf.get(link.b.part)),
+    };
 
     // Prefer a route with room for a node wherever one might be needed: first
     // hugging the obstacles, then with a wide berth. If neither works, build
     // the tight route anyway and flag it.
     let done = false;
     for (const clearance of [0, NODE_CLEARANCE]) {
-      const route = routeLink(pa, pb, taken, tubePoints, clearance);
+      const route = routeLink(pa, pb, taken, tubePoints, clearance, own);
       if (!route.routed) continue;
       const m = checkpoint(ctx);
       if (build(ctx, { dense: route.dense, ...ends }, 0, true)) {
@@ -123,7 +131,7 @@ export function tubesStage(
       rollback(ctx, m);
     }
     if (!done) {
-      const route = routeLink(pa, pb, taken, tubePoints, 0);
+      const route = routeLink(pa, pb, taken, tubePoints, 0, own);
       if (!route.routed) diagnostics.push({ kind: 'tube-unroutable', tube: `tube:${key}` });
       build(ctx, { dense: route.dense, ...ends }, 0, false);
     }
@@ -208,6 +216,10 @@ const NODE_R = NODE_RADII[0];
 const MAX_DEPTH = 4;
 /** Extra cells of clearance around a route that must leave room for a node (radius + margin). */
 const NODE_CLEARANCE = 2;
+/** Gap kept between a node's flange and the nearest earlier tube, on top of the tube radius. */
+const NODE_TUBE_MARGIN = 0.75;
+/** Spacing of the samples used to check that a port's straight lead is clear. */
+const LEAD_STEP = 0.25;
 
 /**
  * Turn a piece into tubes, splitting with nodes as needed. In strict mode a
@@ -307,6 +319,10 @@ function insertNode(ctx: Ctx, piece: Piece): [Piece, Piece] | null {
   if (!def) return null;
   const params = def.resolve({ size: NODE_R });
   const footprint = def.footprint(params);
+  const nodeReach =
+    (footprint.kind === 'rect' ? Math.hypot(footprint.hx, footprint.hz) : footprint.r) +
+    TUBE_RADIUS +
+    NODE_TUBE_MARGIN;
 
   let best: { i: number; score: number; yaw: Yaw } | null = null;
   for (let i = 1; i + 1 < d.length; i++) {
@@ -321,6 +337,7 @@ function insertNode(ctx: Ctx, piece: Piece): [Piece, Piece] | null {
     const yaw = snapYaw(-45 * k);
     const cells = footprintCells(footprint, { x: p[0], y: 0, z: p[1], yaw });
     if (cells.some((c) => ctx.taken.has(c))) continue;
+    if (nearTube(ctx.tubePoints, p, nodeReach)) continue;
     const score = Math.abs(s - total / 2);
     if (!best || score < best.score) best = { i, score, yaw };
   }
@@ -375,6 +392,18 @@ function insertNode(ctx: Ctx, piece: Piece): [Piece, Piece] | null {
   ];
 }
 
+/** Does an earlier tube have a lattice point within `reach` of (c)? */
+function nearTube(points: Set<number>, c: XZ, reach: number): boolean {
+  const r = Math.ceil(reach);
+  for (let dz = -r; dz <= r; dz++) {
+    for (let dx = -r; dx <= r; dx++) {
+      if (dx * dx + dz * dz > reach * reach) continue;
+      if (points.has(cellKey(c[0] + dx, c[1] + dz))) return true;
+    }
+  }
+  return false;
+}
+
 /** Is the polyline one straight line within `reach` metres of point i on both sides? */
 function straightAround(d: XZ[], arc: number[], i: number, reach: number): boolean {
   const here = seg(d, i);
@@ -403,7 +432,7 @@ function dedupe(points: XZ[]): XZ[] {
 // ---- Routing a link -------------------------------------------------------------
 
 function horizontal(p: ResolvedPort): boolean {
-  return Math.abs(p.normal[1]) < 1e-6;
+  return isHorizontal(p.normal);
 }
 
 function heading(p: ResolvedPort): number {
@@ -449,6 +478,25 @@ function leadPoint(p: ResolvedPort, k: number, free: (x: number, z: number) => b
   return [x0, z0];
 }
 
+/** Does the straight lead from a port to its first lattice point stay off every hull but the port's own (`own`)? */
+function leadClear(p: ResolvedPort, q: Lattice, taken: Set<number>, own: Set<number>): boolean {
+  const px = p.position[0];
+  const pz = p.position[2];
+  const steps = Math.max(1, Math.ceil(Math.hypot(q[0] - px, q[1] - pz) / LEAD_STEP));
+  for (let s = 0; s <= steps; s++) {
+    const x = px + ((q[0] - px) * s) / steps;
+    const z = pz + ((q[1] - pz) * s) / steps;
+    // The four cells around the sample: a tube is about as wide as one cell.
+    for (const dz of [-0.5, 0.5]) {
+      for (const dx of [-0.5, 0.5]) {
+        const key = cellKey(cellOf(x + dx), cellOf(z + dz));
+        if (taken.has(key) && !own.has(key)) return false;
+      }
+    }
+  }
+  return true;
+}
+
 /**
  * Dense (x,z) route from port a to port b, exact at both ends. `routed` is
  * false when no lattice route exists; `dense` is then a straight fallback.
@@ -459,6 +507,7 @@ function routeLink(
   taken: Set<number>,
   tubePoints: Set<number>,
   clearance: number,
+  own: { a: Set<number>; b: Set<number> },
 ): { dense: XZ[]; routed: boolean } {
   const ka = heading(pa);
   const kb = heading(pb);
@@ -469,6 +518,20 @@ function routeLink(
   const qa = leadPoint(pa, ka, hullFree);
   const qb = leadPoint(pb, kb, hullFree);
   const goalHeading = (kb + 4) % 8;
+
+  // A port that stares at another hull cannot leave straight: walking the lead out
+  // past that hull would put the tube through it. Hand back the flagged fallback.
+  if (!leadClear(pa, qa, taken, own.a) || !leadClear(pb, qb, taken, own.b)) {
+    return {
+      dense: dedupe([
+        [pa.position[0], pa.position[2]],
+        [qa[0], qa[1]],
+        [qb[0], qb[1]],
+        [pb.position[0], pb.position[2]],
+      ]),
+      routed: false,
+    };
+  }
 
   // The route's own endpoints must be usable even if a neighbour's cells touch them.
   const withEnds =
