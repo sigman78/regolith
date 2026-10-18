@@ -6,6 +6,10 @@ import {
   MAST_BASE_RADIUS,
   MAST_HEADS,
   MAST_HEIGHTS,
+  REACTOR_FIN_REACH,
+  REACTOR_HEIGHT_RATIO,
+  REACTOR_PORT_Y,
+  REACTOR_RADII,
   SLAB_THICK,
   TOWER_CAP_RATIO,
   TOWER_FLOOR_HEIGHT,
@@ -176,6 +180,31 @@ describe('mast geometry', () => {
     for (const f of feet) {
       expect(f.position[1]).toBe(0);
       expect(Math.hypot(f.position[0], f.position[2])).toBeLessThan(MAST_BASE_RADIUS);
+    }
+  });
+});
+
+describe('power plant geometry', () => {
+  const E = getPart('E');
+
+  it('has three POWER ports on the drum, four feet under it, and fins inside the footprint', () => {
+    if (!E) throw new Error('E is not registered');
+    for (const radius of REACTOR_RADII) {
+      const p = E.resolve({ radius });
+      const ports = E.ports(p);
+      const power = ports.filter((q) => q.type === 'POWER');
+      expect(power).toHaveLength(3);
+      for (const q of power) {
+        expect(Math.hypot(q.position[0], q.position[2])).toBeCloseTo(radius, 9);
+        expect(q.position[1]).toBe(REACTOR_PORT_Y);
+      }
+      expect(ports.filter((q) => q.type === 'STRUCT')).toHaveLength(4);
+
+      const { bounds } = buildBundle(E.geometry(p, { seed: 't' }));
+      expect(bounds.min[1]).toBeCloseTo(0, 5);
+      // Fins reach out REACTOR_FIN_REACH of the radius beyond the hull.
+      expect(bounds.max[0]).toBeGreaterThan(radius * (1 + REACTOR_FIN_REACH) - 0.2);
+      expect(bounds.max[1]).toBeGreaterThan(radius * REACTOR_HEIGHT_RATIO);
     }
   });
 });

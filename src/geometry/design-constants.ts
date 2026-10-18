@@ -199,3 +199,33 @@ export const MAST_RELAY_LIFT = 0.6;
 /** Beacon ball on every head. */
 export const MAST_BEACON_RADIUS = 0.15;
 export const MAST_BEACON_SEGMENTS = 12;
+
+// ---- Power plant (letter E) -------------------------------------------------
+
+/** Drum radius for size S / M, metres. */
+export const REACTOR_RADII = [2, 3] as const;
+/** Drum height as a multiple of its radius, and dome cap depth as a fraction of it. */
+export const REACTOR_HEIGHT_RATIO = 1.4;
+export const REACTOR_CAP_RATIO = 0.35;
+export const REACTOR_CAP_STEPS = 6;
+export const REACTOR_SEGMENTS = 32;
+export const REACTOR_FOOTPRINT_MARGIN = 0.15;
+/** Four feet on the flat underside, radial distance as a fraction of the radius. */
+export const REACTOR_FOOT_RADIAL = 0.7;
+/** Radiator fins: count, reach beyond the hull as a fraction of the radius, thickness, and the fraction of the drum height they span (from the top down). */
+export const REACTOR_FIN_COUNT = 8;
+export const REACTOR_FIN_REACH = 0.3;
+export const REACTOR_FIN_THICK = 0.08;
+export const REACTOR_FIN_SPAN = 0.55;
+/** Fins start this far inside the hull so no gap shows. */
+export const REACTOR_FIN_EMBED = 0.1;
+/** Hazard band: centre height as a fraction of the drum height, and half width. */
+export const REACTOR_BAND_AT = 0.3;
+export const REACTOR_BAND_HALF = 0.22;
+export const REACTOR_BAND_PROUD = 0.012;
+/** Rib thickness at the base and top rim. */
+export const REACTOR_RIB_THICK = 0.22;
+/** POWER ports: height above the base, and the junction box that marks each one. */
+export const REACTOR_PORT_Y = 0.9;
+export const REACTOR_PORT_COUNT = 3;
+export const REACTOR_JUNCTION = { radial: 0.3, h: 0.5, tangent: 0.5 } as const;

@@ -2,6 +2,7 @@
  * The alphabet as shipped. Letters are added here as milestones unlock them
  * (PLAN.md); the alphabet is frozen per milestone.
  */
+import { E } from './parts/E';
 import { H } from './parts/H';
 import { M } from './parts/M';
 import { N } from './parts/N';
@@ -9,7 +10,7 @@ import { P } from './parts/P';
 import { V } from './parts/V';
 import type { Letter, PartDefinition } from './types';
 
-const DEFINITIONS: readonly PartDefinition[] = [H, N, V, P, M];
+const DEFINITIONS: readonly PartDefinition[] = [H, N, V, P, M, E];
 
 const BY_LETTER: ReadonlyMap<Letter, PartDefinition> = new Map(
   DEFINITIONS.map((d) => [d.letter, d]),

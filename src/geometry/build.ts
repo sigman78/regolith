@@ -10,6 +10,7 @@ import { buildLegFoot, buildLegStrut } from './leg';
 import { buildMast } from './mast';
 import { buildNode } from './node';
 import { buildSlab } from './slab';
+import { buildReactor } from './reactor';
 import { buildTower } from './tower';
 import { buildTube } from './tube';
 
@@ -35,6 +36,9 @@ export function buildBundle(recipe: GeometryRecipe): GeometryBundle {
         break;
       case 'slab':
         buildSlab(out, op);
+        break;
+      case 'reactor':
+        buildReactor(out, op);
         break;
       case 'mast':
         buildMast(out, op);

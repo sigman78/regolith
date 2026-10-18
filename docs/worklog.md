@@ -25,3 +25,4 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-17 21:59 · f4e469e · Shared plumbing: `warning` material, bevel box/cylinder/rod helpers, part summaries, tray and hotkeys built from the registry
 - 2026-10-17 22:01 · cdc1539 · Letter P slab as a raised deck; solver stands parts on slab tops, slabs only collide with slabs, tubes clear slab tops
 - 2026-10-17 22:03 · b390d1c · Letter V tower: 2–5 floors, ground and upper-floor PRESS ports, tube from an upper port tested
+- 2026-10-17 22:04 · 3e92332 · Letter M radio mast: 6/12/20 m lattice with dish, whip or relay head, accent beacon, inert POWER port
