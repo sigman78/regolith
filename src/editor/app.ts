@@ -48,6 +48,11 @@ import { Halos } from './ui/halos';
 import { ParamsPanel } from './ui/params-panel';
 import { Tray } from './ui/tray';
 
+/** Active rendering is capped at 60 fps; idle redraws at 2 fps (see the loop). */
+const ACTIVE_FRAME_MS = 1000 / 60;
+const IDLE_FRAME_MS = 500;
+const MAX_PIXEL_RATIO = 1.5;
+
 export function startApp(canvas: HTMLCanvasElement): void {
   const params = new URLSearchParams(window.location.search);
   const seed = params.get('seed') ?? 'olympus-07';
@@ -55,17 +60,30 @@ export function startApp(canvas: HTMLCanvasElement): void {
   if (!Number.isFinite(hour)) hour = 15.5;
 
   // ---- rendering ---------------------------------------------------------------
-  const renderer = new WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const quality = parseQuality(params.get('quality'));
+  // The composer resolves its own 4x MSAA target, so the canvas only needs it on the direct path.
+  const renderer = new WebGLRenderer({ canvas, antialias: quality === 'low' });
+  // Fill rate is the cost that grows with screen density; 1.5 is the cap (retina is 2, 4K laptops 2+).
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFShadowMap;
+  // The shadow box is fitted to the base, so shadows only change with the hour, an edit or an animation.
+  renderer.shadowMap.autoUpdate = false;
 
   const scene = new Scene();
   const lighting = new Lighting(scene, renderer);
   const rig = new CameraRig(canvas);
-  const post = new PostChain(renderer, scene, rig.camera, parseQuality(params.get('quality')));
+  const post = new PostChain(renderer, scene, rig.camera, quality);
+
+  // Render-on-demand state: `wake` says the picture is stale (see the frame loop).
+  let dirty = true;
+  let shadowDirty = true;
+  function wake(shadows = false): void {
+    dirty = true;
+    if (shadows) shadowDirty = true;
+  }
 
   // ---- document, terrain, solver -----------------------------------------------
   const initial = createDocument({ seed });
@@ -88,6 +106,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
   const resolve = (): void => {
     resolved = solve(store.doc, world, movingId ? { movingId } : {});
     sync.sync(resolved);
+    wake(true);
     // Rocks yield to the base but stay put while a part is being dragged (SCATTER §4).
     if (!movingId) scatter.update(rocks, resolved.keepOut, gridSize);
     fitShadowToBase();
@@ -325,6 +344,11 @@ export function startApp(canvas: HTMLCanvasElement): void {
       selected = null;
       refreshUi();
     }
+    if (key === 'f2') {
+      // Ambient occlusion is the expensive part; this is the quick way to trade it for battery.
+      post.setQuality(post.current === 'high' ? 'medium' : 'high');
+      wake(true);
+    }
     if (key === '[') hour -= 0.5;
     if (key === ']') hour += 0.5;
     if (key === 'q') rig.rotateStep(-1);
@@ -342,31 +366,58 @@ export function startApp(canvas: HTMLCanvasElement): void {
   window.addEventListener('resize', resize);
   resize();
 
+  // Render on demand: draw only while something changes (input, easing, an animation, an edit,
+  // the hour), at most 60 times a second, with a slow heartbeat while idle so a missed wake-up
+  // shows up as a stale frame for half a second rather than forever.
   const timer = new Timer();
-  function frame(): void {
+  let lastRender = -Infinity;
+  let shownHour = Number.NaN;
+  for (const type of ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'keydown', 'keyup']) {
+    window.addEventListener(type, () => wake(), { passive: true });
+  }
+  window.addEventListener('resize', () => wake());
+
+  function frame(now: number): void {
+    requestAnimationFrame(frame);
+    const due = dirty ? now - lastRender >= ACTIVE_FRAME_MS - 1 : now - lastRender >= IDLE_FRAME_MS;
+    if (!due) return;
+    lastRender = now;
+
     timer.update();
     const dt = Math.min(timer.getDelta(), 0.1);
-    rig.update(dt);
+    let again = rig.update(dt);
     sync.tick(dt);
     scatter.tick(dt);
+    const animating = sync.animating || scatter.animating;
+    again = again || animating;
+
+    if (hour !== shownHour) {
+      shownHour = hour;
+      shadowDirty = true;
+    }
     lighting.apply(hour, rig.target);
     renderer.toneMappingExposure = lighting.exposure;
     handles?.update();
     halos?.update();
     post.setBloomThreshold(lighting.bloomThreshold);
+    if (shadowDirty || animating) renderer.shadowMap.needsUpdate = true;
+    shadowDirty = false;
     post.render(dt);
-    requestAnimationFrame(frame);
+    dirty = again;
   }
-  frame();
+  requestAnimationFrame(frame);
 
   if (import.meta.env.DEV || params.has('debug')) {
     // Handle for tests and screenshot scripts; not part of the product.
     (window as unknown as Record<string, unknown>)['__regolith'] = {
       store,
       cmd,
+      renderer,
+      post,
       base: () => resolved,
       setHour: (h: number) => {
         hour = h;
+        wake(true);
       },
       rig,
       select: (id: PartId | null) => {

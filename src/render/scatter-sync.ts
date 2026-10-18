@@ -50,6 +50,11 @@ export class ScatterSync {
     scene.add(this.root);
   }
 
+  /** Rocks are still fading in. */
+  get animating(): boolean {
+    return this.age.size > 0;
+  }
+
   /** Instance count over all batches (tests and the HUD). */
   get count(): number {
     return this.set.count;

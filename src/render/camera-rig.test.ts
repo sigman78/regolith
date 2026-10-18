@@ -36,3 +36,28 @@ describe('camera pan', () => {
     }
   });
 });
+
+describe('camera rig change reporting (render on demand)', () => {
+  it('reports a moving view until the easing has settled, then nothing', () => {
+    const r = rig();
+    r.update(0);
+    expect(r.update(0.016)).toBe(false); // nothing asked for: idle
+    r.rotateStep(1);
+    expect(r.update(0.016)).toBe(true);
+    let frames = 0;
+    while (r.update(0.016) && frames < 600) frames++;
+    expect(frames).toBeLessThan(600); // it ends instead of creeping toward the goal forever
+    expect(r.update(0.016)).toBe(false);
+  });
+
+  it('reports a pan and a zoom as changes', () => {
+    const r = rig();
+    r.update(0);
+    r.panBy(10, 10);
+    expect(r.update(0.016)).toBe(true);
+    expect(r.update(0.016)).toBe(false);
+    r.setDistance(40);
+    expect(r.update(0.016)).toBe(true);
+    expect(r.update(0.016)).toBe(false);
+  });
+});
