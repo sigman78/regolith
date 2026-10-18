@@ -22,6 +22,7 @@ import {
   MAST_HEAD_WHIP,
   MAST_HEIGHTS,
 } from '@/geometry/design-constants';
+import { mastBeacon } from '../lamps';
 import { readChoice } from '../params';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
@@ -97,5 +98,9 @@ export const M: PartDefinition<MastParams> = {
   summary(p) {
     const head = p.head === MAST_HEAD_DISH ? 'dish' : p.head === MAST_HEAD_WHIP ? 'whip' : 'relay';
     return `${p.height} m ${head}`;
+  },
+
+  beacon(p) {
+    return mastBeacon(p.height, p.head);
   },
 };

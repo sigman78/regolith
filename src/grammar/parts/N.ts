@@ -17,6 +17,7 @@ import {
   NODE_PRESS_DIRS,
   NODE_RADII,
 } from '@/geometry/design-constants';
+import { beaconOn } from '../lamps';
 import { readChoice } from '../params';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
@@ -91,5 +92,9 @@ export const N: PartDefinition<NodeParams> = {
 
   geometry(p) {
     return { ops: [{ kind: 'node', radius: p.size }] };
+  },
+
+  beacon(p) {
+    return beaconOn(p.size);
   },
 };

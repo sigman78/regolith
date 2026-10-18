@@ -17,8 +17,7 @@ export type MaterialName =
   | 'warning'
   | 'rock'
   | 'solar'
-  | 'solarCell'
-  | 'light';
+  | 'solarCell';
 
 export interface MaterialBuffers {
   positions: Float32Array;

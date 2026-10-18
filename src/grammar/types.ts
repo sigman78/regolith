@@ -121,4 +121,9 @@ export interface PartDefinition<P extends ParamValues = ParamValues> {
   handles?(params: P): HandleSpec[];
   /** Short size note for the selection tooltip, e.g. '8 m'. */
   summary?(params: P): string;
+  /**
+   * Where the base's beacon ball would sit on this part (local frame), resting on its top. Absent =
+   * this part cannot carry the beacon. The tallest part that can owns it (grammar/beacon.ts).
+   */
+  beacon?(params: P): Vec3;
 }

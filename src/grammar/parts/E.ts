@@ -11,13 +11,16 @@
  */
 import {
   LEG_MIN_CLEARANCE,
+  REACTOR_CAP_RATIO,
   REACTOR_FIN_REACH,
   REACTOR_FOOTPRINT_MARGIN,
   REACTOR_FOOT_RADIAL,
+  REACTOR_HEIGHT_RATIO,
   REACTOR_PORT_COUNT,
   REACTOR_PORT_Y,
   REACTOR_RADII,
 } from '@/geometry/design-constants';
+import { beaconOn } from '../lamps';
 import { readChoice } from '../params';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
@@ -95,5 +98,9 @@ export const E: PartDefinition<ReactorParams> = {
 
   summary(p) {
     return p.radius === REACTOR_RADII[0] ? 'small' : 'large';
+  },
+
+  beacon(p) {
+    return beaconOn(p.radius * (REACTOR_HEIGHT_RATIO + REACTOR_CAP_RATIO));
   },
 };

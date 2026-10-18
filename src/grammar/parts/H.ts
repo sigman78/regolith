@@ -23,6 +23,7 @@ import {
   LEG_MIN_CLEARANCE,
   RIB_SPACING,
 } from '@/geometry/design-constants';
+import { beaconOn } from '../lamps';
 import { readChoice, readRange } from '../params';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
@@ -144,5 +145,13 @@ export const H: PartDefinition<HabParams> = {
 
   summary(p) {
     return `${p.length} m`;
+  },
+
+  beacon(p) {
+    // On top of the hull in the middle of a rib gap, so no rib flange hides the ball.
+    const half = p.length / 2;
+    const step = p.length / Math.max(1, Math.round(p.length / RIB_SPACING));
+    const rib = -half + Math.round(half / step) * step;
+    return beaconOn(p.radius, Math.abs(rib) < step / 2 ? step / 2 : 0);
   },
 };

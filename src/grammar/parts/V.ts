@@ -14,6 +14,7 @@
  */
 import {
   LEG_MIN_CLEARANCE,
+  TOWER_CAP_RATIO,
   TOWER_FLOORS,
   TOWER_FLOOR_HEIGHT,
   TOWER_FOOTPRINT_MARGIN,
@@ -22,6 +23,7 @@ import {
   TOWER_RADIUS,
 } from '@/geometry/design-constants';
 import type { Vec3 } from '@/core/math';
+import { beaconOn } from '../lamps';
 import { readRange } from '../params';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
@@ -111,5 +113,9 @@ export const V: PartDefinition<TowerParams> = {
 
   summary(p) {
     return `${p.floors} floors`;
+  },
+
+  beacon(p) {
+    return beaconOn(p.floors * TOWER_FLOOR_HEIGHT + TOWER_RADIUS * TOWER_CAP_RATIO);
   },
 };

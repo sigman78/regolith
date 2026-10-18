@@ -33,7 +33,7 @@ import { silhouetteSlots, slotsKey, type Slot } from '@/sim/silhouettes';
 import { CrewSilhouettes } from '@/render/crew-silhouettes';
 import { CrewOutdoors } from '@/render/crew-outdoors';
 import { Lamps } from '@/render/lamps';
-import { airlockLamps, lampsKey, type LampSlot } from '@/sim/lamps';
+import { baseLamps, lampsKey, type LampSlot } from '@/sim/lamps';
 import { GRID } from '@/geometry/design-constants';
 import { wearOf } from '@/grammar/solver/wear';
 import { ScatterSync } from '@/render/scatter-sync';
@@ -484,7 +484,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
   let appliedBase: ResolvedBase | null = null;
   let slotsWake = -Infinity;
   let slotsTick = -1;
-  // Airlock lamps change colour with the cycle (an event); crew walking outside redraw at the tick rate.
+  // Lamps (airlock cycle colours, pole heads, the beacon) change on events; crew walking outside redraw at the tick rate.
   let lampList: LampSlot[] = [];
   let lampsNow = '';
   let lampsShown = '';
@@ -515,7 +515,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
       slots = silhouetteSlots(sim.crew, resolved);
       slotsNow = slotsKey(slots);
       slotsBase = resolved;
-      lampList = airlockLamps(sim.crew, resolved);
+      lampList = baseLamps(sim.crew, resolved);
       lampsNow = lampsKey(lampList);
       outPoints = sim.points(crewWorldNow());
       let out = 0;
