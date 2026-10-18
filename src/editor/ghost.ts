@@ -82,7 +82,7 @@ export class Ghost {
         ...(at.mirror ? { mirror: true as const } : {}),
       };
       const doc = addPart(base, { id: GHOST_ID, letter, params, pose });
-      const solved = solve(doc, this.world, { movingId: GHOST_ID });
+      const solved = solve(doc, this.world, { movingId: GHOST_ID, lean: true });
       this.solves++;
       this.shown = solved.parts.get(GHOST_ID) ?? null;
 
@@ -113,7 +113,7 @@ export class Ghost {
     this.last = null;
     this.arrow.hide();
     const doc = addLink(this.getDoc(), link);
-    const base = solve(doc, this.world);
+    const base = solve(doc, this.world, { lean: true });
     const key = linkKey(link);
     const view: ResolvedBase = emptyBase();
     for (const t of base.tubes.values())

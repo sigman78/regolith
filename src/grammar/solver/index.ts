@@ -17,6 +17,7 @@ import { individualOf } from '../individual';
 import { diagnose } from './diagnose';
 import { dock } from './dock';
 import { flattenStage } from './flatten';
+import { buildGraph, emptyGraph } from './graph';
 import { keepOut } from './keepout';
 import { ground, isHost, type Grounded } from './ground';
 import { overlap } from './overlap';
@@ -34,6 +35,7 @@ import type {
 export type * from './types';
 export { linkKey } from './tubes';
 export { canTakeTube } from './ports';
+export { crossLength, graphComponents } from './graph';
 
 export function emptyBase(): ResolvedBase {
   return {
@@ -42,6 +44,7 @@ export function emptyBase(): ResolvedBase {
     usedPorts: new Set(),
     keepOut: new Uint8Array(0),
     terrain: null,
+    graph: emptyGraph(),
     diagnostics: [],
   };
 }
@@ -86,6 +89,7 @@ export function solve(
     usedPorts: used,
     keepOut: mask,
     terrain: field,
+    graph: opts.lean ? emptyGraph() : buildGraph(parts, tubes),
     diagnostics,
   };
   if (opts.diagnose) diagnostics.push(...diagnose(doc, base, { terrain: levelled, surface }));

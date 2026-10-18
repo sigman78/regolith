@@ -46,6 +46,11 @@ export const HAB_STRIPE_FROM_END = 1.4;
 export const HAB_STRIPE_VARIANTS = 3;
 /** Most a hull may lean from Hull white toward Hull shaded per instance (about 5% darker, a touch warmer). */
 export const INDIVIDUAL_TINT_MAX = 0.35;
+/** Walkable floor sits this far below a PRESS port or a part's origin (metres). */
+export const PRESS_FLOOR_DROP = 0.8;
+/** Pressurised cubic metres per crew member (crew = floor(volume / this), at most CREW_MAX). */
+export const CREW_VOLUME = 60;
+export const CREW_MAX = 24;
 /** Stencil cell size (a glyph is 5 x 7 cells: 22 x 32 cm), how far the paint stands off the hull, and where it sits on the flank (degrees from the top; windows are at 52). */
 export const STENCIL_CELL = 0.045;
 export const STENCIL_PROUD = 0.006;
