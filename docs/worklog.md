@@ -57,3 +57,5 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-17 23:13 · badec13 · Baked vertex tints through `tintUnderside` and `tintDust`; palette rows for both
 - 2026-10-17 23:18 · 5e7c85b · Scatter S1: solver keep-out stage, `world/scatter.ts`, instanced rocks, `rock` material and palette rows
 - 2026-10-17 23:21 · f47cfe9 · Inflate and deflate, tubes extend from their first port, docking clunk
+- 2026-10-17 23:24 · 4d41c4a · Docs: M2 status in PLAN (exit left unticked), worklog, PERF numbers, final 4×4 sheet in `docs/shots/m2/final/`
+- 2026-10-17 23:26 · 5191326 · Fix: camera pan inverted vertically and too fast; now grab-the-ground, tested at every yaw stop
