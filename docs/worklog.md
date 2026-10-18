@@ -91,3 +91,4 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-18 04:45 · 86a25ba · Proposal for M3.5 Human scale (flat-floor corridors, one deck height, floor-level ports, stairs) written into PLAN by Fable, to be built before M3 task 7
 - 2026-10-18 04:47 · ed17d08 · Merged docs/human-scale (M3.5 proposal and decisions) into main and pushed
 - 2026-10-18 04:54 · 9d865a7 · M3.5 stage 0: floor model (one 1.5 m deck for every part), PartDefinition.floor, doors on the floor, graph without the drop, port-on-floor and corridor-steep diagnostics
+- 2026-10-18 04:59 · 0e95393 · M3.5 stage 0 checkpoint fixes: PartDefinition.shellGap and port gap so pipe ends reach the hull, all-pairs route check on the golden base, node numbers corrected, stage 1 notes
