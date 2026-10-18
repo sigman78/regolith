@@ -171,7 +171,7 @@ Letters in the registry: H, N, D (opaque dome), V (tower), P (slab), M (mast), E
 
 Known limits:
 
-- Slabs level the ground under them (a derived field, never stored); parts on legs keep the natural terrain and get a wear ring once that layer lands. Painted terrain edits still wait for M4.
+- Slabs level the ground under them (a derived field, never stored); parts on legs keep the natural terrain and get a wear ring (`world/wear.ts`, a 2-channel texture the regolith shader reads; channel G is for M4's paths). Painted terrain edits still wait for M4.
 - Handles cover the range and choice params that are a length (H length and radius, C length, P width and depth, V floors, M height, D, E and N radius). Toggles, the mast head and the launcher's elevation are edited through the picker only.
 - `POWER` ports exist (M, E, C) but nothing connects to them until the power stage; beacons, dish tracking and fin glow are static.
 - `aluminium` is unused until the sky environment map lands (M2).

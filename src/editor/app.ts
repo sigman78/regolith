@@ -25,8 +25,10 @@ import { CameraRig } from '@/render/camera-rig';
 import { Lighting } from '@/render/lighting';
 import { parseQuality, PostChain } from '@/render/post';
 import { GRID } from '@/geometry/design-constants';
+import { wearOf } from '@/grammar/solver/wear';
 import { ScatterSync } from '@/render/scatter-sync';
 import { SceneSync } from '@/render/scene-sync';
+import { wearMap } from '@/render/shader-patches';
 import { buildTerrainMesh, levelTerrainMesh } from '@/render/terrain-mesh';
 import { createDocument, keepMirror, type PartId } from '@/world/document';
 import { raycastTerrain, type Ray } from '@/world/raycast';
@@ -119,6 +121,8 @@ export function startApp(canvas: HTMLCanvasElement): void {
       terrainKey = key;
       levelTerrainMesh(terrainMesh, groundAt());
     }
+    // Disturbed ground around footprints and footpads; the texture is only re-sent when it changed.
+    wearMap.update(wearOf(resolved, world.halfSize), world.halfSize);
     // Rocks yield to the base but stay put while a part is being dragged (SCATTER §4).
     if (!movingId) scatter.update(rocks, resolved.keepOut, gridSize, resolved.terrain);
     fitShadowToBase();
@@ -469,6 +473,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
       cmd,
       renderer,
       post,
+      wear: wearMap,
       base: () => resolved,
       setHour: (h: number) => {
         hour = h;

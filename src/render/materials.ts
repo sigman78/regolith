@@ -4,7 +4,7 @@
  */
 import { Color, DoubleSide, MeshStandardMaterial } from 'three';
 import type { MaterialName } from '@/geometry/bundle';
-import { patchEdgeFade } from './shader-patches';
+import { patchRegolith } from './shader-patches';
 
 export const PALETTE = {
   regolith: '#b5582f',
@@ -94,7 +94,7 @@ export const materials = {
   }),
 };
 
-patchEdgeFade(materials.regolith);
+patchRegolith(materials.regolith, PALETTE.regolithDark);
 
 // Compile-time check: every material name geometry/ may emit exists in the library.
 const _complete: MaterialName extends keyof typeof materials ? true : never = true;
