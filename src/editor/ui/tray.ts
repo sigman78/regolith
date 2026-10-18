@@ -14,8 +14,8 @@ export interface TrayEntry {
 }
 
 const HINTS: Record<ToolId, string> = {
-  select: 'click: pick · drag: move · R: turn · Del: delete · orange discs: grow',
-  place: 'click: place · R: turn 45° · Esc: done',
+  select: 'click: pick · drag: move · R: turn · F: flip · Del: delete · orange discs: grow',
+  place: 'click: place · R: turn 45° · F: flip · Esc: done',
   connect: 'drag from one ring to another to run a tube · Esc: done',
   delete: 'click a part or tube to delete it · Ctrl+Z brings it back',
 };

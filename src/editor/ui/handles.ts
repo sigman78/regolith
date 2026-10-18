@@ -13,7 +13,7 @@ import { GRID, HAB_CAP_RATIO } from '@/geometry/design-constants';
 import { getPart } from '@/grammar/registry';
 import { habHalfExtent } from '@/grammar/parts/H';
 import { solve, type ResolvedBase, type SolverWorld } from '@/grammar/solver';
-import type { PartId } from '@/world/document';
+import { keepMirror, type PartId } from '@/world/document';
 import type { Ray } from '@/world/raycast';
 import { cmd } from '../commands';
 import type { DocumentStore } from '../store';
@@ -149,7 +149,9 @@ export class GrowHandles {
     const params = { ...part.params, length };
 
     // Would the solver have to move it? Then it has hit something: stay put.
-    const trial = cmd.edit(d.id, { params, pose: { x, z, yaw } }).apply(host.store.doc);
+    const trial = cmd
+      .edit(d.id, { params, pose: keepMirror(part.pose, { x, z, yaw }) })
+      .apply(host.store.doc);
     const resolved = solve(trial, host.world, { movingId: d.id }).parts.get(d.id);
     if (!resolved) return;
     if (
@@ -158,7 +160,7 @@ export class GrowHandles {
     ) {
       return;
     }
-    host.store.execute(cmd.edit(d.id, { params, pose: { x, z, yaw } }));
+    host.store.execute(cmd.edit(d.id, { params, pose: keepMirror(part.pose, { x, z, yaw }) }));
     d.lastLength = length;
   }
 

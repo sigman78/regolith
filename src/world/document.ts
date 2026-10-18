@@ -17,6 +17,16 @@ export interface PartPose {
   yaw: Yaw;
   /** Optional elevation override (e.g. hosted on a pad). Absent = solver decides from terrain. */
   y?: number;
+  /** Flipped across the part's own length axis. Stored only when true, so older documents are unchanged. */
+  mirror?: true;
+}
+
+/** A pose at `at` that keeps `from`'s mirror flag (drags, turns and re-commits must not unflip a part). */
+export function keepMirror(
+  from: PartPose,
+  at: { x: number; z: number; yaw: Yaw; y?: number },
+): PartPose {
+  return from.mirror ? { ...at, mirror: true } : at;
 }
 
 export interface PartFlags {
@@ -149,7 +159,11 @@ export function setPartParams(doc: BaseDocument, id: PartId, params: ParamBag): 
 
 export function setPartPose(doc: BaseDocument, id: PartId, pose: PartPose): BaseDocument {
   return updatePart(doc, id, (p) =>
-    p.pose.x === pose.x && p.pose.z === pose.z && p.pose.yaw === pose.yaw && p.pose.y === pose.y
+    p.pose.x === pose.x &&
+    p.pose.z === pose.z &&
+    p.pose.yaw === pose.yaw &&
+    p.pose.y === pose.y &&
+    !!p.pose.mirror === !!pose.mirror
       ? p
       : { ...p, pose },
   );

@@ -79,7 +79,7 @@ interface PartInstance {
   id: PartId;                   // stable, nanoid
   letter: Letter;               // 'H' | 'D' | 'N' | ...
   params: Record<string, number | string | boolean>;
-  pose: { x: number; z: number; yaw: 0 | 45 | 90 | 135 | 180 | 225 | 270 | 315; y?: number };
+  pose: { x: number; z: number; yaw: 0 | 45 | 90 | 135 | 180 | 225 | 270 | 315; y?: number; mirror?: true };
   flags?: { shielded?: boolean; windows?: boolean };
   serial: number;               // stencil number, allocated once, never reused
 }
@@ -137,7 +137,7 @@ Runs after every command and on every ghost preview update. Target: < 2 ms for 2
 ```
 document
   │
-  ├─ 1. place      : clamp to grid, snap yaw to 45°
+  ├─ 1. place      : clamp to grid, snap yaw to 45°; `mirror` copied through (a flip: local z → -z before the yaw)
   ├─ 2. overlap    : footprint grid test; push to nearest free pose (expanding ring search);
   │                   the part being edited (`movingId`) is placed last and yields
   ├─ 3. ground     : pose.y from terrain, legs per STRUCT port (runs before dock: ports need final heights)

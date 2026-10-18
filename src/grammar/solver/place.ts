@@ -31,6 +31,7 @@ export function place(doc: BaseDocument, world: SolverWorld, diagnostics: Diagno
       z: clamp(snap(finite(instance.pose.z), GRID), -limit, limit),
       y: 0,
       yaw: snapYaw(finite(instance.pose.yaw)),
+      ...(instance.pose.mirror ? { mirror: true } : {}),
     };
     drafts.push({
       instance,

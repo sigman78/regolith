@@ -16,6 +16,7 @@ export class PlaceTool implements Tool {
   readonly key: string;
 
   private yaw = 0;
+  private mirror = false;
   private cursor: { x: number; z: number } | null = null;
   /** Remembered per letter (one PlaceTool each), so Esc and back keeps your choice. */
   private params: ParamValues;
@@ -70,7 +71,12 @@ export class PlaceTool implements Tool {
         id: this.host.newId(),
         letter: this.letter,
         params: part.params,
-        pose: { x: part.pose.x, z: part.pose.z, yaw: snapYaw(part.pose.yaw) },
+        pose: {
+          x: part.pose.x,
+          z: part.pose.z,
+          yaw: snapYaw(part.pose.yaw),
+          ...(this.mirror ? { mirror: true as const } : {}),
+        },
       }),
     );
     this.refresh();
@@ -81,6 +87,11 @@ export class PlaceTool implements Tool {
   keydown(e: KeyboardEvent): boolean {
     if (e.key.toLowerCase() === 'r') {
       this.yaw = (this.yaw + (e.shiftKey ? -45 : 45) + 360) % 360;
+      this.refresh();
+      return true;
+    }
+    if (e.key.toLowerCase() === 'f') {
+      this.mirror = !this.mirror;
       this.refresh();
       return true;
     }
@@ -96,6 +107,10 @@ export class PlaceTool implements Tool {
       this.host.ghost.hide();
       return;
     }
-    this.host.ghost.show(this.letter, this.params, { ...this.cursor, yaw: this.yaw });
+    this.host.ghost.show(this.letter, this.params, {
+      ...this.cursor,
+      yaw: this.yaw,
+      mirror: this.mirror,
+    });
   }
 }
