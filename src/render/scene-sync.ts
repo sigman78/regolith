@@ -17,6 +17,7 @@ import {
   type BatchedMesh,
   BufferAttribute,
   BufferGeometry,
+  Color,
   Group,
   Matrix4,
   Mesh,
@@ -40,12 +41,27 @@ import {
   TUBE_EXTEND_SECONDS,
 } from './inflate';
 import { MaterialBatch, mirrored } from './batch';
-import { materials } from './materials';
+import { materials, PALETTE } from './materials';
 
 const DEG = Math.PI / 180;
 /** Undoes the body's own flip: a mirrored part draws a mirrored geometry under a proper rotation. */
 const UNFLIP = new Matrix4().makeScale(1, 1, -1);
 const scratch = new Matrix4();
+
+const HULL_WHITE = new Color(PALETTE.hullWhite);
+const HULL_SHADOWED = new Color(PALETTE.hullShadowed);
+
+/**
+ * The colour multiplier that leans the hull `k` of the way from Hull white to Hull shaded, so a
+ * tinted hull is always a point on a palette segment.
+ */
+export function hullTint(k: number, out: Color = new Color()): Color {
+  return out.setRGB(
+    1 + k * (HULL_SHADOWED.r / HULL_WHITE.r - 1),
+    1 + k * (HULL_SHADOWED.g / HULL_WHITE.g - 1),
+    1 + k * (HULL_SHADOWED.b / HULL_WHITE.b - 1),
+  );
+}
 
 /** A tube extends from its first point along its chord; a part inflates about its base. */
 type Motion =
@@ -69,6 +85,7 @@ interface Entry {
   bodyPieces: Piece[];
   legPieces: Piece[];
   mirror: boolean;
+  tint: number;
   recipeHash: string;
   legsKey: string;
   /** part: its base point; tube: the first point of its centreline */
@@ -86,6 +103,8 @@ interface Drawable {
   name: string;
   recipe: GeometryRecipe;
   recipeHash: string;
+  /** individual.ts tint (hull only); 0 for tubes */
+  tint?: number;
   legs: Leg[];
   /** body transform; tubes are authored in world space and have none */
   pose?: { x: number; y: number; z: number; yaw: number; mirror?: boolean };
@@ -159,6 +178,7 @@ export class SceneSync {
         name: `${p.letter}-${p.serial}`,
         recipe: p.recipe,
         recipeHash: p.recipeHash,
+        tint: p.tint,
         legs: p.legs,
         pose: p.pose,
       });
@@ -275,6 +295,7 @@ export class SceneSync {
       bodyPieces: [],
       legPieces: [],
       mirror: false,
+      tint: 0,
       recipeHash: '',
       legsKey: '',
       pivot: new Vector3(),
@@ -303,12 +324,17 @@ export class SceneSync {
 
   private update(entry: Entry, d: Drawable): void {
     const mirror = !!d.pose?.mirror;
-    if (entry.recipeHash !== d.recipeHash || (this.batched && entry.mirror !== mirror)) {
+    const tint = d.tint ?? 0;
+    if (
+      entry.recipeHash !== d.recipeHash ||
+      (this.batched && (entry.mirror !== mirror || entry.tint !== tint))
+    ) {
       this.clearPieces(entry.bodyPieces);
       entry.body.clear();
-      this.fill(entry, buildBundle(d.recipe), mirror);
+      this.fill(entry, buildBundle(d.recipe), mirror, tint);
       entry.recipeHash = d.recipeHash;
       entry.mirror = mirror;
+      entry.tint = tint;
     }
     if (d.path) this.setChord(entry, d.path);
     if (d.pose) {
@@ -360,12 +386,14 @@ export class SceneSync {
     e.root.scale.set(s, s * dip, s);
   }
 
-  private fill(entry: Entry, bundle: GeometryBundle, mirror: boolean): void {
+  private fill(entry: Entry, bundle: GeometryBundle, mirror: boolean, tint: number): void {
     const geos = geometriesFor(bundle);
     for (const [name, geo] of Object.entries(geos) as [MaterialName, BufferGeometry][]) {
       if (this.batched) {
         const key = mirror ? `${bundle.hash}|m` : bundle.hash;
-        entry.bodyPieces.push(this.piece(name, key, geo, null, mirror));
+        const piece = this.piece(name, key, geo, null, mirror);
+        if (name === 'hull' && tint > 0) piece.batch.setColor(piece.id, hullTint(tint));
+        entry.bodyPieces.push(piece);
       } else entry.body.add(this.mesh(geo, name));
     }
   }

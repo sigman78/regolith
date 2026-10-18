@@ -70,3 +70,5 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-18 00:25 · 35c0068 · Generic drag handles from each part's schema (length, radius, width, depth, floors, height), anchored opposite end, blocked by neighbours, readout while dragging, one undo step per drag
 - 2026-10-18 00:44 · c9b5865 · Suggested connections for the placed or selected part, verified by trial solves, ghost tubes with accept pills
 - 2026-10-18 01:16 · 798af78 · Slabs level the ground under them: one terrain (flat to 1 cm, 2 m skirt) for legs, tubes, mesh, picking and rocks
+- 2026-10-18 01:12 · 79a0a34 · Worn ring around footprints and footpads: a 2-channel wear texture (R ring, G reserved for paths) read by the merged regolith shader patch
+- 2026-10-18 01:13 · 1c3ef3f · Merged feat/contact into main and pushed

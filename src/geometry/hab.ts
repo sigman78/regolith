@@ -30,6 +30,8 @@ export interface HabOp {
   /** metres, cylinder section between the end caps */
   length: number;
   radius: number;
+  /** individual.ts: which end carries the stripe and in which material (see HAB_STRIPE_VARIANTS) */
+  variant?: number;
 }
 
 /** Lathe profile in (r, y) with y along the module axis. */
@@ -70,11 +72,13 @@ export function buildHab(out: BundleBuilder, op: HabOp): void {
     );
   }
 
-  const stripeY = length / 2 - HAB_STRIPE_FROM_END;
+  // Variant 0 and 2 stripe the +x end, 1 the -x end; 2 is graphite instead of accent.
+  const variant = op.variant ?? 0;
+  const stripeY = (variant === 1 ? -1 : 1) * (length / 2 - HAB_STRIPE_FROM_END);
   addWindows(out, length, radius, stripeY);
   const r = radius + HAB_STRIPE_PROUD;
   out.add(
-    'accent',
+    variant === 2 ? 'graphite' : 'accent',
     layDown(
       lathe(
         [new Vector2(r, stripeY - HAB_STRIPE_HALF), new Vector2(r, stripeY + HAB_STRIPE_HALF)],

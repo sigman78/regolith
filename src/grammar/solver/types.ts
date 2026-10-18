@@ -61,6 +61,8 @@ export interface ResolvedPart {
   ports: ResolvedPort[];
   legs: Leg[];
   recipe: GeometryRecipe;
+  /** individual.ts: 0..INDIVIDUAL_TINT_MAX, how far the hull leans to Hull shaded (per instance, not in the recipe) */
+  tint: number;
   /** stable hash of the recipe; the scene cache key for the body mesh */
   recipeHash: string;
   /** Inserted by the solver (a node on a long tube); not in the document. */

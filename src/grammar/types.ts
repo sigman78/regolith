@@ -66,7 +66,7 @@ export type ParamSchema = Readonly<Record<string, ParamSpec>>;
 
 /** Declarative description of geometry. Hashable, so builders can memoise. */
 export type GeomOp =
-  | { kind: 'hab'; length: number; radius: number }
+  | { kind: 'hab'; length: number; radius: number; variant?: number }
   | { kind: 'node'; radius: number }
   | { kind: 'slab'; w: number; d: number }
   | { kind: 'tower'; floors: number; radius: number }
@@ -89,6 +89,8 @@ export interface GeometryRecipe {
 
 export interface GeometryCtx {
   seed: string;
+  /** individual.ts: a small index a part may fold into its recipe; 0 when absent */
+  variant?: number;
 }
 
 // ---- The contract ---------------------------------------------------------------

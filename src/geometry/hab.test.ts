@@ -108,3 +108,28 @@ describe('hab geometry', () => {
     }
   });
 });
+
+describe('hab stripe variants', () => {
+  const p = H.resolve({ length: 10, radius: 2 });
+  const variant = (v: number) => buildBundle(H.geometry(p, { seed: 't', variant: v }));
+  const meanX = (b: ReturnType<typeof variant>, material: 'accent' | 'graphite'): number => {
+    // The hab lies along local +x after layDown; compare along its axis.
+    const pos = b.byMaterial[material]?.positions ?? new Float32Array(0);
+    let sum = 0;
+    for (let i = 0; i < pos.length; i += 3) sum += pos[i] ?? 0;
+    return sum / Math.max(1, pos.length / 3);
+  };
+
+  it('keeps variant 0 as the plain recipe and gives each variant its own bundle', () => {
+    expect(H.geometry(p, { seed: 't' })).toEqual(H.geometry(p, { seed: 't', variant: 0 }));
+    expect(new Set([0, 1, 2].map((v) => variant(v).hash)).size).toBe(3);
+    for (const v of [0, 1, 2]) expect(() => assertValidBundle(variant(v))).not.toThrow();
+  });
+
+  it('puts the stripe at the other end for 1 and in graphite instead of accent for 2', () => {
+    expect(meanX(variant(0), 'accent')).toBeGreaterThan(1);
+    expect(meanX(variant(1), 'accent')).toBeLessThan(-1);
+    expect(variant(2).byMaterial.accent).toBeUndefined();
+    expect(variant(0).byMaterial.accent).toBeDefined();
+  });
+});

@@ -136,8 +136,10 @@ export const H: PartDefinition<HabParams> = {
     ];
   },
 
-  geometry(p) {
-    return { ops: [{ kind: 'hab', length: p.length, radius: p.radius }] };
+  geometry(p, ctx) {
+    // Variant 0 keeps the plain recipe, so it hashes as it always did.
+    const variant = ctx.variant ? { variant: ctx.variant } : {};
+    return { ops: [{ kind: 'hab', length: p.length, radius: p.radius, ...variant }] };
   },
 
   summary(p) {

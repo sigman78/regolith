@@ -42,6 +42,10 @@ export const HAB_RIB_INSET = 0.01;
 export const HAB_STRIPE_HALF = 0.5;
 export const HAB_STRIPE_PROUD = 0.012;
 export const HAB_STRIPE_FROM_END = 1.4;
+/** Stripe variants: accent at the +x end, accent at the -x end, graphite at the +x end. */
+export const HAB_STRIPE_VARIANTS = 3;
+/** Most a hull may lean from Hull white toward Hull shaded per instance (about 5% darker, a touch warmer). */
+export const INDIVIDUAL_TINT_MAX = 0.35;
 /** A side PRESS port every N metres along the hull, alternating sides. */
 export const HAB_SIDE_PORT_SPACING = 4;
 /** STRUCT ports sit this far in from each end rib. */

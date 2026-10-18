@@ -9,7 +9,14 @@
  * Instance matrices must not have a negative determinant (three does not flip the winding per
  * instance). A mirrored part therefore registers a mirrored copy of the geometry (`mirrored`).
  */
-import { BatchedMesh, BufferGeometry, type Material, type Matrix4, type Object3D } from 'three';
+import {
+  BatchedMesh,
+  BufferGeometry,
+  type Color,
+  type Material,
+  type Matrix4,
+  type Object3D,
+} from 'three';
 
 const MIN_VERTICES = 4096;
 const MIN_INSTANCES = 64;
@@ -100,6 +107,11 @@ export class MaterialBatch {
 
   setMatrix(instance: number, matrix: Matrix4): void {
     this.mesh?.setMatrixAt(instance, matrix);
+  }
+
+  /** Per-instance colour multiplier. A reused instance id starts white again, so set it after every `add`. */
+  setColor(instance: number, color: Color): void {
+    this.mesh?.setColorAt(instance, color);
   }
 
   /** The batch with room for `geometry`, created, repacked or grown as needed. */
