@@ -124,6 +124,8 @@ export interface PartDefinition<P extends ParamValues = ParamValues> {
    * ports sit on it, and the press graph walks it. One rule (FLOOR_ABOVE_BELLY over the lowest foot).
    */
   floor?(params: P): number;
+  /** Metres from a PRESS port back to the hull behind it along its normal; absent = 0 (on the hull). */
+  shellGap?(params: P, portId: string): number;
   /** Local y of every walking floor, ground floor first, when a part has more than one (a tower). */
   floors?(params: P): number[];
   /** Short size note for the selection tooltip, e.g. '8 m'. */

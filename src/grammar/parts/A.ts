@@ -22,6 +22,7 @@ import {
   LEG_MIN_CLEARANCE,
 } from '@/geometry/design-constants';
 import { readChoice } from '../params';
+import { capGap } from '../shell-gap';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
 export type AirlockParams = { radius: number };
@@ -61,6 +62,10 @@ export const A: PartDefinition<AirlockParams> = {
   },
 
   floor: airlockFloor,
+
+  shellGap(p) {
+    return capGap(p.radius, p.radius * HAB_CAP_RATIO, airlockFloor(p));
+  },
 
   ports(p) {
     const ext = halfExtent(p);

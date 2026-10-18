@@ -41,6 +41,8 @@ export interface ResolvedPort {
   /** world space */
   position: Vec3;
   normal: Vec3;
+  /** metres the hull is behind this port (PartDefinition.shellGap); 0 when it sits on the hull */
+  gap: number;
 }
 
 export interface Leg {

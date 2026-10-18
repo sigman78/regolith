@@ -16,6 +16,7 @@
  */
 import {
   CORRIDOR_MAX_SLOPE,
+  CORRIDOR_SLOPE_MIN_RUN,
   NODE_RADII,
   TUBE_LEAD,
   TUBE_MAX_KINKS,
@@ -248,11 +249,14 @@ function finish(ctx: Ctx, piece: Piece): void {
   const first = verts[0];
   const last = verts[verts.length - 1];
   if (first)
-    verts[0] = [first[0] - a.normal[0] * TUBE_PORT_EMBED, first[1] - a.normal[2] * TUBE_PORT_EMBED];
+    verts[0] = [
+      first[0] - a.normal[0] * (TUBE_PORT_EMBED + a.gap),
+      first[1] - a.normal[2] * (TUBE_PORT_EMBED + a.gap),
+    ];
   if (last)
     verts[verts.length - 1] = [
-      last[0] - b.normal[0] * TUBE_PORT_EMBED,
-      last[1] - b.normal[2] * TUBE_PORT_EMBED,
+      last[0] - b.normal[0] * (TUBE_PORT_EMBED + b.gap),
+      last[1] - b.normal[2] * (TUBE_PORT_EMBED + b.gap),
     ];
 
   const id = `tube:${ctx.key}:${ctx.pieceCount++}`;
@@ -279,7 +283,7 @@ function finish(ctx: Ctx, piece: Piece): void {
   }
 }
 
-/** Steepest rise over run along a centreline (segments shorter than half a metre are skipped). */
+/** Steepest rise over run along a centreline (segments shorter than CORRIDOR_SLOPE_MIN_RUN are skipped). */
 export function maxSlope(path: readonly Vec3[]): number {
   let worst = 0;
   for (let i = 1; i < path.length; i++) {
@@ -287,7 +291,7 @@ export function maxSlope(path: readonly Vec3[]): number {
     const b = path[i];
     if (!a || !b) continue;
     const run = Math.hypot(b[0] - a[0], b[2] - a[2]);
-    if (run >= 0.5) worst = Math.max(worst, Math.abs(b[1] - a[1]) / run);
+    if (run >= CORRIDOR_SLOPE_MIN_RUN) worst = Math.max(worst, Math.abs(b[1] - a[1]) / run);
   }
   return worst;
 }

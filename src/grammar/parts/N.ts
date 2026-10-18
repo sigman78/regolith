@@ -20,6 +20,7 @@ import {
 } from '@/geometry/design-constants';
 import { beaconOn } from '../lamps';
 import { readChoice } from '../params';
+import { roundGap } from '../shell-gap';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
 export type NodeParams = { size: number };
@@ -55,6 +56,10 @@ export const N: PartDefinition<NodeParams> = {
   },
 
   floor: nodeFloor,
+
+  shellGap(p, portId) {
+    return portId === 'top' ? 0 : roundGap(p.size, nodeFloor(p));
+  },
 
   ports(p) {
     const r = p.size;

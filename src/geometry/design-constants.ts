@@ -80,6 +80,8 @@ export const CREW_HEIGHT = 1.8;
 export const HEADROOM_MARGIN = 0.2;
 /** A corridor climbing more than this (rise over run, about 8 degrees) is flagged, never refused. */
 export const CORRIDOR_MAX_SLOPE = 0.14;
+/** Slope is measured over runs of at least this many metres (the short embedded ends are skipped). */
+export const CORRIDOR_SLOPE_MIN_RUN = 0.5;
 /** Footpads are sunk into the terrain by this much so nothing hovers. */
 export const FOOT_SINK = 0.05;
 export const LEG_RADIUS = 0.12;

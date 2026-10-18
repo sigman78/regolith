@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DECK_HEIGHT, TUBE_RADIUS } from '@/geometry/design-constants';
-import { solve, type SolverWorld } from '@/grammar/solver';
+import { graphComponents, solve, type SolverWorld } from '@/grammar/solver';
+import { navOf, route, stepPolyline } from '@/sim/nav';
 import { addLink, addPart, createDocument } from '@/world/document';
 import { goldenBase } from './golden-base';
 
@@ -55,6 +56,35 @@ describe('golden base on the level (M3.5 stage 0)', () => {
         expect(p[1]).toBeCloseTo(DECK_HEIGHT, 9);
       }
     }
+  });
+});
+
+describe('golden base walks (M3.5 stage 0)', () => {
+  it('has a route between every pair of nodes it had before, and no step leaves the floor', () => {
+    const g = goldenBase();
+    let doc = createDocument({ seed: 'golden' });
+    for (const p of g.parts) doc = addPart(doc, p);
+    for (const l of g.links) doc = addLink(doc, l);
+    const base = solve(doc, FLAT);
+    const nav = navOf(base.graph);
+    const groups = graphComponents(base.graph);
+    const ids = [...base.graph.nodes.keys()];
+    let pairs = 0;
+    for (const a of ids) {
+      for (const b of ids) {
+        if (a === b || groups.get(a) !== groups.get(b)) continue;
+        const steps = route(nav, a, b);
+        expect(steps).not.toBeNull();
+        pairs++;
+        for (const step of steps ?? []) {
+          // The tower's stairs are not modelled; every other step is level.
+          const touchesTower = step.k === 'node' && step.node === 'g-tower';
+          if (touchesTower) continue;
+          for (const p of stepPolyline(nav, step) ?? []) expect(p[1]).toBeCloseTo(DECK_HEIGHT, 9);
+        }
+      }
+    }
+    expect(pairs).toBeGreaterThan(20);
   });
 });
 

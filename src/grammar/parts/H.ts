@@ -26,6 +26,7 @@ import {
 } from '@/geometry/design-constants';
 import { beaconOn } from '../lamps';
 import { readChoice, readRange } from '../params';
+import { capGap, roundGap } from '../shell-gap';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
 export type HabParams = { length: number; radius: number };
@@ -87,6 +88,13 @@ export const H: PartDefinition<HabParams> = {
   },
 
   floor: habFloor,
+
+  shellGap(p, portId) {
+    const y = habFloor(p);
+    return portId.startsWith('end')
+      ? capGap(p.radius, p.radius * HAB_CAP_RATIO, y)
+      : roundGap(p.radius, y);
+  },
 
   ports(p) {
     const ext = habHalfExtent(p);
