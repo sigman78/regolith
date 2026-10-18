@@ -75,3 +75,5 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-18 01:25 · 2cfa39d · Individuality: per-instance hull tint (palette segment) and hab stripe variants derived from serial and seed, nothing stored
 - 2026-10-18 01:27 · 9b0e68e · Serial stencil on hab hulls as a decal: wrapped onto the hull, yaw-only so flips never mirror it, no extra draw call
 - 2026-10-18 01:29 · 8c23d4a · Merged feat/individuality into main and pushed
+- 2026-10-18 01:32 · f627d06 · Frame counter on the debug hook, idle heartbeat 5 s, wake on focus, the preset steps down by itself on a slow machine
+- 2026-10-18 01:38 · eed0b28 · Merged feat/m25-exit into main and pushed

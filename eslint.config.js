@@ -120,7 +120,7 @@ export default tseslint.config(
   restrict('grammar', { pureThree: true, exceptions: { geometry: ['design-constants'] } }),
   restrict('geometry'),
   restrict('render'),
-  restrict('sim'),
+  restrict('sim', { pureThree: true, exceptions: { geometry: ['design-constants'] } }),
   restrict('editor'),
   {
     files: ['**/*.config.{js,ts}', 'vite.config.ts'],

@@ -112,7 +112,7 @@ Tasks, in order (risk first; each is a commit with tests, 12:00 and 18:30 shots 
 
 ## M3 — Life I: crew, sun, lights
 
-**Starts after M2.5.** The user wants the hand tools and the builder first; nothing here is to be started before that gate.
+**Started 2026-10-18**, after M2.5 (the user asked for it; the M2.5 exit box is for the user to tick).
 
 **Goal:** the base moves on its own.
 
@@ -126,6 +126,21 @@ Deliverables:
 - Night lights: windows, porch lights at airlocks, light poles, beacon on the tallest part.
 - Power graph with auto cables on pylons.
 - Crew count from volume; errand lists.
+
+Tasks, in order (risk first; each a commit with tests, 12:00 and 18:30 shots where visible). Order and cuts from a Fable review (2026-10-18):
+
+0. **Sim clock, render cadence, HUD.** Done. `sim/clock.ts` (`SolClock`: 1 real second = 1 sol-minute, pause, 1x/2x/4x, scrub, wall-clock driven so frames do not matter) and `sim/fixed-step.ts` (10 Hz ticks, `alpha` for interpolation, capped catch-up). The clock lives outside the document. Light and shadows follow `visualHour`, which changes once per sol-minute, so a running clock costs one redraw per sol-minute (measured 10 frames in 10 s; paused 2). Runs by default; `?hour=`, `?shot` and `?pause` freeze it for scripts. Keys: Space pause, `.` speed, `[ ]` scrub half an hour. HUD shows `hh:mm` and the state. The `sim/` layer is pure (no three).
+1. **`graph` solver stage** (`grammar/solver/graph.ts`): `ResolvedBase.graph`, nodes = PRESS parts with interior waypoints, edges = tubes (centreline length) and docks. A `SolveOptions.lean` flag lets the ghost and `suggest.ts` trial solves skip it. Before the letters: the agent-on-a-changing-graph risk is the biggest unknown.
+2. **Crew** (`sim/agents/crew.ts`, `sim/nav.ts`): count `floor(volume / 60)` up to 24, homes by serial, 3-stop errands from `hashInts(seed, i, solHour)`, an agent is `(edge, s)`, never xyz, so a dragged part carries its crew. Rendered as pieces in the existing batches, no shadows. Tests: never off the graph, byte-identical replay, deleting a part re-homes without NaN.
+3. **Window silhouettes**: a flat graphite figure slid along the hull at the window angle, shown while a crew member is in that bay. Tube strips deferred.
+4. **Letters A, S, X, static** (airlock, solar array, light pole): parts, geometry, `solar` and `light` materials, DESIGN_GUIDE rows first for the solar colours.
+5. **Airlock exit and cycle**: a loiter spot 4–8 m from the ramp foot, outdoor errands only 08:00–18:00 so everyone is home by 19:00, a 3-state cycle (seal, pump, open) with the lamp going red, amber, green. No flow field (M4).
+6. **Night lights**: one `InstancedMesh` of lamp heads (porch, pole, airlock, beacon on the tallest part) with a shader patch so the instance colour drives emissive; window glow stays `setNightGlow`. Everything lights up (P1): H and A have no POWER port, so power is cables only and the DESIGN_GUIDE "dim porch light when unpowered" row is amended.
+7. **Solar tracking and parking**: tilt from the sun direction on the sol-minute step, park when the sun is low, per-panel delay from `hashInts(serial, i)`; no shader patch, so shadows stay right. Measure the shadow pass at `?stress`.
+8. **Power stage and cables**: union-find over POWER ports, nearest-network routing with `route.ts`, a `cable` op sampled every 2 m with a pylon each, cables mark `keepOut`, straight fallback.
+9. **Exit shot and PERF row** at 19:00, idle frames still 2 per 10 s when paused.
+
+Cut or deferred: tube window strips, per-hab "someone is home" dimming, sim-written wear (it inverts the layers; channel G stays for M4), street-light auto-placement (M6).
 
 **Exit:** place three habs, a tube, an airlock and an array, scrub to 19:00, and watch crew come home as the lights come on and the panels park.
 

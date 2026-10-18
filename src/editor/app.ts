@@ -25,6 +25,7 @@ import { CameraRig } from '@/render/camera-rig';
 import { Lighting } from '@/render/lighting';
 import { parseQuality, PostChain } from '@/render/post';
 import { QualityGovernor } from '@/render/quality-governor';
+import { SolClock } from '@/sim/clock';
 import { GRID } from '@/geometry/design-constants';
 import { wearOf } from '@/grammar/solver/wear';
 import { ScatterSync } from '@/render/scatter-sync';
@@ -59,8 +60,15 @@ const MAX_PIXEL_RATIO = 1.5;
 export function startApp(canvas: HTMLCanvasElement): void {
   const params = new URLSearchParams(window.location.search);
   const seed = params.get('seed') ?? 'olympus-07';
-  let hour = Number(params.get('hour') ?? 15.5);
-  if (!Number.isFinite(hour)) hour = 15.5;
+  // The sol clock runs by default; an explicit `?hour=`, `?shot` or `?pause` freezes it so screenshots
+  // and scripts stay deterministic.
+  const startHour = Number(params.get('hour') ?? 15.5);
+  const clock = new SolClock(
+    startHour,
+    !(params.has('hour') || params.has('shot') || params.has('pause')),
+  );
+  const clockEl = document.getElementById('clock');
+  let clockText = '';
 
   // ---- rendering ---------------------------------------------------------------
   const quality = parseQuality(params.get('quality'));
@@ -409,8 +417,13 @@ export function startApp(canvas: HTMLCanvasElement): void {
       governor.enabled = false;
       wake(true);
     }
-    if (key === '[') hour -= 0.5;
-    if (key === ']') hour += 0.5;
+    if (key === '[') clock.scrub(-0.5);
+    if (key === ']') clock.scrub(0.5);
+    if (key === ' ') {
+      clock.togglePause();
+      e.preventDefault();
+    }
+    if (key === '.') clock.cycleSpeed();
     if (key === 'q') rig.rotateStep(-1);
     if (key === 'e') rig.rotateStep(1);
   });
@@ -445,8 +458,11 @@ export function startApp(canvas: HTMLCanvasElement): void {
 
   function frame(now: number): void {
     requestAnimationFrame(frame);
+    clock.update(now);
+    // A running clock asks for a frame once per sol-minute (the sun moved), nothing more.
+    const sunMoved = clock.visualHour !== shownHour;
     const gap = now - lastRender;
-    if (!dirty && gap < IDLE_FRAME_MS) return;
+    if (!dirty && !sunMoved && gap < IDLE_FRAME_MS) return;
     lastRender = now;
 
     // After an idle stretch the first frame must not jump an animation ahead by the whole gap.
@@ -457,11 +473,16 @@ export function startApp(canvas: HTMLCanvasElement): void {
     const animating = sync.animating || scatter.animating;
     again = again || animating;
 
-    if (hour !== shownHour) {
-      shownHour = hour;
+    if (sunMoved) {
+      shownHour = clock.visualHour;
       shadowDirty = true;
     }
-    lighting.apply(hour, rig.target);
+    const label = `${clock.label()} ${clock.running ? `\u25b6 ${clock.speed}x` : '\u23f8'}`;
+    if (clockEl && label !== clockText) {
+      clockText = label;
+      clockEl.textContent = label;
+    }
+    lighting.apply(clock.visualHour, rig.target);
     renderer.toneMappingExposure = lighting.exposure;
     handles?.update();
     halos?.update();
@@ -489,8 +510,9 @@ export function startApp(canvas: HTMLCanvasElement): void {
       frames: () => rendered,
       quality: () => post.current,
       base: () => resolved,
+      clock,
       setHour: (h: number) => {
-        hour = h;
+        clock.set(h);
         wake(true);
       },
       rig,

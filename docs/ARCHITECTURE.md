@@ -254,7 +254,7 @@ Decorators and repeated parts (solar panels, lights, crew) are `InstancedMesh` w
 
 ## 7. Simulation (life layer)
 
-- **Clock:** `sim/clock.ts` owns sol time. Real time 1 s = 1 sol-minute by default; the player can pause, scrub, or speed to 4x.
+- **Clock:** `sim/clock.ts` owns sol time. Real time 1 s = 1 sol-minute by default; the player can pause, scrub, or speed to 4x. It is advanced from wall-clock timestamps (frames do not matter) and light and shadows follow `visualHour`, which only changes once per sol-minute, so a running clock costs one redraw per sol-minute. The loop asks for a frame when the sun moved, something is animating, input arrived, or the 5 s heartbeat is due.
 - **Tick:** sim runs at a fixed 10 Hz; render interpolates. Sim never touches three objects; it writes to typed arrays the renderer reads (positions, headings, phases).
 - **Agents:** `sim/agents/*` are small state machines (Crew, Rover, Drone, Lander, DustDevil). Navigation uses `ResolvedBase.graph` indoors and a grid flow field outdoors (recomputed lazily when the base changes).
 - **Systems:** `sim/systems/*` are stateless per-frame updaters: `solarTracking`, `nightLights`, `airlockCycles`, `plantGrowth`, `pathWear`, `dustAccumulation`, `beacon`. Each reads clock + base, writes instance attributes.
