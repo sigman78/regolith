@@ -73,6 +73,20 @@ export const D: PartDefinition<DomeParams> = {
     return { mode: 'legs', minClearance: LEG_MIN_CLEARANCE };
   },
 
+  handles(p) {
+    const d = Math.SQRT1_2;
+    return [
+      {
+        id: 'radius',
+        param: 'radius',
+        at: [p.radius * d, 0, p.radius * d],
+        axis: [d, 0, d],
+        perUnit: 1,
+        anchor: [0, 0, 0],
+      },
+    ];
+  },
+
   geometry(p) {
     return { ops: [{ kind: 'dome', radius: p.radius }] };
   },

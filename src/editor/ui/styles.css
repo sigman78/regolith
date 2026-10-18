@@ -172,6 +172,23 @@ body {
   cursor: grabbing;
 }
 
+/* The value being dragged to, beside the grip, while a drag is in progress. */
+.handle[data-value]::after {
+  content: attr(data-value);
+  position: absolute;
+  left: 26px;
+  top: -2px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(30, 24, 22, 0.82);
+  color: #fff;
+  font:
+    600 12px/1.4 system-ui,
+    sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 #halos {
   position: fixed;
   inset: 0;

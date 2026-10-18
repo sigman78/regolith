@@ -213,7 +213,7 @@ Alphabet is **frozen per milestone**; see PLAN.md for which letters ship when.
 
 - **Tray** along the bottom with the alphabet as monochrome glyph icons; hover shows name and parameters. **Rail** on the left: select, move, terrain raise/lower/flatten/smooth, path paint, delete, photo.
 - **Place:** click the ground. The part appears in ghost form following the cursor with its resolved pose (legs, snaps). Scroll rotates in 45° steps, shift-scroll changes the primary parameter.
-- **Grow:** selected parts show handles at their variable ends. Drag changes the parameter. Handles are 24 px orange discs with a 3 px white ring.
+- **Resize:** a selected part shows one orange disc per grip its letter declares (hab: both ends and the top; slab: all four edges; tower, mast, dome, node, reactor: one; launcher: both ends). Dragging a disc pulls that dimension along its own axis, the opposite end stays put, the value follows the pointer in a small readout and snaps to the schema. Growth stops at an obstacle. One drag is one undo step. Discs are 24 px, orange, with a 3 px white ring, floating 1.2 m off the surface along the grip axis.
 - **Connect:** drag from a port halo to another. Ghost tube previews, including inserted nodes.
 - **Terrain brushes:** 2–12 m radius, soft falloff, dust puff feedback; parts above re-ground instantly.
 - **Undo/redo:** every command, including terrain strokes, coalesced per drag.

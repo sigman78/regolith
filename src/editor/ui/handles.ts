@@ -1,21 +1,23 @@
 /**
- * Grow handles: two orange discs at the ends of a selected hab. Dragging one
- * pulls that end out along the hull axis; the other end stays put and the
- * length snaps to rib segments. DOM elements positioned by projecting the end
- * ports each frame (DESIGN_GUIDE §12).
+ * Handles: orange grips on the selected part, one per `PartDefinition.handles` entry. Dragging a
+ * grip turns its param (length, radius, floors, height, width, depth) and keeps the part's opposite
+ * end in place. DOM elements positioned by projecting each grip every frame (DESIGN_GUIDE §12).
  *
- * Growth stops at obstacles instead of shoving the hab sideways: a candidate
- * length that the solver would have to move to resolve is simply not applied.
+ * The grip is dragged along its own axis: the pointer ray is reduced to a distance along that line,
+ * so it works the same for a hab's end, a tower's top and a slab's edge. What the distance means is
+ * `applyHandleDelta` (grammar) and `resizeByHandle` (blocking by the solver); this file is the DOM.
  */
 import { Vector3, type PerspectiveCamera } from 'three';
-import { rotateY, snap, snapYaw } from '@/core/math';
-import { GRID, HAB_CAP_RATIO } from '@/geometry/design-constants';
+import { localDirToWorld, localToWorld, type Vec3 } from '@/core/math';
+import type { HandleSpec } from '@/grammar/handles';
 import { getPart } from '@/grammar/registry';
-import { habHalfExtent } from '@/grammar/parts/H';
-import { solve, type ResolvedBase, type SolverWorld } from '@/grammar/solver';
-import { keepMirror, type PartId } from '@/world/document';
-import type { Ray } from '@/world/raycast';
+import type { ResolvedBase, SolverWorld } from '@/grammar/solver';
+import type { ParamSpec } from '@/grammar/types';
+import type { PartId } from '@/world/document';
+import type { Letter } from '@/world/letter';
+import { rayClosestOnLine, type Ray } from '@/world/raycast';
 import { cmd } from '../commands';
+import { resizeByHandle, type HandleStart } from '../handle-drag';
 import type { DocumentStore } from '../store';
 
 export interface HandlesHost {
@@ -29,92 +31,105 @@ export interface HandlesHost {
   commitResolved(id: PartId): void;
 }
 
+/** How far the disc floats off the surface along its axis, so it never covers a hatch or the hull. */
+const GRIP_OFFSET = 1.2;
+
 interface Drag {
   id: PartId;
-  /** +1 for the end at +X, -1 for -X */
-  sign: 1 | -1;
-  /** fixed end, world XZ */
-  fixed: [number, number];
-  /** unit axis, world XZ */
-  axis: [number, number];
-  /** world height of the end port, for the drag plane */
-  planeY: number;
-  lastLength: number;
+  spec: HandleSpec;
+  start: HandleStart;
+  /** the grip's world position and axis when the drag began; the drag line */
+  origin: Vec3;
+  axis: Vec3;
+  /** distance along the line where the pointer first grabbed */
+  grabbed: number;
+  last: number;
+  element: HTMLElement;
 }
 
-export class GrowHandles {
-  private readonly discs: [HTMLElement, HTMLElement];
+export class Handles {
+  private readonly discs: HTMLElement[] = [];
   private drag: Drag | null = null;
   private readonly tmp = new Vector3();
 
   constructor(
     private readonly host: HandlesHost,
-    container: HTMLElement,
-  ) {
-    this.discs = [this.makeDisc(container, -1), this.makeDisc(container, 1)];
-  }
+    private readonly container: HTMLElement,
+  ) {}
 
   /** Call once per frame. */
   update(): void {
-    const id = this.host.selected;
-    const part = id ? this.host.base().parts.get(id) : undefined;
-    if (!part || part.letter !== 'H') {
-      for (const d of this.discs) d.hidden = true;
-      return;
-    }
+    const part = this.selectedPart();
+    const specs = part ? (getPart(part.letter)?.handles?.(part.params) ?? []) : [];
+    while (this.discs.length < specs.length) this.discs.push(this.makeDisc(this.discs.length));
     const w = window.innerWidth;
     const h = window.innerHeight;
-    for (const [i, sign] of [-1, 1].entries()) {
-      const disc = this.discs[i];
-      const port = part.ports.find((p) => p.id === (sign > 0 ? 'end+' : 'end-'));
-      if (!disc || !port) continue;
-      // Sit just outside the cap so the disc never covers the hatch.
+    this.discs.forEach((disc, i) => {
+      const spec = specs[i];
+      if (!part || !spec) {
+        disc.hidden = true;
+        return;
+      }
+      const at = localToWorld(part.pose, spec.at);
+      const out = localDirToWorld(part.pose, spec.axis);
       this.tmp
         .set(
-          port.position[0] + port.normal[0] * 1.2,
-          port.position[1] + port.normal[1] * 1.2,
-          port.position[2] + port.normal[2] * 1.2,
+          at[0] + out[0] * GRIP_OFFSET,
+          at[1] + out[1] * GRIP_OFFSET,
+          at[2] + out[2] * GRIP_OFFSET,
         )
         .project(this.host.camera);
       disc.hidden = this.tmp.z > 1;
+      disc.title = `Drag to resize ${this.label(part.letter, spec)}`;
       disc.style.transform = `translate(${((this.tmp.x + 1) / 2) * w - 12}px, ${((1 - this.tmp.y) / 2) * h - 12}px)`;
-    }
+    });
   }
 
-  private makeDisc(container: HTMLElement, sign: 1 | -1): HTMLElement {
+  private selectedPart() {
+    const id = this.host.selected;
+    return id ? this.host.base().parts.get(id) : undefined;
+  }
+
+  private label(letter: Letter, spec: HandleSpec): string {
+    const schema = getPart(letter)?.schema[spec.param];
+    return (schema?.label ?? spec.param).toLowerCase();
+  }
+
+  private makeDisc(index: number): HTMLElement {
     const el = document.createElement('div');
     el.className = 'handle';
     el.hidden = true;
-    el.title = 'Drag to grow';
-    el.addEventListener('pointerdown', (e) => this.begin(e, el, sign));
+    el.addEventListener('pointerdown', (e) => this.begin(e, el, index));
     el.addEventListener('pointermove', (e) => this.move(e));
     el.addEventListener('pointerup', (e) => this.end(e, el));
     el.addEventListener('pointercancel', (e) => this.end(e, el));
-    container.appendChild(el);
+    this.container.appendChild(el);
     return el;
   }
 
-  private begin(e: PointerEvent, el: HTMLElement, sign: 1 | -1): void {
+  private begin(e: PointerEvent, el: HTMLElement, index: number): void {
     const { host } = this;
     const id = host.selected;
-    const part = id ? host.base().parts.get(id) : undefined;
-    if (!id || !part || e.button !== 0) return;
+    const part = this.selectedPart();
+    const inDoc = id ? host.store.doc.parts[id] : undefined;
+    const spec = part ? getPart(part.letter)?.handles?.(part.params)[index] : undefined;
+    if (!id || !part || !inDoc || !spec || e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
     el.setPointerCapture(e.pointerId);
 
-    const length = Number(part.params['length']);
-    const a = rotateY([1, 0, 0], part.pose.yaw);
-    const axis: [number, number] = [a[0], a[2]];
-    const ext = habHalfExtent({ length, radius: Number(part.params['radius']) });
-    const port = part.ports.find((p) => p.id === (sign > 0 ? 'end+' : 'end-'));
+    const origin = localToWorld(part.pose, spec.at);
+    const axis = localDirToWorld(part.pose, spec.axis);
+    const grabbed = rayClosestOnLine(host.rayAt(e.clientX, e.clientY), origin, axis) ?? 0;
     this.drag = {
       id,
-      sign,
+      spec,
+      start: { params: { ...part.params }, pose: inDoc.pose },
+      origin,
       axis,
-      fixed: [part.pose.x - sign * axis[0] * ext, part.pose.z - sign * axis[1] * ext],
-      planeY: port?.position[1] ?? part.pose.y,
-      lastLength: length,
+      grabbed,
+      last: Number(part.params[spec.param]),
+      element: el,
     };
     host.setMoving(id);
     host.store.beginGesture('Resize part');
@@ -124,53 +139,37 @@ export class GrowHandles {
     const d = this.drag;
     if (!d) return;
     const { host } = this;
-    const part = host.store.doc.parts[d.id];
-    const def = getPart('H');
-    if (!part || !def) return;
+    const s = rayClosestOnLine(host.rayAt(e.clientX, e.clientY), d.origin, d.axis);
+    if (s === null) return;
 
-    const ray = host.rayAt(e.clientX, e.clientY);
-    if (Math.abs(ray.dir[1]) < 1e-6) return;
-    const t = (d.planeY - ray.origin[1]) / ray.dir[1];
-    if (t <= 0) return;
-    const px = ray.origin[0] + ray.dir[0] * t;
-    const pz = ray.origin[2] + ray.dir[2] * t;
-
-    // Span from the fixed end to the pointer, along the outward axis.
-    const radius = Number(part.params['radius']);
-    const span = (px - d.fixed[0]) * d.sign * d.axis[0] + (pz - d.fixed[1]) * d.sign * d.axis[1];
-    const next = def.resolve({ ...part.params, length: span - 2 * radius * HAB_CAP_RATIO });
-    const length = Number(next['length']);
-    if (length === d.lastLength) return;
-
-    const ext = habHalfExtent({ length, radius });
-    const x = d.fixed[0] + d.sign * d.axis[0] * ext;
-    const z = d.fixed[1] + d.sign * d.axis[1] * ext;
-    const yaw = snapYaw(part.pose.yaw);
-    const params = { ...part.params, length };
-
-    // Would the solver have to move it? Then it has hit something: stay put.
-    const trial = cmd
-      .edit(d.id, { params, pose: keepMirror(part.pose, { x, z, yaw }) })
-      .apply(host.store.doc);
-    const resolved = solve(trial, host.world, { movingId: d.id }).parts.get(d.id);
-    if (!resolved) return;
-    if (
-      Math.abs(resolved.pose.x - snap(x, GRID)) > 1e-6 ||
-      Math.abs(resolved.pose.z - snap(z, GRID)) > 1e-6
-    ) {
-      return;
-    }
-    host.store.execute(cmd.edit(d.id, { params, pose: keepMirror(part.pose, { x, z, yaw }) }));
-    d.lastLength = length;
+    const next = resizeByHandle(host.store.doc, host.world, d.id, d.spec, d.start, s - d.grabbed);
+    if (!next) return;
+    const value = Number(next.params[d.spec.param]);
+    if (value === d.last) return;
+    host.store.execute(cmd.edit(d.id, next));
+    d.last = value;
+    d.element.dataset['value'] = this.format(d.id, d.spec, value);
   }
 
   private end(e: PointerEvent, el: HTMLElement): void {
     const d = this.drag;
     if (!d) return;
     if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    delete el.dataset['value'];
     this.host.commitResolved(d.id);
     this.host.store.endGesture();
     this.host.setMoving(null);
     this.drag = null;
+  }
+
+  /** "12 m" or the option's name, as the picker would show it. */
+  private format(id: PartId, spec: HandleSpec, value: number): string {
+    const letter = this.host.store.doc.parts[id]?.letter;
+    const schema: ParamSpec | undefined = letter ? getPart(letter)?.schema[spec.param] : undefined;
+    if (schema?.kind === 'choice' && schema.labels) {
+      const name = schema.labels[schema.options.indexOf(value)];
+      if (name) return name;
+    }
+    return `${value}${schema?.kind === 'toggle' ? '' : (schema?.unit ?? '')}`;
   }
 }

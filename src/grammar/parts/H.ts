@@ -106,6 +106,36 @@ export const H: PartDefinition<HabParams> = {
     return { mode: 'legs', minClearance: LEG_MIN_CLEARANCE };
   },
 
+  handles(p) {
+    const ext = habHalfExtent(p);
+    return [
+      {
+        id: 'length+',
+        param: 'length',
+        at: [ext, 0, 0],
+        axis: [1, 0, 0],
+        perUnit: 1,
+        anchor: [-ext, 0, 0],
+      },
+      {
+        id: 'length-',
+        param: 'length',
+        at: [-ext, 0, 0],
+        axis: [-1, 0, 0],
+        perUnit: 1,
+        anchor: [ext, 0, 0],
+      },
+      {
+        id: 'radius',
+        param: 'radius',
+        at: [0, p.radius, 0],
+        axis: [0, 1, 0],
+        perUnit: 1,
+        anchor: [0, 0, 0],
+      },
+    ];
+  },
+
   geometry(p) {
     return { ops: [{ kind: 'hab', length: p.length, radius: p.radius }] };
   },

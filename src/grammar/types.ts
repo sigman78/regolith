@@ -7,6 +7,7 @@
  */
 import type { Vec3 } from '@/core/math';
 import type { Letter } from '@/world/letter';
+import type { HandleSpec } from './handles';
 
 export type { Letter };
 
@@ -107,6 +108,8 @@ export interface PartDefinition<P extends ParamValues = ParamValues> {
   ports(params: P): PortSpec[];
   ground(params: P): GroundSpec;
   geometry(params: P, ctx: GeometryCtx): GeometryRecipe;
+  /** Grips for dragging a range or choice param on the selected part; absent = none (the picker still edits it). */
+  handles?(params: P): HandleSpec[];
   /** Short size note for the selection tooltip, e.g. '8 m'. */
   summary?(params: P): string;
 }

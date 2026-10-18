@@ -75,6 +75,20 @@ export const N: PartDefinition<NodeParams> = {
     return { mode: 'legs', minClearance: LEG_MIN_CLEARANCE };
   },
 
+  handles(p) {
+    const d = Math.SQRT1_2;
+    return [
+      {
+        id: 'size',
+        param: 'size',
+        at: [p.size * d, 0, p.size * d],
+        axis: [d, 0, d],
+        perUnit: 1,
+        anchor: [0, 0, 0],
+      },
+    ];
+  },
+
   geometry(p) {
     return { ops: [{ kind: 'node', radius: p.size }] };
   },

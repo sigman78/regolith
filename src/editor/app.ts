@@ -43,7 +43,7 @@ import { DeleteTool } from './tools/delete';
 import { PlaceTool } from './tools/place';
 import { SelectTool } from './tools/select';
 import type { PointerInfo, Tool, ToolHost, ToolId } from './tools/tool';
-import { GrowHandles } from './ui/handles';
+import { Handles } from './ui/handles';
 import { Halos } from './ui/halos';
 import { ParamsPanel } from './ui/params-panel';
 import { Tray } from './ui/tray';
@@ -247,7 +247,7 @@ export function startApp(canvas: HTMLCanvasElement): void {
       )
     : null;
   const handles = handlesEl
-    ? new GrowHandles(
+    ? new Handles(
         {
           store,
           world,
