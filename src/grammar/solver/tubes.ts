@@ -15,6 +15,7 @@
  * point unless no other route existed.
  */
 import {
+  CORRIDOR_HALF_WIDTH,
   CORRIDOR_MAX_SLOPE,
   CORRIDOR_SLOPE_MIN_RUN,
   NODE_RADII,
@@ -22,7 +23,6 @@ import {
   TUBE_MAX_KINKS,
   TUBE_MAX_SPAN,
   TUBE_PORT_EMBED,
-  TUBE_RADIUS,
 } from '@/geometry/design-constants';
 import { snapYaw, type Pose, type Vec3, type Yaw } from '@/core/math';
 import type { BaseDocument, Link, PartInstance } from '@/world/document';
@@ -32,7 +32,7 @@ import { portKey } from './dock';
 import { ground, type Grounded } from './ground';
 import { isHorizontal } from './ports';
 import { corners, DIRS, route, type Lattice } from './route';
-import { PIPE_AXIS_LIFT, profileXZ, tubeFromPath } from './tube-path';
+import { profileXZ, tubeFromPath } from './tube-path';
 import type { Diagnostic, Draft, ResolvedPort, ResolvedTube, SolverWorld } from './types';
 
 type XZ = [number, number];
@@ -265,12 +265,7 @@ function finish(ctx: Ctx, piece: Piece): void {
     kind: 'tube',
     a: piece.a.ref,
     b: piece.b.ref,
-    path: profileXZ(
-      verts,
-      a.position[1] + PIPE_AXIS_LIFT,
-      b.position[1] + PIPE_AXIS_LIFT,
-      ctx.world,
-    ),
+    path: profileXZ(verts, a.position[1], b.position[1], ctx.world),
     world: ctx.world,
     legs: true,
   });
@@ -347,7 +342,7 @@ function insertNode(ctx: Ctx, piece: Piece): [Piece, Piece] | null {
   const footprint = def.footprint(params);
   const nodeReach =
     (footprint.kind === 'rect' ? Math.hypot(footprint.hx, footprint.hz) : footprint.r) +
-    TUBE_RADIUS +
+    CORRIDOR_HALF_WIDTH +
     NODE_TUBE_MARGIN;
 
   let best: { i: number; score: number; yaw: Yaw } | null = null;

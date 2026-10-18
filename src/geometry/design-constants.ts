@@ -117,16 +117,22 @@ export const NODE_COLLAR_EMBED = 0.06;
 
 // ---- Tubes and docks --------------------------------------------------------
 
-export const TUBE_RADIUS = HATCH_DIAMETER / 2;
+/** Corridor: one person plus one passing; the half-width is the router's lattice clearance. */
+export const CORRIDOR_WIDTH = 2;
+export const CORRIDOR_HALF_WIDTH = CORRIDOR_WIDTH / 2;
+/** Floor to crown: a semicircular roof of radius CORRIDOR_HALF_WIDTH on straight walls. */
+export const CORRIDOR_HEIGHT = 2.4;
+/** The slab under the walkway; the underside is this far below the floor line. */
+export const CORRIDOR_FLOOR_THICK = 0.2;
+/** Roof arc steps; the whole former round pipe had TUBE_SEGMENTS, the roof is half of it. */
 export const TUBE_SEGMENTS = 16;
 /** Flange every N metres along a tube. */
 export const TUBE_RIB_SPACING = 2;
 export const TUBE_RIB_THICK = 0.18;
 export const TUBE_END_THICK = 0.28;
 export const TUBE_FLANGE = 0.08;
-/** Ball joint at a bend, as a multiple of the tube radius. */
-export const TUBE_KINK_BALL = 1.12;
-export const TUBE_BALL_SEGMENTS = 16;
+/** The collar band on the mitre plane of a bend. */
+export const KINK_COLLAR_THICK = TUBE_END_THICK;
 /** The tube starts this far inside the hull so no gap shows around its rim. */
 export const TUBE_PORT_EMBED = 0.3;
 /** Straight run out of a port before the router may turn, metres. */

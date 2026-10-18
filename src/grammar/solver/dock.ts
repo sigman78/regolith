@@ -16,7 +16,7 @@ import {
 import type { Vec3 } from '@/core/math';
 import type { PartId } from '@/world/document';
 import type { Grounded } from './ground';
-import { PIPE_AXIS_LIFT, tubeFromPath } from './tube-path';
+import { tubeFromPath } from './tube-path';
 import type { ResolvedTube, SolverWorld } from './types';
 
 const BUCKET = DOCK_RANGE * 2;
@@ -129,7 +129,7 @@ function embed(e: PortEntry): Vec3 {
   const depth = TUBE_PORT_EMBED + e.gap;
   return [
     e.pos[0] - e.normal[0] * depth,
-    e.pos[1] + PIPE_AXIS_LIFT - e.normal[1] * depth,
+    e.pos[1] - e.normal[1] * depth,
     e.pos[2] - e.normal[2] * depth,
   ];
 }

@@ -5,7 +5,7 @@
  */
 import { worldDirToLocal, worldToLocal, type Vec3 } from '@/core/math';
 import { buildBundle } from '@/geometry/build';
-import { TUBE_RADIUS } from '@/geometry/design-constants';
+import { CORRIDOR_HALF_WIDTH, CORRIDOR_HEIGHT } from '@/geometry/design-constants';
 import type { ResolvedBase, ResolvedPart } from '@/grammar/solver';
 import type { Ray } from '@/world/raycast';
 
@@ -60,12 +60,17 @@ export interface TubeHit {
 }
 
 /** Only player tubes are pickable; docks come and go with the parts they join. */
-export function pickTube(ray: Ray, base: ResolvedBase, radius = TUBE_RADIUS + 0.3): TubeHit | null {
+/** A tube is picked by its volume: the floor line lifted to the middle of the corridor. */
+export function pickTube(
+  ray: Ray,
+  base: ResolvedBase,
+  radius = CORRIDOR_HALF_WIDTH + 0.3,
+): TubeHit | null {
   let best: TubeHit | null = null;
   for (const tube of base.tubes.values()) {
     if (tube.kind !== 'tube') continue;
     for (let i = 0; i + 1 < tube.path.length; i++) {
-      const hit = rayToSegment(ray, tube.path[i] as Vec3, tube.path[i + 1] as Vec3);
+      const hit = rayToSegment(ray, lifted(tube.path[i] as Vec3), lifted(tube.path[i + 1] as Vec3));
       if (hit.dist <= radius && hit.t > 0 && (best === null || hit.t < best.t)) {
         best = { id: tube.id, t: hit.t };
       }
@@ -73,6 +78,8 @@ export function pickTube(ray: Ray, base: ResolvedBase, radius = TUBE_RADIUS + 0.
   }
   return best;
 }
+
+const lifted = (p: Vec3): Vec3 => [p[0], p[1] + CORRIDOR_HEIGHT / 2, p[2]];
 
 /**
  * Closest approach between a ray (parameter s >= 0, unit direction) and a

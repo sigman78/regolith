@@ -187,3 +187,30 @@ describe('suggestLinks on random bases', () => {
     }
   });
 });
+
+describe('suggestLinks on a slope', () => {
+  const HILL: SolverWorld = {
+    halfSize: 48,
+    heightAt: (x) => Math.max(0, Math.min(8, (x - 6) * 0.9)),
+  };
+
+  it('still offers a steep corridor, flagged, and ranks it behind a level one', () => {
+    let doc = createDocument({ seed: 't' });
+    doc = hab(doc, 'a', -8, 0);
+    doc = hab(doc, 'up', 20, 0);
+    doc = hab(doc, 'level', -8, 22);
+    const list = suggest(doc, 'a', HILL);
+    const up = list.find((s) => s.target === 'up');
+    const level = list.find((s) => s.target === 'level');
+    expect(up?.steep).toBe(true);
+    expect(level?.steep).toBe(false);
+    expect(list.indexOf(level as Suggestion)).toBeLessThan(list.indexOf(up as Suggestion));
+  });
+
+  it('flags nothing on level ground', () => {
+    let doc = createDocument({ seed: 't' });
+    doc = hab(doc, 'a', -12, 0);
+    doc = hab(doc, 'b', 12, 0);
+    expect(suggest(doc, 'a').every((s) => !s.steep)).toBe(true);
+  });
+});

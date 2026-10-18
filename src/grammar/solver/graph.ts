@@ -4,8 +4,7 @@
  * the sim needs nothing else from the solver to know where people can go.
  *
  * A node keeps one floor-level point per door (horizontal PRESS port) plus a centre on its floor;
- * walking through a node is port → centre → port. An edge keeps the tube's centreline lowered to
- * the floor. All lengths are
+ * walking through a node is port → centre → port. An edge keeps the corridor's floor line. All lengths are
  * walking distances in metres. Derived nodes (inserted on long tubes) are nodes like any other.
  */
 import type { Vec3 } from '@/core/math';
@@ -13,16 +12,12 @@ import type { PartId } from '@/world/document';
 import { getPart } from '../registry';
 import { pressVolume } from '../volume';
 import { isHorizontal } from './ports';
-import { PIPE_AXIS_LIFT } from './tube-path';
 import type { Letter } from '../types';
 import type { PressEdge, PressGraph, PressNode, ResolvedPart, ResolvedTube } from './types';
 
 export function emptyGraph(): PressGraph {
   return { nodes: new Map(), edges: [] };
 }
-
-/** A pipe's centreline, lowered to the floor it stands on (M3.5 stage 1 replaces the pipe). */
-const onFloor = (p: Vec3): Vec3 => [p[0], p[1] - PIPE_AXIS_LIFT, p[2]];
 
 const dist = (a: Vec3, b: Vec3): number => Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
 
@@ -68,7 +63,7 @@ export function buildGraph(
     const a = nodes.get(t.a.part);
     const b = nodes.get(t.b.part);
     if (!a || !b || !a.ports.has(t.a.port) || !b.ports.has(t.b.port)) continue;
-    const path = t.path.map(onFloor);
+    const path = t.path;
     edges.push({ id: t.id, kind: t.kind, a: t.a, b: t.b, path, length: pathLength(path) });
   }
   return { nodes, edges };

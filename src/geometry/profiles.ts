@@ -4,13 +4,14 @@
  * helper that stands an axis-aligned (Y-up) lathe along any direction.
  */
 import {
+  BufferGeometry,
   CylinderGeometry,
+  Float32BufferAttribute,
   LatheGeometry,
   Matrix4,
   Quaternion,
   Vector2,
   Vector3,
-  type BufferGeometry,
 } from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import type { Vec3 } from '@/core/math';
@@ -110,4 +111,238 @@ export function rod(a: Vec3, b: Vec3, radius: number, segments: number): BufferG
     [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2],
     [dir[0] / len, dir[1] / len, dir[2] / len],
   );
+}
+
+// ---- The corridor section ---------------------------------------------------
+
+/** One vertex of a closed 2D section: x lateral, y up from the floor line, and its outward normal. */
+export interface SectionPoint {
+  x: number;
+  y: number;
+  nx: number;
+  ny: number;
+}
+
+/** A closed loop, counter-clockwise in (x, y), consecutive normals continuous (no hard corners). */
+export type Section = readonly SectionPoint[];
+
+/**
+ * The corridor's skin: a flat underside `floorThick` below the floor line with 6 cm bevelled
+ * corners, straight walls, and a semicircular crown of radius width / 2 whose top is `height` over
+ * the floor. Normals are continuous all round, so one vertex per point shades correctly.
+ */
+export function corridorSection(
+  width: number,
+  height: number,
+  floorThick: number,
+  roofSteps: number,
+): Section {
+  const hw = width / 2;
+  const wallTop = height - hw;
+  const b = Math.min(BEVEL, hw);
+  const out: SectionPoint[] = [];
+  const arc = (cx: number, cy: number, r: number, from: number, to: number, n: number): void => {
+    for (let i = 0; i <= n; i++) {
+      const a = from + ((to - from) * i) / n;
+      out.push({
+        x: cx + Math.cos(a) * r,
+        y: cy + Math.sin(a) * r,
+        nx: Math.cos(a),
+        ny: Math.sin(a),
+      });
+    }
+  };
+  arc(-hw + b, -floorThick + b, b, Math.PI, 1.5 * Math.PI, BEVEL_SEGMENTS);
+  arc(hw - b, -floorThick + b, b, 1.5 * Math.PI, 2 * Math.PI, BEVEL_SEGMENTS);
+  arc(0, wallTop, hw, 0, Math.PI, roofSteps);
+  return out;
+}
+
+/**
+ * Where a section stands in the world: its origin on the floor line, the unit horizontal axis
+ * across the corridor, and a stretch of that axis. The heading is lat × up. A bend's mitre plane
+ * stretches the section by 1 / cos(half the turn), which is what makes two straight runs meet
+ * without a gap.
+ */
+export interface SectionFrame {
+  at: Vec3;
+  lat: Vec3;
+  stretch: number;
+}
+
+/** The horizontal unit heading of a frame: lat × up. */
+function headingOf(lat: Vec3): Vec3 {
+  return [-lat[2], 0, lat[0]];
+}
+
+/** The across axis of a horizontal heading: up × heading. */
+export function lateralOf(heading: Vec3): Vec3 {
+  return [heading[2], 0, -heading[0]];
+}
+
+function sectionAt(f: SectionFrame, p: SectionPoint, offset = 0): Vec3 {
+  const x = p.x * f.stretch + p.nx * offset;
+  const y = p.y + p.ny * offset;
+  return [f.at[0] + f.lat[0] * x, f.at[1] + y, f.at[2] + f.lat[2] * x];
+}
+
+function pushQuad(idx: number[], a: number, b: number, c: number, e: number): void {
+  idx.push(a, b, c, a, c, e);
+}
+
+/**
+ * The skin of a corridor: the section lofted through a frame per path vertex. Frames at a bend sit
+ * on its mitre plane and are stretched, so each straight piece is an exact prism, and the pieces
+ * meet on the plane with no overlap. A piece's normals are exact for a climbing piece too (the
+ * tangent in the section plane crossed with the piece's direction). Open at both ends.
+ */
+export function sectionSweep(section: Section, frames: readonly SectionFrame[]): BufferGeometry {
+  const n = section.length;
+  const pos: number[] = [];
+  const nor: number[] = [];
+  const uv: number[] = [];
+  const idx: number[] = [];
+  let s = 0;
+  for (let i = 0; i + 1 < frames.length; i++) {
+    const fa = frames[i] as SectionFrame;
+    const fb = frames[i + 1] as SectionFrame;
+    const dx = fb.at[0] - fa.at[0];
+    const dy = fb.at[1] - fa.at[1];
+    const dz = fb.at[2] - fa.at[2];
+    const len = Math.hypot(dx, dy, dz);
+    if (len < 1e-9) continue;
+    const dir = new Vector3(dx / len, dy / len, dz / len);
+    const h = Math.hypot(dx, dz);
+    if (h < 1e-9) continue;
+    const lat = new Vector3(dz / h, 0, -dx / h);
+    const base = pos.length / 3;
+    for (const [f, along] of [
+      [fa, s],
+      [fb, s + len],
+    ] as const) {
+      for (let j = 0; j < n; j++) {
+        const p = section[j] as SectionPoint;
+        pos.push(...sectionAt(f, p));
+        // Tangent of the loop (counter-clockwise) is (-ny, nx); the outward normal is tangent × dir.
+        const t = lat
+          .clone()
+          .multiplyScalar(-p.ny)
+          .add(new Vector3(0, p.nx, 0));
+        const nn = t.cross(dir).normalize();
+        nor.push(nn.x, nn.y, nn.z);
+        uv.push(j / n, along);
+      }
+    }
+    for (let j = 0; j < n; j++) {
+      const k = (j + 1) % n;
+      pushQuad(idx, base + j, base + k, base + n + k, base + n + j);
+    }
+    s += len;
+  }
+  return buildIndexed(pos, nor, uv, idx);
+}
+
+/** The D-shaped flange: the section pushed out by `flange`, `thick` along the heading, bevelled. */
+export function sectionRing(
+  section: Section,
+  frame: SectionFrame,
+  thick: number,
+  flange: number,
+): BufferGeometry {
+  const n = section.length;
+  const b = Math.min(BEVEL, thick / 2);
+  // The profile across the band in (offset along the section normal, along the heading), counter-
+  // clockwise, with its own normal in the same two axes.
+  const rows: { o: number; a: number; no: number; na: number }[] = [
+    { o: -HAB_RIB_INSET, a: -thick / 2, no: 0, na: -1 },
+    { o: flange - b, a: -thick / 2, no: 0, na: -1 },
+  ];
+  for (let i = 1; i <= BEVEL_SEGMENTS; i++) {
+    const t = -Math.PI / 2 + (i / BEVEL_SEGMENTS) * (Math.PI / 2);
+    rows.push({
+      o: flange - b + Math.cos(t) * b,
+      a: -thick / 2 + b + Math.sin(t) * b,
+      no: Math.cos(t),
+      na: Math.sin(t),
+    });
+  }
+  for (let i = 0; i <= BEVEL_SEGMENTS; i++) {
+    const t = (i / BEVEL_SEGMENTS) * (Math.PI / 2);
+    rows.push({
+      o: flange - b + Math.cos(t) * b,
+      a: thick / 2 - b + Math.sin(t) * b,
+      no: Math.cos(t),
+      na: Math.sin(t),
+    });
+  }
+  rows.push({ o: -HAB_RIB_INSET, a: thick / 2, no: 0, na: 1 });
+
+  const head = headingOf(frame.lat);
+  const pos: number[] = [];
+  const nor: number[] = [];
+  const uv: number[] = [];
+  const idx: number[] = [];
+  for (const r of rows) {
+    for (let j = 0; j < n; j++) {
+      const p = section[j] as SectionPoint;
+      const q = sectionAt(frame, p, r.o);
+      pos.push(q[0] + head[0] * r.a, q[1], q[2] + head[2] * r.a);
+      // Section normal (nx lateral, ny up) mixed with the heading.
+      const x = frame.lat[0] * p.nx * r.no + head[0] * r.na;
+      const y = p.ny * r.no;
+      const z = frame.lat[2] * p.nx * r.no + head[2] * r.na;
+      const l = Math.hypot(x, y, z) || 1;
+      nor.push(x / l, y / l, z / l);
+      uv.push(j / n, r.a);
+    }
+  }
+  for (let i = 0; i + 1 < rows.length; i++) {
+    for (let j = 0; j < n; j++) {
+      const k = (j + 1) % n;
+      pushQuad(idx, i * n + j, i * n + k, (i + 1) * n + k, (i + 1) * n + j);
+    }
+  }
+  return buildIndexed(pos, nor, uv, idx);
+}
+
+function buildIndexed(pos: number[], nor: number[], uv: number[], idx: number[]): BufferGeometry {
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new Float32BufferAttribute(nor, 3));
+  g.setAttribute('uv', new Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  return g;
+}
+
+/**
+ * A flat face closing the section at a frame: facing along the heading (`forward`) or against it.
+ * The section is convex, so a fan from its middle is enough. Buried inside a hull it is never seen;
+ * where a corridor mouth would otherwise show daylight (a round hull the crown overtops) it is the wall.
+ */
+export function sectionCap(
+  section: Section,
+  frame: SectionFrame,
+  forward: boolean,
+): BufferGeometry {
+  const n = section.length;
+  const head = headingOf(frame.lat);
+  const sign = forward ? 1 : -1;
+  let cy = 0;
+  for (const p of section) cy += p.y / n;
+  const pos: number[] = [...frame.at];
+  pos[1] = frame.at[1] + cy;
+  const nor: number[] = [head[0] * sign, 0, head[2] * sign];
+  const uv: number[] = [0.5, 0.5];
+  for (const p of section) {
+    pos.push(...sectionAt(frame, p));
+    nor.push(head[0] * sign, 0, head[2] * sign);
+    uv.push(p.x, p.y);
+  }
+  const idx: number[] = [];
+  for (let j = 0; j < n; j++) {
+    const k = (j + 1) % n;
+    if (forward) idx.push(0, 1 + j, 1 + k);
+    else idx.push(0, 1 + k, 1 + j);
+  }
+  return buildIndexed(pos, nor, uv, idx);
 }

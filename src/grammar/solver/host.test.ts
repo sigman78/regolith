@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { rotateY, snapYaw } from '@/core/math';
 import { Rng } from '@/core/rng';
-import { FOOT_SINK, LEG_MIN_CLEARANCE, SLAB_THICK, TUBE_RADIUS } from '@/geometry/design-constants';
+import {
+  FOOT_SINK,
+  LEG_MIN_CLEARANCE,
+  SLAB_THICK,
+  CORRIDOR_FLOOR_THICK,
+} from '@/geometry/design-constants';
 import { addLink, addPart, createDocument, type BaseDocument } from '@/world/document';
 import { generateTerrain, heightAt } from '@/world/terrain';
 import { solve, type ResolvedBase, type SolverWorld } from './index';
@@ -159,7 +164,7 @@ describe('slab hosting', () => {
             Math.abs(z - slab.pose.z) <= slab.footprint.hz
           ) {
             sampled++;
-            expect(y - TUBE_RADIUS).toBeGreaterThanOrEqual(top - 1e-6);
+            expect(y - CORRIDOR_FLOOR_THICK).toBeGreaterThanOrEqual(top - 1e-6);
           }
         }
       }

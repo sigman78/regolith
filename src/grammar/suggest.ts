@@ -35,6 +35,8 @@ const DETOUR_SLACK = 5;
 /** What a bend and a node cost, in metres of tube, when ranking. */
 const KINK_COST = 3;
 const NODE_COST = 6;
+/** A climb steeper than CORRIDOR_MAX_SLOPE is still offered, but costs like this many metres of tube. */
+const STEEP_COST = 12;
 
 export interface Suggestion {
   link: Link;
@@ -45,6 +47,8 @@ export interface Suggestion {
   kinks: number;
   /** derived nodes the route needs */
   nodes: number;
+  /** true when a corridor of the route climbs more than CORRIDOR_MAX_SLOPE */
+  steep: boolean;
   /** true when the two parts are not connected to each other yet */
   joinsComponents: boolean;
   /** Where to hang a label: the middle of the route, world space. */
@@ -153,6 +157,9 @@ function verify(
   }
   const tubes = [...trial.tubes.values()].filter((t) => t.id.startsWith(`${mineTube}:`));
   if (tubes.length === 0) return null;
+  const steep = trial.diagnostics.some(
+    (d) => d.kind === 'corridor-steep' && d.tube.startsWith(mineTube),
+  );
   const parts = [...trial.parts.values()].filter((p) => p.id.startsWith(`node:${key}:`));
 
   let length = 0;
@@ -172,6 +179,7 @@ function verify(
     length,
     kinks,
     nodes: parts.length,
+    steep,
     joinsComponents,
     anchor: midpoint(line),
     tubes,
@@ -181,7 +189,8 @@ function verify(
 
 function rank(a: Suggestion, b: Suggestion): number {
   if (a.joinsComponents !== b.joinsComponents) return a.joinsComponents ? -1 : 1;
-  const cost = (s: Suggestion): number => s.length + KINK_COST * s.kinks + NODE_COST * s.nodes;
+  const cost = (s: Suggestion): number =>
+    s.length + KINK_COST * s.kinks + NODE_COST * s.nodes + (s.steep ? STEEP_COST : 0);
   return cost(a) - cost(b) || cmp(linkKey(a.link), linkKey(b.link));
 }
 
