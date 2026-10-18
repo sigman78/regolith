@@ -92,4 +92,4 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-18 04:47 · ed17d08 · Merged docs/human-scale (M3.5 proposal and decisions) into main and pushed
 - 2026-10-18 04:54 · 9d865a7 · M3.5 stage 0: floor model (one 1.5 m deck for every part), PartDefinition.floor, doors on the floor, graph without the drop, port-on-floor and corridor-steep diagnostics
 - 2026-10-18 04:59 · 0e95393 · M3.5 stage 0 checkpoint fixes: PartDefinition.shellGap and port gap so pipe ends reach the hull, all-pairs route check on the golden base, node numbers corrected, stage 1 notes
-2026-10-18 14:45 · dd33e29 · merge feat/m35-floors: M3.5 stage 0, one floor rule and ports on the floor
+- 2026-10-18 14:45 · dd33e29 · merge feat/m35-floors: M3.5 stage 0, one floor rule and ports on the floor
