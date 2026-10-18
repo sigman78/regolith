@@ -5,6 +5,7 @@
  */
 import type { Scene } from 'three';
 import { snapYaw } from '@/core/math';
+import { SNAP_ARROW_MIN } from '@/geometry/design-constants';
 import {
   emptyBase,
   linkKey,
@@ -17,13 +18,23 @@ import { getPart } from '@/grammar/registry';
 import type { ParamValues } from '@/grammar/types';
 import { materials } from '@/render/materials';
 import { SceneSync } from '@/render/scene-sync';
+import { SnapArrow } from '@/render/snap-arrow';
 import { addLink, addPart, type BaseDocument, type Link, type PartPose } from '@/world/document';
 import type { Letter } from '@/world/letter';
 
 export const GHOST_ID = '__ghost__';
 
+/** True when the solver moved a ghost far enough from the cursor that the player should be told. */
+export function needsSnapArrow(
+  cursor: { x: number; z: number },
+  resolved: { x: number; z: number },
+): boolean {
+  return Math.hypot(resolved.x - cursor.x, resolved.z - cursor.z) > SNAP_ARROW_MIN;
+}
+
 export class Ghost {
   private readonly sync: SceneSync;
+  private readonly arrow: SnapArrow;
   private shown: ResolvedPart | null = null;
 
   constructor(
@@ -32,6 +43,7 @@ export class Ghost {
     private readonly getDoc: () => BaseDocument,
   ) {
     this.sync = new SceneSync(scene, { override: materials.ghost });
+    this.arrow = new SnapArrow(scene);
   }
 
   /** The pose the solver resolved for the last `show`, or null when hidden. */
@@ -58,12 +70,22 @@ export class Ghost {
       if (t.a.part === GHOST_ID || t.b.part === GHOST_ID) view.tubes.set(t.id, t);
     }
     this.sync.sync(view);
+
+    if (part && needsSnapArrow(at, part.pose)) {
+      this.arrow.show(
+        [at.x, this.world.heightAt(at.x, at.z), at.z],
+        [part.pose.x, this.world.heightAt(part.pose.x, part.pose.z), part.pose.z],
+      );
+    } else {
+      this.arrow.hide();
+    }
     return part;
   }
 
   /** Preview the tube (and any nodes) a new link would create. Returns false if none would. */
   showLink(link: Link): boolean {
     this.shown = null;
+    this.arrow.hide();
     const doc = addLink(this.getDoc(), link);
     const base = solve(doc, this.world);
     const key = linkKey(link);
@@ -78,6 +100,7 @@ export class Ghost {
 
   hide(): null {
     this.shown = null;
+    this.arrow.hide();
     this.sync.clear();
     return null;
   }

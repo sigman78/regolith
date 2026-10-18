@@ -281,3 +281,12 @@ export const DOME_RIB_THICK = 0.2;
 export const DOME_STRIPE_Y = 1.25;
 export const DOME_STRIPE_HALF = 0.18;
 export const DOME_STRIPE_PROUD = 0.012;
+
+// ---- Editor cues ------------------------------------------------------------
+
+/** The ghost shows a snap arrow once the solver moves it this far from the cursor, metres. */
+export const SNAP_ARROW_MIN = 0.25;
+export const SNAP_ARROW_RADIUS = 0.07;
+export const SNAP_ARROW_HEAD = { radius: 0.24, length: 0.5 } as const;
+/** Lift above the terrain so the arrow does not z-fight with it, metres. */
+export const SNAP_ARROW_LIFT = 0.15;
