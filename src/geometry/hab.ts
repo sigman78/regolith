@@ -7,7 +7,7 @@
  */
 import { Vector2, type LatheGeometry } from 'three';
 import type { BundleBuilder } from './bundle';
-import { lathe, ribProfile } from './profiles';
+import { bevelBox, lathe, ribProfile } from './profiles';
 import {
   FLANGE_RATIO,
   HAB_CAP_RATIO,
@@ -18,6 +18,11 @@ import {
   HAB_STRIPE_FROM_END,
   HAB_STRIPE_HALF,
   HAB_STRIPE_PROUD,
+  HAB_WINDOW_ANGLE_DEG,
+  HAB_WINDOW_ARC,
+  HAB_WINDOW_LENGTH,
+  HAB_WINDOW_PROUD,
+  HAB_WINDOW_THICK,
   RIB_SPACING,
 } from './design-constants';
 
@@ -66,6 +71,7 @@ export function buildHab(out: BundleBuilder, op: HabOp): void {
   }
 
   const stripeY = length / 2 - HAB_STRIPE_FROM_END;
+  addWindows(out, length, radius, stripeY);
   const r = radius + HAB_STRIPE_PROUD;
   out.add(
     'accent',
@@ -76,4 +82,26 @@ export function buildHab(out: BundleBuilder, op: HabOp): void {
       ),
     ),
   );
+}
+
+/**
+ * One window pane in the middle of each rib bay, on both upper flanks, so a
+ * camera looking down sees a row of lit panes (they glow at night). The bay
+ * under the accent stripe is left plain.
+ */
+function addWindows(out: BundleBuilder, length: number, radius: number, stripeY: number): void {
+  const count = Math.max(1, Math.round(length / RIB_SPACING));
+  const angle = (HAB_WINDOW_ANGLE_DEG * Math.PI) / 180;
+  for (let i = 0; i < count; i++) {
+    const x = -length / 2 + (length * (i + 0.5)) / count;
+    if (Math.abs(x - stripeY) < HAB_STRIPE_HALF + HAB_WINDOW_LENGTH / 2 + 0.2) continue;
+    for (const side of [1, -1]) {
+      // A thin box with its outer face HAB_WINDOW_PROUD off the hull, turned to face outward.
+      const pane = bevelBox(HAB_WINDOW_LENGTH, HAB_WINDOW_THICK, HAB_WINDOW_ARC);
+      pane.translate(0, radius + HAB_WINDOW_PROUD - HAB_WINDOW_THICK, 0);
+      pane.rotateX(side * angle);
+      pane.translate(x, 0, 0);
+      out.add('glass', pane);
+    }
+  }
 }

@@ -290,3 +290,13 @@ export const SNAP_ARROW_RADIUS = 0.07;
 export const SNAP_ARROW_HEAD = { radius: 0.24, length: 0.5 } as const;
 /** Lift above the terrain so the arrow does not z-fight with it, metres. */
 export const SNAP_ARROW_LIFT = 0.15;
+
+// ---- Hab windows ---------------------------------------------------------------------
+/** Window panes on the upper flanks of a hab, one per rib bay and side. */
+export const HAB_WINDOW_LENGTH = 0.9;
+export const HAB_WINDOW_ARC = 0.55;
+export const HAB_WINDOW_THICK = 0.05;
+/** The pane's outer face stands this far proud of the hull (no coplanar faces). */
+export const HAB_WINDOW_PROUD = 0.02;
+/** Angle of the window rows from the top of the hull, degrees. */
+export const HAB_WINDOW_ANGLE_DEG = 52;

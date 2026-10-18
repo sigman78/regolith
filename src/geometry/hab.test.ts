@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { H } from '@/grammar/parts/H';
 import { buildBundle, clearBundleCache } from './build';
-import { HAB_LENGTH, HAB_RADII } from './design-constants';
+import { HAB_LENGTH, HAB_RADII, HAB_STRIPE_FROM_END, HAB_STRIPE_HALF } from './design-constants';
 import { assertValidBundle } from './validate';
 
 const lengths: number[] = [];
@@ -18,7 +18,40 @@ describe('hab geometry', () => {
       for (const radius of HAB_RADII) {
         const { bundle } = hullBundle(length, radius);
         expect(() => assertValidBundle(bundle)).not.toThrow();
-        expect(Object.keys(bundle.byMaterial).sort()).toEqual(['accent', 'graphite', 'hull']);
+        expect(Object.keys(bundle.byMaterial).sort()).toEqual([
+          'accent',
+          'glass',
+          'graphite',
+          'hull',
+        ]);
+      }
+    }
+  });
+
+  it('puts window panes proud of the hull, on both flanks, never under the stripe', () => {
+    for (const length of lengths) {
+      for (const radius of HAB_RADII) {
+        const { bundle } = hullBundle(length, radius);
+        const glass = bundle.byMaterial.glass;
+        expect(glass).toBeTruthy();
+        if (!glass) return;
+        let minR = Infinity;
+        let seenPlus = false;
+        let seenMinus = false;
+        const stripeX = length / 2 - HAB_STRIPE_FROM_END;
+        for (let i = 0; i < glass.positions.length; i += 3) {
+          const x = glass.positions[i] ?? 0;
+          const y = glass.positions[i + 1] ?? 0;
+          const z = glass.positions[i + 2] ?? 0;
+          minR = Math.min(minR, Math.hypot(y, z));
+          if (z > 0) seenPlus = true;
+          if (z < 0) seenMinus = true;
+          expect(Math.abs(x - stripeX)).toBeGreaterThan(HAB_STRIPE_HALF);
+        }
+        // No pane face lies on the hull: every vertex is at least the pane's inset off it
+        // or clearly proud (the back face is buried, the front face stands 2 cm off).
+        expect(minR).toBeGreaterThan(radius - 0.1);
+        expect(seenPlus && seenMinus).toBe(true);
       }
     }
   });
