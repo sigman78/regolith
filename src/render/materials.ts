@@ -83,18 +83,9 @@ export const materials = {
     metalness: 0.3,
     vertexColors: true,
   }),
-  /** Lamp heads: warm white, glowing at night (the same glow as windows for now). */
-  light: new MeshStandardMaterial({
-    color: new Color(0xffffff),
-    roughness: 0.3,
-    metalness: 0.0,
-    emissive: new Color(PALETTE.windowWarm),
-    emissiveIntensity: 0.0,
-    vertexColors: true,
-  }),
   /**
    * Lamp heads drawn as instances (render/lamps.ts): the instance colour is both paint and glow
-   * (shader-patches.ts), so the airlock lamp can cycle through palette colours.
+   * (shader-patches.ts), so an airlock lamp can cycle through palette colours and pole heads and the beacon take theirs.
    */
   lamp: new MeshStandardMaterial({
     color: new Color(0xffffff),
@@ -143,6 +134,5 @@ void _complete;
 /** Windows warm up at dusk and glow at night. Called from the sky update. */
 export function setNightGlow(amount: number): void {
   materials.glass.emissiveIntensity = amount * 1.6;
-  materials.light.emissiveIntensity = amount * 2.2;
   materials.lamp.emissiveIntensity = LAMP_BASE_GLOW + amount * 1.4;
 }

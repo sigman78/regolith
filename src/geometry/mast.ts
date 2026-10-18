@@ -120,9 +120,10 @@ export function buildMast(out: BundleBuilder, op: MastOp): void {
   }
 }
 
+/** The ball every head carries; graphite, and the base's beacon glows over the owner's. */
 function beacon(out: BundleBuilder, at: Vec3): void {
   out.add(
-    'accent',
+    'graphite',
     translated(
       lathe(sphereProfile(MAST_BEACON_RADIUS, 6), MAST_BEACON_SEGMENTS),
       at[0],

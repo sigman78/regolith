@@ -19,6 +19,7 @@ import {
   LEG_MIN_CLEARANCE,
 } from '@/geometry/design-constants';
 import type { Vec3 } from '@/core/math';
+import { beaconOn } from '../lamps';
 import { readChoice } from '../params';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
@@ -93,5 +94,9 @@ export const D: PartDefinition<DomeParams> = {
 
   summary(p) {
     return `${p.radius} m`;
+  },
+
+  beacon(p) {
+    return beaconOn(p.radius + DOME_COLLAR_HEIGHT);
   },
 };

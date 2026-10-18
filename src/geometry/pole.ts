@@ -1,15 +1,15 @@
 /**
- * Letter X geometry: a slim graphite pole on a round base, with an arm, a hood and a lamp
- * facing down. Frame matches grammar/parts/X.ts: axis +Y, base underside at y = 0.
+ * Letter X geometry: a slim graphite pole on a round base, with an arm and a hood. The lamp plate under the hood is
+ * an instance (render/lamps.ts, placed by grammar/lamps.ts). Frame matches grammar/parts/X.ts: axis +Y, base underside at y = 0.
  */
 import { Vector2 } from 'three';
 import type { BundleBuilder } from './bundle';
 import {
   POLE_ARM,
+  POLE_ARM_DROP,
   POLE_BASE_RADIUS,
   POLE_BASE_THICK,
   POLE_HOOD,
-  POLE_LIGHT,
   POLE_RADIUS_BOTTOM,
   POLE_RADIUS_TOP,
   POLE_SEGMENTS,
@@ -36,7 +36,7 @@ export function buildPole(out: BundleBuilder, op: PoleOp): void {
     ),
   );
 
-  const armY = h - 0.1;
+  const armY = h - POLE_ARM_DROP;
   const arm = bevelBox(POLE_ARM, 0.06, 0.06);
   arm.translate(POLE_ARM / 2, armY, 0);
   out.add('graphite', arm);
@@ -44,8 +44,4 @@ export function buildPole(out: BundleBuilder, op: PoleOp): void {
   const hood = bevelBox(POLE_HOOD[0], POLE_HOOD[1], POLE_HOOD[2]);
   hood.translate(POLE_ARM, armY - POLE_HOOD[1] / 2, 0);
   out.add('graphite', hood);
-
-  const lamp = bevelBox(POLE_LIGHT[0], POLE_LIGHT[1], POLE_LIGHT[2]);
-  lamp.translate(POLE_ARM, armY - POLE_HOOD[1] / 2 - POLE_LIGHT[1], 0);
-  out.add('light', lamp);
 }

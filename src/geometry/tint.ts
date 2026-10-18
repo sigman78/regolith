@@ -28,7 +28,7 @@ const dust = new Color(TINT_DUST);
 const WIND = [Math.cos((WIND_FROM_DEG * Math.PI) / 180), Math.sin((WIND_FROM_DEG * Math.PI) / 180)];
 
 /** Materials that stay clean: glass reads as glass, not as dusty hull. */
-const UNTINTED: ReadonlySet<MaterialName> = new Set(['glass', 'light']);
+const UNTINTED: ReadonlySet<MaterialName> = new Set(['glass']);
 /** Rocks are already dust-coloured and small: underside shade only, no contact band or dust. */
 const SHADE_ONLY: ReadonlySet<MaterialName> = new Set(['rock']);
 

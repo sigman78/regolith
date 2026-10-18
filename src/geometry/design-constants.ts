@@ -432,7 +432,8 @@ export const POLE_SEGMENTS = 14;
 /** The lamp head: an arm reaching along +x, a hood and the light under it. */
 export const POLE_ARM = 0.4;
 export const POLE_HOOD = [0.4, 0.06, 0.26] as const;
-export const POLE_LIGHT = [0.34, 0.03, 0.2] as const;
+/** The arm sits this far under the pole top; the lamp plate hangs under the hood. */
+export const POLE_ARM_DROP = 0.1;
 export const POLE_FOOTPRINT_MARGIN = 0.3;
 /** The pole stands on its base plate with a single short foot (every part stands on something). */
 export const POLE_CLEARANCE = 0.1;
@@ -467,3 +468,11 @@ export const SUIT_HELMET_RADIUS = 0.25;
 export const SUIT_PACK = [0.2, 0.5, 0.34] as const;
 export const SUIT_VISOR = [0.1, 0.12, 0.28] as const;
 export const SUIT_SEGMENTS = 14;
+
+// ---- Night lights -------------------------------------------------------------------
+/** Lamp plates drawn at most (airlock and pole heads); the stress base has far fewer. */
+export const LAMP_CAPACITY = 256;
+/** The beacon ball: one centimetre proud of the graphite ball every mast head carries. */
+export const BEACON_RADIUS = MAST_BEACON_RADIUS + 0.01;
+/** How far the ball centre sits above the surface it rests on, as a share of its radius. */
+export const BEACON_LIFT = 0.5;

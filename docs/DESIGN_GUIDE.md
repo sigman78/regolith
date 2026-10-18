@@ -71,8 +71,7 @@ One library in `src/render/materials.ts`. Parts reference entries by name; they 
 | `glass` | glass teal | 0.15 | 0 | opacity 0.55 day; emissive `window warm` ramps 0 → 1.6 across dusk. No transmission (cost). |
 | `solar` | solar blue | 0.25 | 0.3 | The panel face. Tiny specular glint. |
 | `solarCell` | `#4A79B8` | 0.30 | 0.3 | The cell lines on a panel face: thin planes 4 mm above it (no texture). Same palette row as solar blue. |
-| `light` | white | 0.3 | 0 | Lamp heads on the light pole. Emissive warm, driven by the night glow for now; per instance in M3 task 6 (beacons, ground lights). Never dust-tinted. |
-| `lamp` | white | 0.3 | 0 | The airlock lamp, one instanced mesh. Emissive white times the instance colour, so each lamp shows its own phase; instance colours are palette entries only. Glows brighter at night with the window glow. Never dust-tinted. |
+| `lamp` | white | 0.3 | 0 | Every lamp head, as instanced meshes: the airlock lamp and the light pole head (flat plates) and the beacon ball. Emissive white times the instance colour, so each lamp shows its own colour; instance colours are palette entries only (the beacon at half strength, same hue, so the night glow keeps it orange). The material's emissive intensity is the night ramp (window glow), so lamps are lit by day at the base level and brighter at night, with no per-lamp switch. Never dust-tinted. |
 | `plant` | plant green | 0.8 | 0 | subsurface fake via wrapped diffuse in a small shader patch. Plant green is also the airlock lamp's "open" colour. |
 
 Until the sky environment map lands (M2), no part uses `aluminium`: a fully metallic surface renders black without an environment to reflect. Parts use `hull` and `graphite` instead.
@@ -150,9 +149,9 @@ The base is written in letters. Each letter is a parametric generator with ports
 | **E** | Power core (compact reactor) | size S/M | `POWER` ×3, `STRUCT` | radiator fins that glow at night, keep-out hazard ring, hum when zoomed close |
 | **K** | Tank | radius 1.5/2.5, length 3–8, horizontal/vertical | `STRUCT` | cradle legs, frost band at the bottom third, stencil (O2 / H2O / CH4), pipe to nearest hab |
 | **R** | Radiator | panels 2–8, deployed angle | `STRUCT` | slow deploy animation on place, faint red emissive at night |
-| **M** | Mast | height 6/12/20, head: dish / whip / relay | `STRUCT`, `POWER` | guy wires on 20 m, dish tracks a satellite, red beacon, drone inspection target |
+| **M** | Mast | height 6/12/20, head: dish / whip / relay | `STRUCT`, `POWER` | guy wires on 20 m, dish tracks a satellite, orange beacon (the palette has no red), drone inspection target. Its head ball is graphite; the glowing orange beacon is a larger ball of the same centre, drawn only when this mast is the tallest part that can carry the beacon |
 | **B** | Berm (regolith wall) | spline, height 1–3 | — | drawn with the terrain brush; soft ridge with a crest path |
-| **X** | Light pole | height 4 | `POWER` | warm pool of light at night; auto-placed along paths if the player enables "street lights" |
+| **X** | Light pole | height 4 | `POWER` | a warm head under the hood that glows at night (the pool of light on the ground waits for M4: a shader term on the terrain, not a disc); auto-placed along paths if the player enables "street lights" |
 | **P** | Pad (foundation slab) | w × d 2–12 m | `STRUCT` top (anything placed on it inherits the pad as ground) | levelled regolith apron, chamfered edge, drain grooves |
 | **C** | Launcher (electromagnetic mass driver) | length 8–20 m step 4, elevation 10/20/30° | `STRUCT` ×4 under the sled, `POWER` at the breech | coil rings along the barrel, hazard band at the muzzle, trestle posts; fires a cargo capsule on a lander-less schedule (M5). Not a weapon: the fantasy is a kinder future (KICKOFF). |
 
@@ -168,10 +167,10 @@ Alphabet is **frozen per milestone**; see PLAN.md for which letters ship when.
 2. A tube is a polyline on the grid of at most 3 segments with 45° kinks. Spans over 24 m or with more than 2 kinks auto-insert a **node** at the best grid point. Tubes never pass through hulls; if they must, a node is inserted to route around.
 3. Every part with a `STRUCT` port must be grounded: on terrain (legs generated to the sampled height), on a pad, or on a host part. Nothing floats, ever.
 4. Pressurized hulls **never intersect**. When the player moves a part into another, the solver resolves by: (a) snapping to the nearest non-intersecting grid pose, or (b) if a `PRESS` port is in range, docking. The ghost preview shows the resolved pose before commit, so the player is never surprised.
-5. `POWER` ports connect automatically to the nearest reachable power network via ground cables routed on the grid around footprints. Unpowered habs still work (P1), they just show no cable and a dim porch light. Power is purely cosmetic.
+5. `POWER` ports connect automatically to the nearest reachable power network via ground cables routed on the grid around footprints. Unpowered parts still work (P1), they just show no cable; lights never depend on power. Power is purely cosmetic.
 6. `EXT` ports spawn a path origin. Paths grow between origins proportional to crew traffic. Paths avoid hull footprints and climb berms via cut steps.
 7. Decorators are **derived state**. They are recomputed from the structure, never stored, so they can never be stale or orphaned.
-8. The tallest part owns the beacon. Exactly one beacon per base.
+8. The tallest part owns the beacon. Exactly one beacon per base. "Tallest" is the world height of the ball's mount (the part's ground height plus its mount), so a tower on a slab outranks the same tower on the ground; ties go to the smaller part id. Only parts that offer a mount can own it (H, N, D, V, E, M); a launcher, an array, a deck, an airlock or a pole never does. The beacon is steady, never blinking. Porch light: the airlock lamp is the porch light; there are no extra lamps on habs.
 
 ### 8.4 Invariants ("always / never")
 
