@@ -188,7 +188,9 @@ Alphabet is **frozen per milestone**; see PLAN.md for which letters ship when.
 | Normal seams | Lathe and sweep generators share one profile library with explicit hard/soft edge flags; normals are computed by the generator, never by `computeVertexNormals` on merged geometry. |
 | Scale drift | Every generator takes metres and the design constants from a single `design-constants.ts` (bevel, flange ratio, rib spacing). No magic numbers in part files. |
 | Determinism | Every generator is a pure function of (params, seed). Geometry cache keyed by hash. Same base, same bytes. |
-| Colour drift | Materials only from the library. Vertex tints only through two helpers: `tintUnderside` and `tintDust`. |
+| Colour drift | Materials only from the library. Vertex tints only through two helpers: `tintUnderside` and `tintDust`. The one other per-part colour is the individual hull tint: an instance multiplier that leans the hull up to 35% of the way from Hull white to Hull shaded (about 5% darker, a touch warmer), so it is always a point on a palette segment. |
+| Stencils | Each hab carries its tag (`H-002`: letter, dash, serial mod 1000) in graphite on the flank that faces the default camera, in the rib bay furthest from the stripe, reading left to right whatever the yaw and never mirrored by a flip. Glyphs are 5 × 7 cells of 4.5 cm (22 × 32 cm), wrapped onto the hull 6 mm proud at 86° from the top (the windows sit at 52°), built from a hand-coded rectangle font, never rasterised text. Solver-made nodes have no serial and no stencil. |
+| Individuality | Derived from `(letter, serial, seed)` in `grammar/individual.ts`, never stored. Hull tint on H, V, D, N, P; a stripe variant on H (accent at the +x end, accent at the −x end, graphite at the +x end). Solver-made nodes (serial 0) and the other letters stay as authored. |
 
 ## 10. Animation principles
 

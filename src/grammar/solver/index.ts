@@ -12,6 +12,8 @@
  */
 import { hashValue } from '@/core/hash';
 import type { BaseDocument } from '@/world/document';
+import { decalsFor } from '../decals';
+import { individualOf } from '../individual';
 import { diagnose } from './diagnose';
 import { dock } from './dock';
 import { flattenStage } from './flatten';
@@ -92,7 +94,12 @@ export function solve(
 
 function toResolved(g: Grounded, seed: string, derived: boolean): ResolvedPart {
   const { draft } = g;
-  const recipe = draft.def.geometry(draft.params, { seed });
+  const { variant, tint } = individualOf(
+    draft.instance.letter,
+    derived ? 0 : draft.instance.serial,
+    seed,
+  );
+  const recipe = draft.def.geometry(draft.params, { seed, variant });
   return {
     id: draft.instance.id,
     letter: draft.instance.letter,
@@ -104,6 +111,10 @@ function toResolved(g: Grounded, seed: string, derived: boolean): ResolvedPart {
     ports: g.ports,
     legs: g.legs,
     recipe,
+    tint,
+    decals: derived
+      ? []
+      : decalsFor(draft.instance.letter, draft.instance.serial, draft.params, draft.pose, variant),
     recipeHash: hashValue(recipe),
     ...(derived ? { derived: true as const } : {}),
   };

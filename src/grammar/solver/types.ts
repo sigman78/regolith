@@ -5,6 +5,7 @@
 import type { Pose, Vec3 } from '@/core/math';
 import type { FlatField } from '@/world/flatten';
 import type { Link, PartId, PartInstance, PortRef } from '@/world/document';
+import type { Decal } from '../decals';
 import type {
   Footprint,
   GeometryRecipe,
@@ -61,6 +62,10 @@ export interface ResolvedPart {
   ports: ResolvedPort[];
   legs: Leg[];
   recipe: GeometryRecipe;
+  /** individual.ts: 0..INDIVIDUAL_TINT_MAX, how far the hull leans to Hull shaded (per instance, not in the recipe) */
+  tint: number;
+  /** Paint on the hull (the serial stencil), world-space matrices; not part of the body recipe. */
+  decals: Decal[];
   /** stable hash of the recipe; the scene cache key for the body mesh */
   recipeHash: string;
   /** Inserted by the solver (a node on a long tube); not in the document. */

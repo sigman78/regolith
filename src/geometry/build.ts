@@ -12,6 +12,7 @@ import { buildLauncher } from './launcher';
 import { buildMast } from './mast';
 import { buildNode } from './node';
 import { buildSlab } from './slab';
+import { buildStencil } from './stencil';
 import { buildReactor } from './reactor';
 import { buildRock } from './rock';
 import { buildTower } from './tower';
@@ -36,6 +37,9 @@ export function buildBundle(recipe: GeometryRecipe): GeometryBundle {
         break;
       case 'node':
         buildNode(out, op);
+        break;
+      case 'stencil':
+        buildStencil(out, op);
         break;
       case 'slab':
         buildSlab(out, op);
