@@ -3,6 +3,7 @@
  * most of what keeps the look consistent. See docs/DESIGN_GUIDE.md.
  */
 import { Color, DoubleSide, MeshStandardMaterial } from 'three';
+import type { MaterialName } from '@/geometry/bundle';
 
 export const PALETTE = {
   regolith: '#b5582f',
@@ -45,6 +46,16 @@ export const materials = {
     roughness: 0.35,
     metalness: 1.0,
   }),
+  /** Placement preview: hull colour at half strength, never casts shadows. */
+  ghost: new MeshStandardMaterial({
+    color: new Color(PALETTE.hullWhite),
+    emissive: new Color(PALETTE.accentOrange),
+    emissiveIntensity: 0.25,
+    roughness: 0.6,
+    transparent: true,
+    opacity: 0.5,
+    depthWrite: false,
+  }),
   glass: new MeshStandardMaterial({
     color: new Color(PALETTE.glassTeal),
     roughness: 0.15,
@@ -56,6 +67,10 @@ export const materials = {
     side: DoubleSide,
   }),
 };
+
+// Compile-time check: every material name geometry/ may emit exists in the library.
+const _complete: MaterialName extends keyof typeof materials ? true : never = true;
+void _complete;
 
 /** Windows warm up at dusk and glow at night. Called from the sky update. */
 export function setNightGlow(amount: number): void {
