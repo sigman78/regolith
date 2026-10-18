@@ -8,6 +8,7 @@ import { BundleBuilder, type GeometryBundle } from './bundle';
 import { buildHab } from './hab';
 import { buildLegFoot, buildLegStrut } from './leg';
 import { buildNode } from './node';
+import { buildSlab } from './slab';
 import { buildTube } from './tube';
 
 const cache = new Map<string, GeometryBundle>();
@@ -29,6 +30,9 @@ export function buildBundle(recipe: GeometryRecipe): GeometryBundle {
         break;
       case 'node':
         buildNode(out, op);
+        break;
+      case 'slab':
+        buildSlab(out, op);
         break;
       case 'tube':
         buildTube(out, op);

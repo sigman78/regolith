@@ -120,3 +120,18 @@ export const TUBE_TURN_COST = 1.5;
 export const DOCK_RANGE = 1.5;
 export const DOCK_ANGLE_DEG = 15;
 export const DOCK_LATERAL = 0.5;
+
+// ---- Slab (letter P) --------------------------------------------------------
+
+export const SLAB_SIZE = { min: 2, max: 12, step: 2, default: 8 } as const;
+/** Deck thickness; its top is the surface other parts stand on. */
+export const SLAB_THICK = 0.5;
+export const SLAB_FOOTPRINT_MARGIN = 0.1;
+/** Pylon feet sit this far in from the slab edge. */
+export const SLAB_FOOT_INSET = 0.6;
+/** Pylons along a slab edge are at most this far apart. */
+export const SLAB_FOOT_SPACING = 4;
+/** Hazard band along the slab top: width, inset from the edge, height proud of the deck. */
+export const SLAB_BAND_WIDTH = 0.2;
+export const SLAB_BAND_INSET = 0.2;
+export const SLAB_BAND_PROUD = 0.02;

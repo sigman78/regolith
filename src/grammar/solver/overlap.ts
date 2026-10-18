@@ -13,6 +13,7 @@
  */
 import { GRID } from '@/geometry/design-constants';
 import { shiftCellKey } from '../footprint';
+import { isHost } from './ground';
 import type { Diagnostic, Draft, SolveOptions, SolverWorld } from './types';
 
 interface Offset {
@@ -51,10 +52,13 @@ export function overlap(
     );
   }
 
-  const taken = new Set<number>();
+  // Hosts (slabs) only collide with each other; everything else stands on or beside them.
+  const takenHosts = new Set<number>();
+  const takenParts = new Set<number>();
   const maxRing = Math.ceil((world.halfSize * 2) / GRID);
 
   for (const d of ordered) {
+    const taken = isHost(d) ? takenHosts : takenParts;
     if (!collides(d.cells, taken, 0, 0)) {
       claim(d.cells, taken);
       continue;

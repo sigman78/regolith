@@ -4,9 +4,10 @@
  */
 import { H } from './parts/H';
 import { N } from './parts/N';
+import { P } from './parts/P';
 import type { Letter, PartDefinition } from './types';
 
-const DEFINITIONS: readonly PartDefinition[] = [H, N];
+const DEFINITIONS: readonly PartDefinition[] = [H, N, P];
 
 const BY_LETTER: ReadonlyMap<Letter, PartDefinition> = new Map(
   DEFINITIONS.map((d) => [d.letter, d]),

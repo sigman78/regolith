@@ -27,7 +27,13 @@ export type Footprint = { kind: 'rect'; hx: number; hz: number } | { kind: 'disc
 
 export type GroundSpec =
   /** STRUCT ports get legs down to the terrain; the hull keeps `minClearance` above it. */
-  { mode: 'legs'; minClearance: number } | { mode: 'none' };
+  | {
+      mode: 'legs';
+      minClearance: number;
+      /** Local height of a standable top surface; other parts on this footprint stand on it. */
+      hostTop?: number;
+    }
+  | { mode: 'none' };
 
 // ---- Params -------------------------------------------------------------------
 
@@ -47,6 +53,7 @@ export type ParamSchema = Readonly<Record<string, ParamSpec>>;
 export type GeomOp =
   | { kind: 'hab'; length: number; radius: number }
   | { kind: 'node'; radius: number }
+  | { kind: 'slab'; w: number; d: number }
   /** World-space centreline, flat x,y,z, already embedded slightly into the hulls at both ends. */
   | { kind: 'tube'; points: number[] }
   /** Unit-height leg strut, base at y = 0. Render scales it in Y to the leg length. */

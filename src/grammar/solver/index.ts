@@ -12,7 +12,7 @@
 import { hashValue } from '@/core/hash';
 import type { BaseDocument } from '@/world/document';
 import { dock } from './dock';
-import { ground, type Grounded } from './ground';
+import { ground, isHost, type Grounded } from './ground';
 import { overlap } from './overlap';
 import { place } from './place';
 import { tubesStage } from './tubes';
@@ -40,14 +40,15 @@ export function solve(
   const diagnostics: Diagnostic[] = [];
   const placed = place(doc, world, diagnostics);
   const resolved = overlap(placed, world, opts, diagnostics);
-  const grounded = ground(resolved, world);
+  const { grounded, surface } = ground(resolved, world);
 
+  // Tubes route around hulls but not over slabs (they clear a slab's top instead).
   const taken = new Set<number>();
-  for (const g of grounded) for (const c of g.draft.cells) taken.add(c);
+  for (const g of grounded) if (!isHost(g.draft)) for (const c of g.draft.cells) taken.add(c);
 
   const used = new Set<string>();
-  const docks = dock(grounded, world, used);
-  const linked = tubesStage(doc, grounded, world, taken, used, diagnostics);
+  const docks = dock(grounded, surface, used);
+  const linked = tubesStage(doc, grounded, surface, taken, used, diagnostics);
 
   const parts = new Map<string, ResolvedPart>();
   for (const g of grounded) {

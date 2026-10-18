@@ -345,7 +345,7 @@ function insertNode(ctx: Ctx, piece: Piece): [Piece, Piece] | null {
     pose,
     cells: footprintCells(footprint, pose),
   };
-  const [node] = ground([draft], ctx.world);
+  const [node] = ground([draft], ctx.world).grounded;
   if (!node) return null;
   for (const cell of node.draft.cells) claim(ctx, cell);
   ctx.result.nodes.push(node);

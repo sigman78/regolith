@@ -13,7 +13,7 @@
  * the hull belly never dips below the sampled terrain.
  */
 import { FOOT_SINK } from '@/geometry/design-constants';
-import { localToWorld } from '@/core/math';
+import { localToWorld, rotateY } from '@/core/math';
 import { cellCenter } from '../footprint';
 import type { Draft, Leg, ResolvedPort, SolverWorld } from './types';
 
@@ -23,8 +23,64 @@ export interface Grounded {
   legs: Leg[];
 }
 
-export function ground(drafts: Draft[], world: SolverWorld): Grounded[] {
-  return drafts.map((draft) => groundOne(draft, world));
+/** A part other parts can stand on (a slab). */
+export function isHost(draft: Draft): boolean {
+  const spec = draft.def.ground(draft.params);
+  return spec.mode === 'legs' && spec.hostTop !== undefined;
+}
+
+interface HostTop {
+  x: number;
+  z: number;
+  yaw: number;
+  hx: number;
+  hz: number;
+  top: number;
+}
+
+/**
+ * Hosts are grounded on bare terrain first; everything else then stands on the
+ * `surface`: the terrain, or a host's top wherever one is underfoot. The surface
+ * is also what dock and tubes see, so tubes and their legs clear a slab.
+ */
+export function ground(
+  drafts: Draft[],
+  world: SolverWorld,
+): { grounded: Grounded[]; surface: SolverWorld } {
+  const hosted = new Map<Draft, Grounded>();
+  const tops: HostTop[] = [];
+  for (const draft of drafts) {
+    if (!isHost(draft) || draft.footprint.kind !== 'rect') continue;
+    const g = groundOne(draft, world);
+    hosted.set(draft, g);
+    const spec = draft.def.ground(draft.params);
+    tops.push({
+      x: draft.pose.x,
+      z: draft.pose.z,
+      yaw: draft.pose.yaw,
+      hx: draft.footprint.hx,
+      hz: draft.footprint.hz,
+      top: draft.pose.y + (spec.mode === 'legs' ? (spec.hostTop ?? 0) : 0),
+    });
+  }
+  const surface: SolverWorld =
+    tops.length === 0
+      ? world
+      : {
+          halfSize: world.halfSize,
+          heightAt(x, z) {
+            let h = world.heightAt(x, z);
+            for (const t of tops) {
+              const [lx, , lz] = rotateY([x - t.x, 0, z - t.z], -t.yaw);
+              if (Math.abs(lx) <= t.hx && Math.abs(lz) <= t.hz) h = Math.max(h, t.top);
+            }
+            return h;
+          },
+        };
+  return {
+    grounded: drafts.map((draft) => hosted.get(draft) ?? groundOne(draft, surface)),
+    surface,
+  };
 }
 
 function groundOne(draft: Draft, world: SolverWorld): Grounded {
