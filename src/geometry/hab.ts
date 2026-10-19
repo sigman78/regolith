@@ -6,7 +6,7 @@
  * Frame matches grammar/parts/H.ts: axis along +X, origin at the centre.
  */
 import { Vector2, type LatheGeometry } from 'three';
-import { habStripeAt, habWindowBays } from '@/grammar/windows';
+import { habPaneAngle, habStripeAt, habWindowBays } from '@/grammar/windows';
 import type { BundleBuilder } from './bundle';
 import { bevelBox, lathe, ribProfile } from './profiles';
 import {
@@ -18,7 +18,6 @@ import {
   HAB_SEGMENTS,
   HAB_STRIPE_HALF,
   HAB_STRIPE_PROUD,
-  HAB_WINDOW_ANGLE_DEG,
   HAB_WINDOW_ARC,
   HAB_WINDOW_LENGTH,
   HAB_WINDOW_PROUD,
@@ -89,14 +88,14 @@ export function buildHab(out: BundleBuilder, op: HabOp): void {
 }
 
 /**
- * One window pane in the middle of each rib bay, on both upper flanks, so a
- * camera looking down sees a row of lit panes (they glow at night). The bay
- * under the accent stripe is left plain.
+ * One window pane in the middle of each rib bay on both flanks, at eye height over the floor (they
+ * glow at night). The bay under the accent stripe is left plain, and so is a bay with a door on
+ * that flank (grammar/windows.ts).
  */
 function addWindows(out: BundleBuilder, length: number, radius: number, variant: number): void {
-  const angle = (HAB_WINDOW_ANGLE_DEG * Math.PI) / 180;
-  for (const x of habWindowBays(length, variant)) {
-    for (const side of [1, -1]) {
+  const angle = habPaneAngle(radius);
+  for (const side of [1, -1] as const) {
+    for (const x of habWindowBays(length, variant, side)) {
       // A thin box with its outer face HAB_WINDOW_PROUD off the hull, turned to face outward.
       const pane = bevelBox(HAB_WINDOW_LENGTH, HAB_WINDOW_THICK, HAB_WINDOW_ARC);
       pane.translate(0, radius + HAB_WINDOW_PROUD - HAB_WINDOW_THICK, 0);

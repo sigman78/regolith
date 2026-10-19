@@ -1,12 +1,14 @@
 /**
  * A stencilled line of text wrapped onto a cylinder, for the serial on a hab hull. Built in the
  * hull's own frame (axis along x, centred at x = 0, text on the +z flank reading toward +x, the
- * top of the letters toward +y), a hair proud of the surface. Solid paint only: flat quads, one
- * per painted run, so a serial is about 200 triangles.
+ * top of the letters toward +y), a hair proud of the surface, just beside the window row on the
+ * equator side of it (below the panes on an S hull, above them on an M hull, so it always faces the
+ * camera). Solid paint only: flat quads, one per painted run, so a serial is about 200 triangles.
  */
 import { BufferAttribute, BufferGeometry } from 'three';
 import type { BundleBuilder } from './bundle';
-import { STENCIL_ANGLE_DEG, STENCIL_CELL, STENCIL_PROUD } from './design-constants';
+import { habPaneAngle } from '@/grammar/windows';
+import { HAB_WINDOW_ARC, STENCIL_CELL, STENCIL_GAP, STENCIL_PROUD } from './design-constants';
 import { GLYPH_ROWS, textColumns, textRuns } from './font';
 
 export interface StencilOp {
@@ -15,12 +17,19 @@ export interface StencilOp {
   radius: number;
 }
 
+/** Angle of the text's centre from the top of the hull: the window row plus half a pane, half the text and a gap, toward the equator. */
+export function stencilAngle(radius: number): number {
+  const pane = habPaneAngle(radius);
+  const off = (HAB_WINDOW_ARC / 2 + (GLYPH_ROWS * STENCIL_CELL) / 2 + STENCIL_GAP) / radius;
+  return pane < Math.PI / 2 ? pane + off : pane - off;
+}
+
 export function buildStencil(out: BundleBuilder, op: StencilOp): void {
   const runs = textRuns(op.text);
   if (runs.length === 0) return;
   const r = op.radius + STENCIL_PROUD;
   const dAlpha = STENCIL_CELL / op.radius;
-  const alpha0 = (STENCIL_ANGLE_DEG * Math.PI) / 180;
+  const alpha0 = stencilAngle(op.radius);
   const width = textColumns(op.text) * STENCIL_CELL;
 
   const positions: number[] = [];

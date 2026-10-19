@@ -51,7 +51,8 @@ describe('hab geometry', () => {
         // No pane face lies on the hull: every vertex is at least the pane's inset off it
         // or clearly proud (the back face is buried, the front face stands 2 cm off).
         expect(minR).toBeGreaterThan(radius - 0.1);
-        expect(seenPlus && seenMinus).toBe(true);
+        // The shortest hab has one bay free of the stripe, and a door on one flank of it.
+        if (length >= 8) expect(seenPlus && seenMinus).toBe(true);
       }
     }
   });

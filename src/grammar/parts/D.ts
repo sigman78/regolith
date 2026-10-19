@@ -1,7 +1,8 @@
 /**
  * Letter D: the dome (opaque kind; greenhouse and observatory come with M5).
  *
- * Frame: axis along local +Y, flat base at y = 0, centred in X and Z.
+ * Frame: axis along local +Y, flat base at y = 0, centred in X and Z. The collar stands on a
+ * FLOOR_ABOVE_BELLY plinth, so the floor is at the plinth's top.
  * Ports:
  *   c-0..3     PRESS on the collar drum, normals +X, +Z, -X, -Z, on the floor (FLOOR_ABOVE_BELLY)
  *   foot-0..3  STRUCT on the flat underside, DOME_FOOT_RADIAL of the radius out
@@ -56,7 +57,7 @@ export const D: PartDefinition<DomeParams> = {
   },
 
   stubDepth(p) {
-    return drumStub(p.radius, FLOOR_ABOVE_BELLY, DOME_COLLAR_HEIGHT);
+    return drumStub(p.radius, FLOOR_ABOVE_BELLY, FLOOR_ABOVE_BELLY + DOME_COLLAR_HEIGHT);
   },
 
   ports(p) {
@@ -106,6 +107,6 @@ export const D: PartDefinition<DomeParams> = {
   },
 
   beacon(p) {
-    return beaconOn(p.radius + DOME_COLLAR_HEIGHT);
+    return beaconOn(FLOOR_ABOVE_BELLY + DOME_COLLAR_HEIGHT + p.radius);
   },
 };

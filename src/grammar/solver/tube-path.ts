@@ -33,7 +33,11 @@ export interface TubeInput {
 
 export function tubeFromPath(o: TubeInput): ResolvedTube {
   const path = o.path.map((p): Vec3 => [mm(p[0]), mm(p[1]), mm(p[2])]);
-  const recipe = { ops: [{ kind: 'tube' as const, points: path.flatMap((p) => [...p]) }] };
+  const recipe = {
+    ops: [
+      { kind: 'tube' as const, points: path.flatMap((p) => [...p]), windows: o.kind === 'tube' },
+    ],
+  };
   return {
     id: o.id,
     kind: o.kind,

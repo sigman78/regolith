@@ -81,8 +81,8 @@ export type GeomOp =
   | { kind: 'dome'; radius: number }
   /** Ambient rock, unit size, base at y = 0 (world scatter, not a part). */
   | { kind: 'rock'; variant: number }
-  /** World-space centreline, flat x,y,z, already embedded slightly into the hulls at both ends. */
-  | { kind: 'tube'; points: number[] }
+  /** World-space floor line, flat x,y,z, already embedded into the stubs at both ends; window strips on a corridor, not on a dock bridge. */
+  | { kind: 'tube'; points: number[]; windows?: boolean }
   /** A door's vestibule: the corridor section from `depth` inside the hull to the port, door on its face. */
   | { kind: 'stub'; at: Vec3; normal: Vec3; depth: number }
   /** Unit-height leg strut, base at y = 0. Render scales it in Y to the leg length. */

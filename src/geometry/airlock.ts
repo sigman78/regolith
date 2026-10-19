@@ -55,10 +55,11 @@ export function buildAirlock(out: BundleBuilder, op: AirlockOp): void {
     const top = floor - riser * (i + 1);
     const base = i + 1 < AIRLOCK_STAIR_RISERS ? ground : ground - FOOT_HEIGHT;
     const block = bevelBox(AIRLOCK_STAIR_W, top - base, tread);
-    block.translate(0, base, r + tread * (i + 0.5));
+    // The first block's back face would share the stub face's plane at z = r: nudged 4 mm out.
+    block.translate(0, base, r + 0.004 + tread * (i + 0.5));
     out.add('graphite', block);
     const nose = bevelBox(AIRLOCK_STAIR_W * 0.9, 0.012, AIRLOCK_NOSE_W);
-    nose.translate(0, top + 0.004, r + tread * (i + 1) - AIRLOCK_NOSE_W / 2);
+    nose.translate(0, top + 0.004, r + 0.004 + tread * (i + 1) - AIRLOCK_NOSE_W / 2);
     out.add('warning', nose);
   }
 }

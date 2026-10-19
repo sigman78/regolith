@@ -95,7 +95,8 @@ describe('airlock stair', () => {
     expect(floor - ground).toBeCloseTo(DECK_HEIGHT, 9);
     const [z0, z1] = extent(b.byMaterial.warning?.positions, 2);
     expect(z0).toBeGreaterThan(r);
-    expect(z1).toBeLessThanOrEqual(r + AIRLOCK_STAIR_RUN + 1e-6);
+    // The whole stair is nudged 4 mm off the stub face, so nothing shares its plane.
+    expect(z1).toBeLessThanOrEqual(r + AIRLOCK_STAIR_RUN + 0.005);
     // One nose strip per tread, the last on the landing pad at the ground: each a riser down from
     // the one before, so the strips span RISERS - 1 risers.
     const tops = new Set<number>();

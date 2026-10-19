@@ -10,7 +10,12 @@ import {
   CORRIDOR_FLOOR_THICK,
   CORRIDOR_HALF_WIDTH,
   CORRIDOR_HEIGHT,
+  CORRIDOR_STRIP_GAP,
+  CORRIDOR_STRIP_HALF,
+  CORRIDOR_STRIP_MIN,
+  CORRIDOR_STRIP_PROUD,
   CORRIDOR_WIDTH,
+  EYE_HEIGHT,
   KINK_COLLAR_THICK,
   TUBE_END_THICK,
   TUBE_FLANGE,
@@ -22,6 +27,7 @@ import {
 import {
   corridorSection,
   lateralOf,
+  sectionBands,
   sectionCap,
   sectionRing,
   sectionSweep,
@@ -31,6 +37,8 @@ import {
 export interface TubeOp {
   /** flat x,y,z world coordinates of the floor line, at least two points */
   points: readonly number[];
+  /** window strips along both walls at eye height (a corridor; never a dock bridge) */
+  windows?: boolean;
 }
 
 /** The corridor's skin, built once: every corridor in a base has this section. */
@@ -39,6 +47,14 @@ export const CORRIDOR_SECTION = corridorSection(
   CORRIDOR_HEIGHT,
   CORRIDOR_FLOOR_THICK,
   TUBE_SEGMENTS / 2,
+);
+
+/** The window strips' runs of the section, one per wall, straddling the wall top and the first crown chord. */
+const STRIP_BANDS = sectionBands(
+  CORRIDOR_SECTION,
+  EYE_HEIGHT - CORRIDOR_STRIP_HALF,
+  EYE_HEIGHT + CORRIDOR_STRIP_HALF,
+  CORRIDOR_STRIP_PROUD,
 );
 
 /** Plan turns below this are smooth enough to need neither a mitre nor a collar. */
@@ -132,6 +148,35 @@ export function buildTube(out: BundleBuilder, op: TubeOp): void {
 
   for (const bend of bends) {
     out.add('graphite', sectionRing(CORRIDOR_SECTION, bend.frame, KINK_COLLAR_THICK, TUBE_FLANGE));
+  }
+
+  // Window strips: along each straight piece, clear of the end flanges (the stubs) and of the
+  // bend collars and their mitre corners; a strip runs under the plain flanges between.
+  if (op.windows) {
+    const endClear = TUBE_PORT_EMBED + TUBE_END_THICK / 2 + CORRIDOR_STRIP_GAP;
+    const bendClear = (v: number): number =>
+      (CORRIDOR_HALF_WIDTH + CORRIDOR_STRIP_PROUD) * Math.tan(halves[v] ?? 0) +
+      KINK_COLLAR_THICK / 2 +
+      CORRIDOR_STRIP_GAP;
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const len = lens[i] ?? 0;
+      const s0 = i === 0 ? endClear : bendClear(i);
+      const s1 = len - (i + 2 === pts.length ? endClear : bendClear(i + 1));
+      if (s1 - s0 < CORRIDOR_STRIP_MIN) continue;
+      const a = pts[i] as Vec3;
+      const b = pts[i + 1] as Vec3;
+      const lat = lateralOf(heads[i] as Vec3);
+      const along = (s: number): Vec3 => [
+        a[0] + ((b[0] - a[0]) * s) / len,
+        a[1] + ((b[1] - a[1]) * s) / len,
+        a[2] + ((b[2] - a[2]) * s) / len,
+      ];
+      const frames: SectionFrame[] = [
+        { at: along(s0), lat, stretch: 1 },
+        { at: along(s1), lat, stretch: 1 },
+      ];
+      for (const band of STRIP_BANDS) out.add('glass', sectionSweep(band, frames, false));
+    }
   }
 
   // Flanges: both ends, then every TUBE_RIB_SPACING between them.

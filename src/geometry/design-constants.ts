@@ -46,10 +46,10 @@ export const HAB_STRIPE_FROM_END = 1.4;
 export const HAB_STRIPE_VARIANTS = 3;
 /** Most a hull may lean from Hull white toward Hull shaded per instance (about 5% darker, a touch warmer). */
 export const INDIVIDUAL_TINT_MAX = 0.35;
-/** Stencil cell size (a glyph is 5 x 7 cells: 22 x 32 cm), how far the paint stands off the hull, and where it sits on the flank (degrees from the top; windows are at 52). */
+/** Stencil cell size (a glyph is 5 x 7 cells: 22 x 32 cm), how far the paint stands off the hull, and its gap to the window row it sits beside (on the equator side of it). */
 export const STENCIL_CELL = 0.045;
 export const STENCIL_PROUD = 0.006;
-export const STENCIL_ANGLE_DEG = 86;
+export const STENCIL_GAP = 0.04;
 /** A side PRESS port every N metres along the hull, alternating sides. */
 export const HAB_SIDE_PORT_SPACING = 4;
 /** STRUCT ports sit this far in from each end rib. */
@@ -87,6 +87,8 @@ export const DOOR_SILL = 0.05;
 /** The person everything is checked against, and the clear height kept over their head. */
 export const CREW_HEIGHT = 1.8;
 export const HEADROOM_MARGIN = 0.2;
+/** Window centres sit this far above the floor they look out from. */
+export const EYE_HEIGHT = 1.5;
 /** A corridor climbing more than this (rise over run, about 8 degrees) is flagged, never refused. */
 export const CORRIDOR_MAX_SLOPE = 0.14;
 /** Slope is measured over runs of at least this many metres (the short embedded ends are skipped). */
@@ -104,7 +106,8 @@ export const LEG_TOP_OVERLAP = 0.1;
 
 /** Sphere radii for node S / M / L, metres. */
 export const NODE_RADII = [2, 2.5, 3] as const;
-export const NODE_FOOTPRINT_MARGIN = 0.15;
+/** Covers the flat stub plates' corners, hypot(r, STUB_HALF_WIDTH) - r at the smallest size. */
+export const NODE_FOOTPRINT_MARGIN = 0.3;
 /** Directions of a node's PRESS ports in its local frame: ±X, ±Z and up. Shared by grammar and geometry. */
 export const NODE_PRESS_DIRS = [
   [1, 0, 0],
@@ -143,6 +146,14 @@ export const TUBE_END_THICK = 0.28;
 export const TUBE_FLANGE = 0.08;
 /** The collar band on the mitre plane of a bend. */
 export const KINK_COLLAR_THICK = TUBE_END_THICK;
+/**
+ * Window strips along both corridor walls, centred EYE_HEIGHT over the floor: half height, proud of
+ * the skin, the gap kept from an end flange or a bend collar, and the shortest run worth a strip.
+ */
+export const CORRIDOR_STRIP_HALF = 0.2;
+export const CORRIDOR_STRIP_PROUD = 0.012;
+export const CORRIDOR_STRIP_GAP = 0.1;
+export const CORRIDOR_STRIP_MIN = 1;
 /** The tube starts this far inside the hull so no gap shows around its rim. */
 export const TUBE_PORT_EMBED = 0.3;
 /** Straight run out of a port before the router may turn, metres. */
@@ -189,11 +200,11 @@ export const TOWER_FLOOR_HEIGHT = 3;
 export const TOWER_CAP_RATIO = 0.3;
 export const TOWER_CAP_STEPS = 6;
 export const TOWER_SEGMENTS = 48;
-export const TOWER_FOOTPRINT_MARGIN = 0.15;
+/** Covers the flat stub plates' corners, hypot(r, STUB_HALF_WIDTH) - r. */
+export const TOWER_FOOTPRINT_MARGIN = 0.2;
 /** Four feet on the flat underside, radial distance as a fraction of the radius. */
 export const TOWER_FOOT_RADIAL = 0.7;
-/** Window band per floor: centre height above floor level, half height, proud of the hull. */
-export const TOWER_WINDOW_Y = 2.2;
+/** Window band per floor, centred EYE_HEIGHT over the floor: half height, proud of the hull. */
 export const TOWER_WINDOW_HALF = 0.35;
 export const TOWER_WINDOW_PROUD = 0.012;
 /** Accent stripe under the cap: half width and distance below the top rim. */
@@ -337,8 +348,8 @@ export const HAB_WINDOW_ARC = 0.55;
 export const HAB_WINDOW_THICK = 0.05;
 /** The pane's outer face stands this far proud of the hull (no coplanar faces). */
 export const HAB_WINDOW_PROUD = 0.02;
-/** Angle of the window rows from the top of the hull, degrees. */
-export const HAB_WINDOW_ANGLE_DEG = 52;
+/** A ring (rib, band, stripe) that skips a door's stub ends this far outside the stub's wall, with a flat end. */
+export const BAND_END_GAP = 0.05;
 
 // ---- Vertex tints (DESIGN_GUIDE §3, §9) -------------------------------------------
 /** Colour multipliers, as hex: they scale the material colour, they never replace it. */

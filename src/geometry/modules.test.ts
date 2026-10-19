@@ -4,6 +4,7 @@ import type { ParamSchema, ParamValues } from '@/grammar/types';
 import { buildBundle } from './build';
 import {
   DOME_COLLAR_HEIGHT,
+  FLOOR_ABOVE_BELLY,
   DOME_RADII,
   LAUNCHER_ELEVATIONS,
   MAST_BASE_RADIUS,
@@ -131,7 +132,7 @@ describe('tower geometry', () => {
       const p = V.resolve({ floors });
       const { bounds } = buildBundle(V.geometry(p, { seed: 't' }));
       expect(bounds.min[1]).toBeCloseTo(0, 5);
-      const top = floors * TOWER_FLOOR_HEIGHT;
+      const top = FLOOR_ABOVE_BELLY + floors * TOWER_FLOOR_HEIGHT;
       expect(bounds.max[1]).toBeGreaterThan(top);
       expect(bounds.max[1]).toBeLessThan(top + TOWER_RADIUS * TOWER_CAP_RATIO + 0.1);
     }
@@ -146,7 +147,7 @@ describe('tower geometry', () => {
       for (const q of press) {
         expect(Math.hypot(q.position[0], q.position[2])).toBeCloseTo(TOWER_RADIUS, 9);
         expect(q.normal[1]).toBe(0);
-        expect(q.position[1]).toBeLessThan(floors * TOWER_FLOOR_HEIGHT);
+        expect(q.position[1]).toBeLessThan(FLOOR_ABOVE_BELLY + floors * TOWER_FLOOR_HEIGHT);
       }
       for (const q of ports.filter((s) => s.type === 'STRUCT')) expect(q.position[1]).toBe(0);
     }
@@ -159,7 +160,7 @@ describe('tower surface bands', () => {
     if (!V) throw new Error('V is not registered');
     for (const floors of [2, 3, 4, 5]) {
       const bundle = buildBundle(V.geometry(V.resolve({ floors }), { seed: 't' }));
-      const stripeY = floors * TOWER_FLOOR_HEIGHT - TOWER_STRIPE_BELOW_TOP;
+      const stripeY = FLOOR_ABOVE_BELLY + floors * TOWER_FLOOR_HEIGHT - TOWER_STRIPE_BELOW_TOP;
       const glass = bundle.byMaterial.glass?.positions ?? new Float32Array();
       for (let i = 0; i < glass.length; i += 3) {
         const y = glass[i + 1] ?? 0;
@@ -272,7 +273,7 @@ describe('dome geometry', () => {
       const p = D.resolve({ radius });
       const { bounds } = buildBundle(D.geometry(p, { seed: 't' }));
       expect(bounds.min[1]).toBeCloseTo(0, 5);
-      expect(bounds.max[1]).toBeCloseTo(DOME_COLLAR_HEIGHT + radius, 3);
+      expect(bounds.max[1]).toBeCloseTo(FLOOR_ABOVE_BELLY + DOME_COLLAR_HEIGHT + radius, 3);
       const press = D.ports(p).filter((q) => q.type === 'PRESS');
       expect(press).toHaveLength(4);
       for (const q of press) {

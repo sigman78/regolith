@@ -36,7 +36,10 @@ export function ribProfile(r: number, y: number, thick: number, flange: number):
  * set it exactly, and normalise everything else.
  */
 export function lathe(points: Vector2[], segments: number): LatheGeometry {
-  const g = new LatheGeometry(points, segments);
+  return soundLathe(new LatheGeometry(points, segments));
+}
+
+function soundLathe(g: LatheGeometry): LatheGeometry {
   const pos = g.getAttribute('position');
   const nor = g.getAttribute('normal');
   for (let i = 0; i < pos.count; i++) {
@@ -57,6 +60,80 @@ export function flangeRing(
   segments: number,
 ): LatheGeometry {
   return lathe(ribProfile(r, 0, thick, flange), segments);
+}
+
+/** The lathe angle a horizontal direction sits at: three puts angle phi at (r sin phi, y, r cos phi). */
+export function lathePhi(dir: Vec3): number {
+  return Math.atan2(dir[0], dir[2]);
+}
+
+/**
+ * The arcs of a ring that skips a gap `halfWidth` wide (a lateral distance at radius r) around each
+ * direction, as [phiStart, phiLength] pairs; the whole ring when there is nothing to skip.
+ */
+export function ringArcs(dirs: readonly Vec3[], r: number, halfWidth: number): [number, number][] {
+  const TAU = Math.PI * 2;
+  if (dirs.length === 0) return [[0, TAU]];
+  if (halfWidth >= r) return [];
+  const half = Math.asin(halfWidth / r);
+  const centres = dirs.map((d) => ((lathePhi(d) % TAU) + TAU) % TAU).sort((a, b) => a - b);
+  const out: [number, number][] = [];
+  for (let i = 0; i < centres.length; i++) {
+    const start = (centres[i] ?? 0) + half;
+    const next = (centres[(i + 1) % centres.length] ?? 0) + (i + 1 === centres.length ? TAU : 0);
+    const length = next - half - start;
+    if (length > 1e-6) out.push([start, length]);
+  }
+  return out;
+}
+
+/**
+ * A lathe over only the given arcs, the segments shared pro rata. A thin band (two profile points)
+ * just ends; a solid profile (a rib) gets a flat face at each arc end, so no hollow shows.
+ */
+export function latheArcs(
+  points: Vector2[],
+  segments: number,
+  arcs: readonly [number, number][],
+): BufferGeometry[] {
+  const out: BufferGeometry[] = [];
+  for (const [start, length] of arcs) {
+    const n = Math.max(1, Math.round((segments * length) / (Math.PI * 2)));
+    out.push(soundLathe(new LatheGeometry(points, n, start, length)));
+    if (points.length > 2 && length < Math.PI * 2 - 1e-9) {
+      out.push(arcCap(points, start, -1), arcCap(points, start + length, 1));
+    }
+  }
+  return out;
+}
+
+/** The profile as a flat face at angle phi, looking along (sign) the direction of increasing phi. */
+function arcCap(points: Vector2[], phi: number, sign: 1 | -1): BufferGeometry {
+  const n: Vec3 = [Math.cos(phi) * sign, 0, -Math.sin(phi) * sign];
+  const pos: number[] = [];
+  const nor: number[] = [];
+  const uv: number[] = [];
+  const idx: number[] = [];
+  for (const p of points) {
+    pos.push(p.x * Math.sin(phi), p.y, p.x * Math.cos(phi));
+    nor.push(...n);
+    uv.push(p.x, p.y);
+  }
+  // A fan over the (convex) profile, wound to face the normal.
+  const a = points[0] as Vector2;
+  const b = points[1] as Vector2;
+  const c = points[2] as Vector2;
+  const u = [b.x - a.x, b.y - a.y];
+  const v = [c.x - a.x, c.y - a.y];
+  // Profile winding in the (radial, y) plane; the face normal is the tangent, so the sign of the
+  // cross product against it decides the order.
+  const ccw = (u[0] ?? 0) * (v[1] ?? 0) - (u[1] ?? 0) * (v[0] ?? 0) > 0;
+  const flip = ccw === sign > 0;
+  for (let i = 1; i + 1 < points.length; i++) {
+    if (flip) idx.push(0, i + 1, i);
+    else idx.push(0, i, i + 1);
+  }
+  return buildIndexed(pos, nor, uv, idx);
 }
 
 /** Pole-to-pole semicircle in (r, y), ascending in y so lathe normals face outward. */
@@ -194,9 +271,14 @@ function pushQuad(idx: number[], a: number, b: number, c: number, e: number): vo
  * The skin of a corridor: the section lofted through a frame per path vertex. Frames at a bend sit
  * on its mitre plane and are stretched, so each straight piece is an exact prism, and the pieces
  * meet on the plane with no overlap. A piece's normals are exact for a climbing piece too (the
- * tangent in the section plane crossed with the piece's direction). Open at both ends.
+ * tangent in the section plane crossed with the piece's direction). Open at both ends; with
+ * `closed` false the section is an open run (a window strip) rather than a loop.
  */
-export function sectionSweep(section: Section, frames: readonly SectionFrame[]): BufferGeometry {
+export function sectionSweep(
+  section: Section,
+  frames: readonly SectionFrame[],
+  closed = true,
+): BufferGeometry {
   const n = section.length;
   const pos: number[] = [];
   const nor: number[] = [];
@@ -233,13 +315,64 @@ export function sectionSweep(section: Section, frames: readonly SectionFrame[]):
         uv.push(j / n, along);
       }
     }
-    for (let j = 0; j < n; j++) {
+    for (let j = 0; j + (closed ? 0 : 1) < n; j++) {
       const k = (j + 1) % n;
       pushQuad(idx, base + j, base + k, base + n + k, base + n + j);
     }
     s += len;
   }
   return buildIndexed(pos, nor, uv, idx);
+}
+
+/**
+ * The run of a section between two heights on each wall (x < 0, then x > 0), its ends interpolated
+ * exactly at the heights and every point pushed out by `proud`: the open runs a window strip is
+ * swept from. Each run keeps the loop's order, so sectionSweep(run, frames, false) faces outward.
+ */
+export function sectionBands(section: Section, yLo: number, yHi: number, proud: number): Section[] {
+  const n = section.length;
+  const out: Section[] = [];
+  for (const side of [-1, 1]) {
+    const run: SectionPoint[] = [];
+    let lastRaw: SectionPoint | null = null;
+    const push = (p: SectionPoint): void => {
+      // Consecutive edges share a point: keep it once (compared before the offset).
+      if (lastRaw && Math.abs(lastRaw.x - p.x) < 1e-9 && Math.abs(lastRaw.y - p.y) < 1e-9) return;
+      lastRaw = p;
+      const l = Math.hypot(p.nx, p.ny) || 1;
+      const nx = p.nx / l;
+      const ny = p.ny / l;
+      run.push({ x: p.x + nx * proud, y: p.y + ny * proud, nx, ny });
+    };
+    const lerp = (p: SectionPoint, q: SectionPoint, t: number): SectionPoint => ({
+      x: p.x + (q.x - p.x) * t,
+      y: p.y + (q.y - p.y) * t,
+      nx: p.nx + (q.nx - p.nx) * t,
+      ny: p.ny + (q.ny - p.ny) * t,
+    });
+    for (let j = 0; j < n; j++) {
+      const p = section[j] as SectionPoint;
+      const q = section[(j + 1) % n] as SectionPoint;
+      if (Math.sign((p.x + q.x) / 2) !== side) continue;
+      // The part of this edge between the heights, as a parameter range.
+      let t0 = 0;
+      let t1 = 1;
+      const dy = q.y - p.y;
+      if (Math.abs(dy) < 1e-12) {
+        if (p.y < yLo || p.y > yHi) continue;
+      } else {
+        const a = (yLo - p.y) / dy;
+        const b = (yHi - p.y) / dy;
+        t0 = Math.max(0, Math.min(a, b));
+        t1 = Math.min(1, Math.max(a, b));
+        if (t1 - t0 <= 1e-9) continue;
+      }
+      push(lerp(p, q, t0));
+      push(lerp(p, q, t1));
+    }
+    if (run.length >= 2) out.push(run);
+  }
+  return out;
 }
 
 /** The D-shaped flange: the section pushed out by `flange`, `thick` along the heading, bevelled. */

@@ -45,7 +45,7 @@ function inside(letter: string, p: ParamValues, q: Vec3): boolean {
     case 'N':
       return Math.hypot(x, y, z) <= Number(p['size']);
     case 'V': {
-      const h = TOWER_FLOOR_HEIGHT * Number(p['floors']);
+      const h = FLOOR_ABOVE_BELLY + TOWER_FLOOR_HEIGHT * Number(p['floors']);
       if (y < 0) return false;
       if (y <= h) return Math.hypot(x, z) <= TOWER_RADIUS;
       const cap = TOWER_RADIUS * TOWER_CAP_RATIO;
@@ -55,8 +55,9 @@ function inside(letter: string, p: ParamValues, q: Vec3): boolean {
     case 'D': {
       const r = Number(p['radius']);
       if (y < 0) return false;
-      if (y <= DOME_COLLAR_HEIGHT) return Math.hypot(x, z) <= r;
-      return Math.hypot(x, y - DOME_COLLAR_HEIGHT, z) <= r;
+      const rim = FLOOR_ABOVE_BELLY + DOME_COLLAR_HEIGHT;
+      if (y <= rim) return Math.hypot(x, z) <= r;
+      return Math.hypot(x, y - rim, z) <= r;
     }
     default:
       return false;

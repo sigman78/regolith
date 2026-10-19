@@ -1,7 +1,8 @@
 /**
  * Letter V: the vertical habitat (tower).
  *
- * Frame: axis along local +Y, base (flat underside) at y = 0, centred in X and Z.
+ * Frame: axis along local +Y, base (flat underside) at y = 0, centred in X and Z. The ground
+ * floor is FLOOR_ABOVE_BELLY up, on a plinth; every floor above is TOWER_FLOOR_HEIGHT higher.
  * Ports:
  *   g-0..3     PRESS on the ground floor, normals +X, +Z, -X, -Z
  *   f<k>-0/1   PRESS on each upper floor k (1-based), opposite each other,
@@ -81,7 +82,12 @@ export const V: PartDefinition<TowerParams> = {
   stubDepth(p, portId) {
     // The same drum at every floor; the top floor's stub reaches into the cap.
     const y = V.ports(p).find((q) => q.id === portId)?.position[1] ?? FLOOR_ABOVE_BELLY;
-    return drumStub(TOWER_RADIUS, y, p.floors * TOWER_FLOOR_HEIGHT, TOWER_RADIUS * TOWER_CAP_RATIO);
+    return drumStub(
+      TOWER_RADIUS,
+      y,
+      FLOOR_ABOVE_BELLY + p.floors * TOWER_FLOOR_HEIGHT,
+      TOWER_RADIUS * TOWER_CAP_RATIO,
+    );
   },
 
   ports(p) {
@@ -114,7 +120,7 @@ export const V: PartDefinition<TowerParams> = {
       {
         id: 'floors',
         param: 'floors',
-        at: [0, p.floors * TOWER_FLOOR_HEIGHT, 0],
+        at: [0, FLOOR_ABOVE_BELLY + p.floors * TOWER_FLOOR_HEIGHT, 0],
         axis: [0, 1, 0],
         perUnit: TOWER_FLOOR_HEIGHT,
         anchor: [0, 0, 0],
@@ -131,6 +137,8 @@ export const V: PartDefinition<TowerParams> = {
   },
 
   beacon(p) {
-    return beaconOn(p.floors * TOWER_FLOOR_HEIGHT + TOWER_RADIUS * TOWER_CAP_RATIO);
+    return beaconOn(
+      FLOOR_ABOVE_BELLY + p.floors * TOWER_FLOOR_HEIGHT + TOWER_RADIUS * TOWER_CAP_RATIO,
+    );
   },
 };

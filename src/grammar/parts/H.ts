@@ -62,6 +62,14 @@ export function habSidePortXs(p: HabParams): number[] {
   return xs;
 }
 
+/** The side PRESS ports: axial position and flank, alternating +z / -z from the first bay used. */
+export function habSidePorts(length: number): { x: number; side: 1 | -1 }[] {
+  return habSidePortXs({ length, radius: HAB_RADII[0] }).map((x, i) => ({
+    x,
+    side: i % 2 === 0 ? 1 : -1,
+  }));
+}
+
 /** Local y of the walking floor: FLOOR_ABOVE_BELLY over the belly, which is one radius under the axis. */
 export function habFloor(p: HabParams): number {
   return FLOOR_ABOVE_BELLY - p.radius;
@@ -103,8 +111,7 @@ export const H: PartDefinition<HabParams> = {
       { id: 'end-', type: 'PRESS', position: [-ext, y, 0], normal: [-1, 0, 0] },
       { id: 'end+', type: 'PRESS', position: [ext, y, 0], normal: [1, 0, 0] },
     ];
-    habSidePortXs(p).forEach((x, i) => {
-      const side = i % 2 === 0 ? 1 : -1;
+    habSidePorts(p.length).forEach(({ x, side }, i) => {
       ports.push({
         id: `side-${i}`,
         type: 'PRESS',

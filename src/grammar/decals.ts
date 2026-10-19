@@ -9,8 +9,8 @@
  * faces the default camera (+z), reading left to right.
  */
 import { hashValue } from '@/core/hash';
-import { HAB_STRIPE_FROM_END, RIB_SPACING } from '@/geometry/design-constants';
 import type { Letter, GeometryRecipe, ParamValues } from './types';
+import { habStencilBay } from './windows';
 
 export interface Decal {
   recipe: GeometryRecipe;
@@ -22,23 +22,6 @@ export interface Decal {
 /** The tag text: letter, dash, three digits. */
 export function serialText(letter: Letter, serial: number): string {
   return `${letter}-${String(serial % 1000).padStart(3, '0')}`;
-}
-
-/** Bay centres along a hab (between its ribs), and the one furthest from the stripe. */
-function stencilBay(length: number, variant: number): number {
-  const count = Math.max(1, Math.round(length / RIB_SPACING));
-  const stripe = (variant === 1 ? -1 : 1) * (length / 2 - HAB_STRIPE_FROM_END);
-  let bestAt = 0;
-  let bestScore = -Infinity;
-  for (let i = 0; i < count; i++) {
-    const x = -length / 2 + (length * (i + 0.5)) / count;
-    const score = Math.abs(x - stripe) - 1e-3 * Math.abs(x);
-    if (score > bestScore) {
-      bestScore = score;
-      bestAt = x;
-    }
-  }
-  return bestAt;
 }
 
 export function decalsFor(
@@ -61,7 +44,8 @@ export function decalsFor(
   const turn = psi + (side < 0 ? Math.PI : 0);
   const ct = Math.cos(turn);
   const st = Math.sin(turn);
-  const bay = stencilBay(length, variant);
+  // The text is on the hab's own +z flank when that faces the camera, its -z flank otherwise.
+  const bay = habStencilBay(length, variant, side);
 
   const recipe: GeometryRecipe = {
     ops: [{ kind: 'stencil', text: serialText(letter, serial), radius }],

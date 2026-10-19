@@ -3,11 +3,17 @@ import type { GeometryBundle } from './bundle';
 import { buildBundle } from './build';
 import {
   CORRIDOR_FLOOR_THICK,
+  CORRIDOR_STRIP_GAP,
+  CORRIDOR_STRIP_HALF,
+  CORRIDOR_STRIP_PROUD,
   CREW_HEIGHT,
+  EYE_HEIGHT,
   HEADROOM_MARGIN,
   CORRIDOR_HALF_WIDTH,
   CORRIDOR_HEIGHT,
   KINK_COLLAR_THICK,
+  TUBE_END_THICK,
+  TUBE_PORT_EMBED,
   TUBE_SEGMENTS,
   TUBE_FLANGE,
 } from './design-constants';
@@ -191,6 +197,52 @@ describe('corridor geometry', () => {
       expect(roof(x)).toBeGreaterThanOrEqual(CREW_HEIGHT + HEADROOM_MARGIN - sag - 1e-9);
     }
     expect(roof(0)).toBeCloseTo(CORRIDOR_HEIGHT, 2);
+  });
+
+  it('wears window strips at eye height on both walls, clear of the end flanges, when asked', () => {
+    const b = buildBundle({ ops: [{ kind: 'tube', points: [0, 3, 0, 10, 3, 0], windows: true }] });
+    expect(() => assertValidBundle(b)).not.toThrow();
+    const g = b.byMaterial.glass?.positions ?? new Float32Array();
+    expect(g.length).toBeGreaterThan(0);
+    let plus = false;
+    let minus = false;
+    for (let i = 0; i < g.length; i += 3) {
+      const [x = 0, y = 0, z = 0] = [g[i], g[i + 1], g[i + 2]];
+      expect(y).toBeGreaterThanOrEqual(3 + EYE_HEIGHT - CORRIDOR_STRIP_HALF - 0.02);
+      expect(y).toBeLessThanOrEqual(3 + EYE_HEIGHT + CORRIDOR_STRIP_HALF + 0.02);
+      expect(x).toBeGreaterThanOrEqual(
+        TUBE_PORT_EMBED + TUBE_END_THICK / 2 + CORRIDOR_STRIP_GAP - 1e-6,
+      );
+      expect(x).toBeLessThanOrEqual(
+        10 - TUBE_PORT_EMBED - TUBE_END_THICK / 2 - CORRIDOR_STRIP_GAP + 1e-6,
+      );
+      expect(Math.abs(z)).toBeGreaterThanOrEqual(CORRIDOR_HALF_WIDTH - 0.05);
+      if (z > 0) plus = true;
+      if (z < 0) minus = true;
+    }
+    expect(plus && minus).toBe(true);
+    expect(build([0, 3, 0, 10, 3, 0]).byMaterial.glass).toBeUndefined();
+  });
+
+  it('breaks the strips at a bend, clear of its collar and mitre corner', () => {
+    const b = buildBundle({
+      ops: [{ kind: 'tube', points: [0, 3, 0, 6, 3, 0, 10, 3, 4], windows: true }],
+    });
+    expect(() => assertValidBundle(b)).not.toThrow();
+    const g = b.byMaterial.glass?.positions ?? new Float32Array();
+    expect(g.length).toBeGreaterThan(0);
+    const clear =
+      (CORRIDOR_HALF_WIDTH + CORRIDOR_STRIP_PROUD) * Math.tan(Math.PI / 8) +
+      KINK_COLLAR_THICK / 2 +
+      CORRIDOR_STRIP_GAP;
+    for (let i = 0; i < g.length; i += 3) {
+      // Every strip vertex is at least the clearance from the bend vertex along its own piece.
+      const x = g[i] ?? 0;
+      const z = g[i + 2] ?? 0;
+      const onFirst = z <= CORRIDOR_HALF_WIDTH + 0.1 && x < 6;
+      const d = onFirst ? 6 - x : Math.hypot(x - 6, z);
+      expect(d).toBeGreaterThanOrEqual(clear - CORRIDOR_HALF_WIDTH - 0.05);
+    }
   });
 
   it('ignores repeated points and survives degenerate input', () => {
