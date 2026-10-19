@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { snapYaw } from '@/core/math';
 import { Rng } from '@/core/rng';
-import { CREW_VOLUME, DECK_HEIGHT } from '@/geometry/design-constants';
+import { DECK_HEIGHT } from '@/geometry/design-constants';
 import { addLink, addPart, createDocument, type BaseDocument } from '@/world/document';
 import { crossLength, graphComponents, solve, type SolverWorld } from './index';
 
@@ -128,10 +128,9 @@ describe('graph stage', () => {
     }
   });
 
-  it('counts volume per part and so crew', () => {
+  it('counts the pressurised volume per part', () => {
     const base = solve(addPart(createDocument({ seed: 'g' }), hab('a', 0)), FLAT);
     const node = base.graph.nodes.get('a');
     expect(node?.volume).toBeCloseTo(Math.PI * 4 * 8 + (4 / 3) * Math.PI * 8, 6);
-    expect(Math.floor((node?.volume ?? 0) / CREW_VOLUME)).toBe(2);
   });
 });

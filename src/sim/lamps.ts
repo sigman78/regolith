@@ -1,15 +1,14 @@
 /**
  * Every lamp the base shows at night: an airlock lamp per airlock (it shows the cycle's phase), a
  * head under each light pole's hood, and the one beacon ball on the tallest part that can carry it.
- * Pure numbers, like silhouettes.ts; render/lamps.ts maps a phase to a palette colour and draws
+ * Pure numbers; render/lamps.ts maps a phase to a palette colour and draws
  * the instances.
  */
 import { localDirToWorld, localToWorld, type Pose, type Vec3 } from '@/core/math';
 import { beaconOwner } from '@/grammar/beacon';
 import { airlockLampFrame, poleLampFrame, type LampFrame } from '@/grammar/lamps';
 import type { ResolvedBase } from '@/grammar/solver';
-import type { LockPhase } from './airlock';
-import type { CrewState } from './crew';
+import type { Lock, LockPhase } from './airlock';
 
 /** What a lamp shows: an airlock's cycle phase, or 'beacon' for the ball. Poles rest as 'idle'. */
 export type LampTone = LockPhase | 'beacon';
@@ -44,13 +43,13 @@ function frameMatrix(pose: Pose, frame: LampFrame): number[] {
 }
 
 /** Every lamp, airlocks and poles in part id order, then the beacon. Reads the committed base. */
-export function baseLamps(crew: CrewState, base: ResolvedBase): LampSlot[] {
+export function baseLamps(locks: ReadonlyMap<string, Lock>, base: ResolvedBase): LampSlot[] {
   const out: LampSlot[] = [];
   const parts = [...base.parts.values()].sort((a, b) => (a.id < b.id ? -1 : 1));
   for (const part of parts) {
     if (part.letter === 'A') {
       const frame = airlockLampFrame(Number(part.params['radius']));
-      const tone = crew.locks.get(part.id)?.phase ?? 'idle';
+      const tone = locks.get(part.id)?.phase ?? 'idle';
       out.push({ id: part.id, tone, matrix: frameMatrix(part.pose, frame) });
     } else if (part.letter === 'X') {
       const frame = poleLampFrame(Number(part.params['height']));

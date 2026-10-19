@@ -76,7 +76,6 @@ export type GeomOp =
   | { kind: 'solar'; rows: number; cols: number; tracking?: boolean }
   | { kind: 'pole'; height: number }
   /** A suited crew member outdoors (hull and graphite), feet at y = 0, facing +x. */
-  | { kind: 'suit' }
   | { kind: 'mast'; height: number; head: number }
   | { kind: 'reactor'; radius: number }
   | { kind: 'launcher'; length: number; elevation: number }

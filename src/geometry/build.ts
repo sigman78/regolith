@@ -10,7 +10,6 @@ import { buildAirlock } from './airlock';
 import { buildHab } from './hab';
 import { buildPole } from './pole';
 import { buildSolar } from './solar';
-import { buildSuit } from './suit';
 import { buildLegFoot, buildLegStrut } from './leg';
 import { buildLauncher } from './launcher';
 import { buildMast } from './mast';
@@ -71,9 +70,6 @@ export function buildBundle(recipe: GeometryRecipe): GeometryBundle {
         break;
       case 'pole':
         buildPole(out, op);
-        break;
-      case 'suit':
-        buildSuit(out);
         break;
       case 'tube':
         buildTube(out, op);

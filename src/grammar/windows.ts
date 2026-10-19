@@ -1,6 +1,6 @@
 /**
- * Where the glass is. The hull builders (geometry/hab.ts) and the window silhouettes
- * (sim/silhouettes.ts) both read these, so a figure can never stand on a bay that has no pane.
+ * Where the glass is: one layout for the hull builders (geometry/hab.ts) and for anything that
+ * needs to know where a pane is.
  */
 import {
   HAB_STRIPE_FROM_END,

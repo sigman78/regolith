@@ -142,7 +142,7 @@ The base is written in letters. Each letter is a parametric generator with ports
 | **N** | Node (junction) | size S/M/L, shape hex/sphere | `PRESS` ×6 (hex) or ×4 + top | docking lights per used port, blanking plate per unused port |
 | **D** | Dome | radius 3/4.5/6/8, kind opaque / greenhouse / observatory | `PRESS` ×4 at base collar, `STRUCT` ring | greenhouse: plants that grow, warm glow; observatory: telescope slit that opens at night; opaque: regolith-printed shell with printer texture |
 | **T** | Tube (corridor) | *derived*: from two `PRESS` ports; max span 24 m | — | flanges every 2 m, bend collars at kinks, support legs every 6 m, window strip if both ends have windows |
-| **A** | Airlock | size S/M | `PRESS` in, `EXT` out | ramp or 3-step stair to terrain, hazard chevrons, lamp that cycles orange (seal), yellow (pump), green (open) and rests window-warm, footprint path origin; `EXT` is live: crew walk out of it between 08:00 and 18:00 |
+| **A** | Airlock | size S/M | `PRESS` in, `EXT` out | ramp or 3-step stair to terrain, hazard chevrons, lamp that cycles orange (seal), yellow (pump), green (open) and rests window-warm, footprint path origin; the lock cycles on its own once a sol-hour between 08:00 and 18:00 |
 | **G** | Garage | bays 1–3 | `EXT` ×bays (roller doors), `PRESS` back | one rover per bay, tyre tracks out of the door, tool wall visible through the open door |
 | **L** | Landing pad | radius 8/12 | — | edge lights, hazard ring, scorch mark that grows per landing, windsock, blast berm |
 | **S** | Solar array | rows 1–4 × cols 2–12, tracking on/off | `POWER` at the end post | sun tracking, parked at night, cable to nearest `POWER`, dust that a drone cleans |
@@ -207,8 +207,8 @@ Alphabet is **frozen per milestone**; see PLAN.md for which letters ship when.
 
 ## 11. Simulation flavour (life layer) — rules of thumb
 
-- Crew count = floor(pressurized volume / 60 m³), max 24. Each crewmember has a home hab and a 3-stop errand list rebuilt every sol-hour.
-- Crew path only through the `PRESS` graph; they exit only through airlocks and garages. Outside, they walk on worn paths and avoid the pad when a lander is due.
+- Crew are not drawn (cut 2026-10-18 after review: figures at this fidelity read as cheap; the life layer is mechanical). The 1.8 m crew member survives as the check every walkable dimension is held to (§8.4), and the `PRESS` graph is still the proof that every door and corridor can be walked.
+- Airlocks cycle on their own, once per sol-hour between 08:00 and 18:00, at a minute hashed from the seed and the lock.
 - Rovers exist per garage bay, make one trip every 2–4 minutes to the pad, a tank or a random crater rim, and park facing out.
 - Drones: one per mast, one per 20 solar panels. They inspect, clean dust, and hover 1.5 m off surfaces.
 - The lander arrives every 6 minutes if a pad exists, visible from 300 m out, 25 s descent, 90 s on the ground, 15 s ascent.

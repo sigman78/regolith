@@ -1,6 +1,6 @@
 /**
  * Pressurised volume of a part in cubic metres, from its params. Crew count is
- * `floor(volume / CREW_VOLUME)`; parts that hold no air return 0.
+ * parts that hold no air return 0.
  */
 import { AIRLOCK_LENGTH, HAB_CAP_RATIO, TOWER_FLOOR_HEIGHT } from '@/geometry/design-constants';
 import type { Letter, ParamValues } from './types';

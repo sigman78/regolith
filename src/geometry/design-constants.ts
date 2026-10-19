@@ -46,9 +46,6 @@ export const HAB_STRIPE_FROM_END = 1.4;
 export const HAB_STRIPE_VARIANTS = 3;
 /** Most a hull may lean from Hull white toward Hull shaded per instance (about 5% darker, a touch warmer). */
 export const INDIVIDUAL_TINT_MAX = 0.35;
-/** Pressurised cubic metres per crew member (crew = floor(volume / this), at most CREW_MAX). */
-export const CREW_VOLUME = 60;
-export const CREW_MAX = 24;
 /** Stencil cell size (a glyph is 5 x 7 cells: 22 x 32 cm), how far the paint stands off the hull, and where it sits on the flank (degrees from the top; windows are at 52). */
 export const STENCIL_CELL = 0.045;
 export const STENCIL_PROUD = 0.006;
@@ -380,14 +377,6 @@ export const SCATTER_FADE_RADIUS = 45;
 export const SCATTER_FADE_SECONDS = 0.15;
 
 // ---- Window silhouettes ---------------------------------------------------------------
-/** A crew figure on a window pane: a flat graphite head-and-shoulders, this size, this far off the glass. */
-export const FIGURE_WIDTH = 0.26;
-export const FIGURE_HEIGHT = 0.46;
-export const FIGURE_PROUD = 0.008;
-/** Shown figures at most: one per crew member on each flank. */
-export const FIGURE_CAPACITY = CREW_MAX * 2;
-/** Silhouette redraws are coalesced to at most this many per second. */
-export const FIGURE_MAX_HZ = 4;
 
 // ---- Letter A: airlock ----------------------------------------------------------------
 /** Same radii as a hab, so its PRESS port meets a hab's at the same height and docks. */
@@ -455,35 +444,13 @@ export const POLE_FOOTPRINT_MARGIN = 0.3;
 export const POLE_CLEARANCE = 0.1;
 
 // ---- Crew outdoors and the airlock cycle ------------------------------------------------
-/** Outdoor errands only between these sol hours (everyone is home by 19:00). */
-export const OUTDOOR_FROM_HOUR = 8;
-export const OUTDOOR_TO_HOUR = 18;
-/** Chance (percent) that a crew member's second errand in an hour is outdoors, when allowed. */
-export const OUTDOOR_CHANCE = 60;
-/** Loiter spot: distances from the ramp foot (m) and angles off the door's facing (degrees). */
-export const LOITER_DISTANCES = [4, 5, 6, 7, 8] as const;
-export const LOITER_ANGLES_DEG = [0, 20, -20, 40, -40, 60, -60] as const;
-/** Time standing about outside, ticks (10 Hz): minimum and spread. */
-export const LOITER_DWELL_MIN = 100;
-export const LOITER_DWELL_SPAN = 200;
-/** Airlock phases in ticks (seal, pump, open), and how many ride one cycle. */
+/** An airlock cycles on its own once per sol-hour between these hours, at a minute hashed from the seed and its id. */
+export const LOCK_DAY_FROM_HOUR = 8;
+export const LOCK_DAY_TO_HOUR = 18;
+/** Airlock phases in ticks (seal, pump, open). */
 export const LOCK_SEAL_TICKS = 15;
 export const LOCK_PUMP_TICKS = 30;
 export const LOCK_OPEN_TICKS = 15;
-export const LOCK_RIDERS = 2;
-/** Suited figure outdoors: height, and the walking bob (m). */
-export const SUIT_HEIGHT = CREW_HEIGHT;
-export const SUIT_BOB = 0.04;
-/** Redraw rate while anyone walks outside, per second (the sim tick rate). */
-export const OUTDOOR_REDRAW_HZ = 10;
-/** The suited figure's parts (metres): torso, limbs, helmet radius, pack. */
-export const SUIT_LEG = [0.2, 0.8, 0.2] as const;
-export const SUIT_TORSO = [0.38, 0.62, 0.5] as const;
-export const SUIT_ARM = [0.16, 0.55, 0.16] as const;
-export const SUIT_HELMET_RADIUS = 0.25;
-export const SUIT_PACK = [0.2, 0.5, 0.34] as const;
-export const SUIT_VISOR = [0.1, 0.12, 0.28] as const;
-export const SUIT_SEGMENTS = 14;
 
 // ---- Night lights -------------------------------------------------------------------
 /** Lamp plates drawn at most (airlock and pole heads); the stress base has far fewer. */
