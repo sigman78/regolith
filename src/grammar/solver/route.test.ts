@@ -73,6 +73,63 @@ describe('route', () => {
     expect(out?.[out.length - 1]).toEqual([20, 0]);
   });
 
+  it('turns at most 45° per step, and runs straight at an end it is told is skewed', () => {
+    const step = (a: number, b: number): number => {
+      const d = Math.abs(a - b) % 8;
+      return Math.min(d, 8 - d);
+    };
+    const cases: { start: Lattice; startHeading: number; goal: Lattice; goalHeading: number }[] = [
+      // straight back behind the start: a U that used to be two 90° corners a cell apart
+      { start: [0, 0], startHeading: 0, goal: [0, 3], goalHeading: 0 },
+      { start: [0, 0], startHeading: 0, goal: [0, 1], goalHeading: 0 },
+      { start: [0, 0], startHeading: 0, goal: [-6, 0], goalHeading: 0 },
+      { start: [0, 0], startHeading: 2, goal: [5, -5], goalHeading: 6 },
+    ];
+    for (let seed = 1; seed <= 12; seed++) {
+      cases.push({
+        start: [0, 0],
+        startHeading: seed % 8,
+        goal: [(seed * 7) % 11, (seed * 5) % 9],
+        goalHeading: (seed * 3) % 8,
+      });
+    }
+    for (const c of cases) {
+      // The cell ahead of the start and the one behind the goal stay open: the first and last
+      // steps are straight by rule, so blocking them would make the case unroutable by design.
+      const sd = DIRS[c.startHeading] as Lattice;
+      const gd = DIRS[c.goalHeading] as Lattice;
+      const open: Lattice[] = [
+        c.start,
+        c.goal,
+        [c.start[0] + sd[0], c.start[1] + sd[1]],
+        [c.goal[0] - gd[0], c.goal[1] - gd[1]],
+      ];
+      const blocked = (x: number, z: number): boolean =>
+        ((x * 73856093) ^ (z * 19349663) ^ (c.goalHeading * 83492791)) % 7 === 0 &&
+        !open.some((o) => o[0] === x && o[1] === z);
+      const p = route({ ...c, free: (x, z) => !blocked(x, z) });
+      expect(p).not.toBeNull();
+      const hs = headings(p ?? []);
+      expect(step(hs[0] ?? c.startHeading, c.startHeading)).toBeLessThanOrEqual(1);
+      for (let i = 1; i < hs.length; i++) {
+        expect(step(hs[i] as number, hs[i - 1] as number)).toBeLessThanOrEqual(1);
+      }
+      expect(step(hs[hs.length - 1] ?? c.goalHeading, c.goalHeading)).toBeLessThanOrEqual(1);
+
+      // Told the ends are skewed, it leaves and arrives dead straight.
+      const strict = route({
+        ...c,
+        free: (x, z) => !blocked(x, z),
+        startStraight: true,
+        goalStraight: true,
+      });
+      expect(strict).not.toBeNull();
+      const hs2 = headings(strict ?? []);
+      expect(hs2[0] ?? c.startHeading).toBe(c.startHeading);
+      expect(hs2[hs2.length - 1] ?? c.goalHeading).toBe(c.goalHeading);
+    }
+  });
+
   it('is deterministic', () => {
     const q = {
       start: [0, 0] as Lattice,

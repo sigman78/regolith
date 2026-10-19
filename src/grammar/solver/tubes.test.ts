@@ -242,6 +242,50 @@ describe('tubes', () => {
     expectSoundTubes(base, world);
   });
 
+  it('draws nothing for a link it cannot route: the port stares at a hull', () => {
+    let doc = createDocument({ seed: 't' });
+    doc = hab(doc, 'A', 0, 0);
+    // A wall hab across A's end+, closer than the lead needs.
+    doc = hab(doc, 'WALL', 7.4, 0, 90, 12);
+    doc = hab(doc, 'B', 30, 0);
+    doc = addLink(doc, tube('A', 'end+', 'B', 'end-'));
+    const base = solve(doc, flat);
+    const flagged = base.diagnostics.filter((d) => d.kind === 'tube-unroutable');
+    expect(flagged).toHaveLength(1);
+    expect([...base.tubes.values()].filter((t) => t.kind === 'tube')).toEqual([]);
+    expect([...base.parts.values()].filter((p) => p.derived)).toEqual([]);
+    expectSoundTubes(base, flat);
+  });
+
+  it('never bends a corridor by more than 45° at one vertex, so every piece can be mitred', () => {
+    const rng = new Rng(4242);
+    for (let trial = 0; trial < 12; trial++) {
+      let doc = createDocument({ seed: 't' });
+      doc = hab(doc, 'A', -12, 0);
+      // The target sits behind or beside A's end+, so the route has to double back.
+      const yaw = (rng.int(0, 1) * 90) as 0 | 90;
+      doc = hab(doc, 'B', rng.int(-24, -2), rng.int(4, 14), yaw);
+      doc = addLink(doc, tube('A', 'end+', 'B', yaw === 0 ? 'end-' : 'end+'));
+      const base = solve(doc, flat);
+      for (const t of base.tubes.values()) {
+        if (t.kind !== 'tube') continue;
+        for (let i = 1; i + 1 < t.path.length; i++) {
+          const a = t.path[i - 1] as Vec3;
+          const b = t.path[i] as Vec3;
+          const c = t.path[i + 1] as Vec3;
+          const u = [b[0] - a[0], b[2] - a[2]];
+          const v = [c[0] - b[0], c[2] - b[2]];
+          const lu = Math.hypot(u[0] ?? 0, u[1] ?? 0);
+          const lv = Math.hypot(v[0] ?? 0, v[1] ?? 0);
+          if (lu < 1e-6 || lv < 1e-6) continue;
+          const cos = ((u[0] ?? 0) * (v[0] ?? 0) + (u[1] ?? 0) * (v[1] ?? 0)) / (lu * lv);
+          expect(cos).toBeGreaterThanOrEqual(Math.cos(Math.PI / 4) - 1e-6);
+        }
+      }
+      expectSoundTubes(base, flat);
+    }
+  });
+
   it('skips links that cannot be built, without throwing (P1)', () => {
     let doc = createDocument({ seed: 't' });
     doc = hab(doc, 'A', -15, 0);

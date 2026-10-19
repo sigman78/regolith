@@ -2,9 +2,13 @@
  * Lattice router for tubes: A* over integer (x, z) lattice points in the eight
  * 45° directions, with a turn penalty so tubes prefer long straight runs.
  *
- * State is (point, heading). The first move may continue the start heading for
- * free; turns of up to 90° are allowed per step, each 45° costing TUBE_TURN_COST;
- * reaching the goal adds the cost of turning into the goal heading.
+ * State is (point, heading). A step may turn by at most 45°, each 45° costing
+ * TUBE_TURN_COST; a right angle is two steps over at least one lattice cell, the
+ * shortest piece the corridor profile can mitre at both ends. The first move may
+ * turn off the start heading and the last may turn into the goal heading by the
+ * same 45°, unless the caller says the piece beyond that end is skewed off the
+ * lattice (`startStraight`, `goalStraight`): then it must run straight, so the
+ * skew plus the turn never bends a corridor by more than 45° at one vertex.
  *
  * Pure: the caller supplies `free(x, z)` for lattice points (a point is free
  * when all four cells around it are). Moves are checked by their endpoints,
@@ -33,6 +37,10 @@ export interface RouteQuery {
   /** Heading the tube should be travelling when it reaches the goal. */
   goalHeading: number;
   free(x: number, z: number): boolean;
+  /** The first step must keep the start heading (the piece before the start is skewed). */
+  startStraight?: boolean;
+  /** The last step must already be on the goal heading (the piece after the goal is skewed). */
+  goalStraight?: boolean;
   /** Search window around the start/goal box, in lattice units. */
   margin?: number;
 }
@@ -103,7 +111,9 @@ export function route(q: RouteQuery): Lattice[] | null {
     const gc = g[cur] ?? Infinity;
 
     if (x === q.goal[0] && z === q.goal[1]) {
-      const total = gc + TUBE_TURN_COST * turns(k, q.goalHeading);
+      const tin = turns(k, q.goalHeading);
+      if (tin > 1 || (q.goalStraight && tin > 0)) continue;
+      const total = gc + TUBE_TURN_COST * tin;
       if (total < best) {
         best = total;
         bestState = cur;
@@ -113,7 +123,7 @@ export function route(q: RouteQuery): Lattice[] | null {
 
     for (let nk = 0; nk < 8; nk++) {
       const t = turns(k, nk);
-      if (t > 2) continue;
+      if (t > 1 || (q.startStraight && cur === s && t > 0)) continue;
       const d = DIRS[nk] as Lattice;
       const nx = x + d[0];
       const nz = z + d[1];

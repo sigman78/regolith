@@ -4,13 +4,14 @@
  *
  * Route: leave each port straight for at least TUBE_LEAD, then A* across the
  * 1 m lattice (45° headings, turn penalty) around hull footprints and earlier
- * tubes. A tube over TUBE_MAX_SPAN or with more than TUBE_MAX_KINKS bends is
- * split by inserting a derived node on a straight run near the middle, and
- * each half is checked again. Nothing is ever rejected (P1): a link whose
- * route fails still gets a straight tube, flagged in the diagnostics.
+ * tubes. A tube over TUBE_MAX_SPAN or bent by more than TUBE_MAX_KINKS right
+ * angles is split by inserting a derived node on a straight run near the middle,
+ * and each half is checked again. Nothing is ever rejected (P1): a link whose
+ * route fails stays in the document, is flagged in the diagnostics and gets no
+ * tube at all; a corridor is never drawn through a hull.
  *
  * Invariants: lattice route points keep >= 1 m clear of every hull footprint
- * cell (tube radius is 0.8 m), so tubes never cross hulls; derived nodes sit on
+ * cell (the corridor is 2 m wide), so tubes never cross hulls; derived nodes sit on
  * lattice points whose footprint cells were free; no two tubes share a lattice
  * point unless no other route existed.
  */
@@ -119,23 +120,27 @@ export function tubesStage(
     };
 
     // Prefer a route with room for a node wherever one might be needed: first
-    // hugging the obstacles, then with a wide berth. If neither works, build
-    // the tight route anyway and flag it.
+    // hugging the obstacles, then with a wide berth. If neither leaves room for a
+    // node, build the tight route anyway and flag it; if there is no route, the
+    // link gets no corridor (a mesh through a hull would be a lie).
     let done = false;
     for (const clearance of [0, NODE_CLEARANCE]) {
-      const route = routeLink(pa, pb, taken, tubePoints, clearance, own);
-      if (!route.routed) continue;
+      const dense = routeLink(pa, pb, taken, tubePoints, clearance, own);
+      if (!dense) continue;
       const m = checkpoint(ctx);
-      if (build(ctx, { dense: route.dense, ...ends }, 0, true)) {
+      if (build(ctx, { dense, ...ends }, 0, true)) {
         done = true;
         break;
       }
       rollback(ctx, m);
     }
     if (!done) {
-      const route = routeLink(pa, pb, taken, tubePoints, 0, own);
-      if (!route.routed) diagnostics.push({ kind: 'tube-unroutable', tube: `tube:${key}` });
-      build(ctx, { dense: route.dense, ...ends }, 0, false);
+      const dense = routeLink(pa, pb, taken, tubePoints, 0, own);
+      if (!dense) {
+        diagnostics.push({ kind: 'tube-unroutable', tube: `tube:${key}` });
+        continue;
+      }
+      build(ctx, { dense, ...ends }, 0, false);
     }
   }
   return result;
@@ -294,7 +299,7 @@ export function maxSlope(path: readonly Vec3[]): number {
 // ---- Node insertion --------------------------------------------------------------
 
 function needsNode(dense: XZ[]): boolean {
-  return length(dense) > TUBE_MAX_SPAN || kinks(dense) > TUBE_MAX_KINKS;
+  return length(dense) > TUBE_MAX_SPAN || kinks(dense) > TUBE_MAX_KINKS + 1e-6;
 }
 
 function length(dense: XZ[]): number {
@@ -311,13 +316,17 @@ function seg(dense: XZ[], i: number): { len: number; dx: number; dz: number } {
 }
 
 /** Number of direction changes (over ~1°) along the polyline. */
+/** Total bending in right angles: a 90° corner counts one, each of its two 45° steps a half. */
 function kinks(dense: XZ[]): number {
   let n = 0;
   let prev: { dx: number; dz: number } | null = null;
   for (let i = 0; i + 1 < dense.length; i++) {
     const s = seg(dense, i);
     if (s.len < 1e-9) continue;
-    if (prev && prev.dx * s.dx + prev.dz * s.dz < Math.cos(Math.PI / 180)) n++;
+    if (prev) {
+      const dot = Math.max(-1, Math.min(1, prev.dx * s.dx + prev.dz * s.dz));
+      if (dot < Math.cos(Math.PI / 180)) n += Math.acos(dot) / (Math.PI / 2);
+    }
     prev = s;
   }
   return n;
@@ -351,7 +360,8 @@ function insertNode(ctx: Ctx, piece: Piece): [Piece, Piece] | null {
     if (!Number.isInteger(p[0]) || !Number.isInteger(p[1])) continue;
     const s = arc[i] ?? 0;
     if (s < margin || total - s < margin) continue;
-    if (!straightAround(d, arc, i, NODE_R + 0.5)) continue;
+    // Straight through the node and for a lead beyond each of its ports, like any port.
+    if (!straightAround(d, arc, i, NODE_R + TUBE_LEAD)) continue;
     const dir = seg(d, i);
     // Heading as a 45° stop; the node's local +X runs along the tube.
     const k = Math.round(Math.atan2(dir.dz, dir.dx) / (Math.PI / 4));
@@ -425,18 +435,23 @@ function nearTube(points: Set<number>, c: XZ, reach: number): boolean {
   return false;
 }
 
-/** Is the polyline one straight line within `reach` metres of point i on both sides? */
+/**
+ * Is the polyline one straight line through point i, with no bend at any vertex nearer than
+ * `reach` metres along it on either side? (A bend exactly `reach` out is allowed.)
+ */
 function straightAround(d: XZ[], arc: number[], i: number, reach: number): boolean {
   const here = seg(d, i);
   const same = (j: number): boolean => {
     const s = seg(d, j);
     return s.dx * here.dx + s.dz * here.dz > Math.cos(Math.PI / 180);
   };
-  for (let j = i; j + 1 < d.length && (arc[j] ?? 0) - (arc[i] ?? 0) < reach; j++) {
-    if (!same(j)) return false;
+  // Ahead: each vertex within reach keeps the heading on its outgoing segment.
+  for (let v = i; v + 1 < d.length && (arc[v] ?? 0) - (arc[i] ?? 0) < reach - 1e-6; v++) {
+    if (!same(v)) return false;
   }
-  for (let j = i - 1; j >= 0 && (arc[i] ?? 0) - (arc[j] ?? 0) < reach; j--) {
-    if (!same(j)) return false;
+  // Behind: each vertex within reach keeps it on its incoming segment.
+  for (let v = i; v > 0 && (arc[i] ?? 0) - (arc[v] ?? 0) < reach - 1e-6; v--) {
+    if (!same(v - 1)) return false;
   }
   return true;
 }
@@ -519,8 +534,8 @@ function leadClear(p: ResolvedPort, q: Lattice, taken: Set<number>, own: Set<num
 }
 
 /**
- * Dense (x,z) route from port a to port b, exact at both ends. `routed` is
- * false when no lattice route exists; `dense` is then a straight fallback.
+ * Dense (x,z) route from port a to port b, exact at both ends, or null when
+ * there is none (a port staring at a hull, or no lattice path).
  */
 function routeLink(
   pa: ResolvedPort,
@@ -529,7 +544,7 @@ function routeLink(
   tubePoints: Set<number>,
   clearance: number,
   own: { a: Set<number>; b: Set<number> },
-): { dense: XZ[]; routed: boolean } {
+): XZ[] | null {
   const ka = heading(pa);
   const kb = heading(pb);
   const hullFree = (x: number, z: number): boolean => pointFree(taken, x, z, clearance);
@@ -541,18 +556,8 @@ function routeLink(
   const goalHeading = (kb + 4) % 8;
 
   // A port that stares at another hull cannot leave straight: walking the lead out
-  // past that hull would put the tube through it. Hand back the flagged fallback.
-  if (!leadClear(pa, qa, taken, own.a) || !leadClear(pb, qb, taken, own.b)) {
-    return {
-      dense: dedupe([
-        [pa.position[0], pa.position[2]],
-        [qa[0], qa[1]],
-        [qb[0], qb[1]],
-        [pb.position[0], pb.position[2]],
-      ]),
-      routed: false,
-    };
-  }
+  // past that hull would put the tube through it.
+  if (!leadClear(pa, qa, taken, own.a) || !leadClear(pb, qb, taken, own.b)) return null;
 
   // The route's own endpoints must be usable even if a neighbour's cells touch them.
   const withEnds =
@@ -560,18 +565,31 @@ function routeLink(
     (x: number, z: number): boolean =>
       (x === qa[0] && z === qa[1]) || (x === qb[0] && z === qb[1]) || f(x, z);
 
+  // A port off the lattice line reaches its lead point on a skew (a bend of its own, up to half
+  // a cell over the lead): the lattice must then run straight there, or the two bends add up.
   const query = (free: (x: number, z: number) => boolean) =>
-    route({ start: qa, startHeading: ka, goal: qb, goalHeading, free });
+    route({
+      start: qa,
+      startHeading: ka,
+      goal: qb,
+      goalHeading,
+      free,
+      startStraight: skewed(pa, ka, qa),
+      goalStraight: skewed(pb, kb, qb),
+    });
 
   const lattice = query(withEnds(clearFree)) ?? query(withEnds(hullFree));
-  const mid: XZ[] = lattice
-    ? lattice.map((p): XZ => [p[0], p[1]])
-    : [
-        [qa[0], qa[1]],
-        [qb[0], qb[1]],
-      ];
-  return {
-    dense: dedupe([[pa.position[0], pa.position[2]], ...mid, [pb.position[0], pb.position[2]]]),
-    routed: lattice !== null,
-  };
+  if (!lattice) return null;
+  return dedupe([
+    [pa.position[0], pa.position[2]],
+    ...lattice.map((p): XZ => [p[0], p[1]]),
+    [pb.position[0], pb.position[2]],
+  ]);
+}
+
+/** Does the lead point sit off the line the port's heading leaves on? */
+function skewed(p: ResolvedPort, k: number, q: Lattice): boolean {
+  const [dx, dz] = DIRS[k] as Lattice;
+  const cross = dx * (q[1] - p.position[2]) - dz * (q[0] - p.position[0]);
+  return Math.abs(cross) > 1e-6;
 }

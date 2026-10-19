@@ -157,7 +157,7 @@ Each stage is a pure function `(ResolvedBase, Document) → ResolvedBase` in its
 
 ### 4.3 State of the solver (M1) and known limits
 
-Implemented: place, overlap, ground, dock, tubes (with node insertion and a wider-clearance retry that rolls back cleanly) and diagnose. Not yet: power, paths, decorators, beacon. The `Diagnostic` kinds in use are `unknown-letter`, `moved`, `unplaceable`, `link-skipped`, `tube-unroutable`, `tube-too-long` and `invariant`; a failed route falls back to a tight tube plus a diagnostic, never an error (P1).
+Implemented: place, overlap, ground, dock, tubes (with node insertion and a wider-clearance retry that rolls back cleanly) and diagnose. Not yet: power, paths, decorators, beacon. The `Diagnostic` kinds in use are `unknown-letter`, `moved`, `unplaceable`, `link-skipped`, `tube-unroutable`, `tube-too-long` and `invariant`; a link with no route keeps its place in the document and is flagged, but gets no corridor (a mesh through a hull is never drawn), never an error (P1). The router turns by at most 45° per lattice step and runs straight into a skewed lead, so no corridor bends by more than 45° at one vertex, the most the D-section mitre can take on a 1 m piece.
 
 Letters in the registry: H, N, D (opaque dome), V (tower), P (slab), M (mast), E (power plant), C (launcher).
 

@@ -137,7 +137,7 @@ export const KINK_COLLAR_THICK = TUBE_END_THICK;
 export const TUBE_PORT_EMBED = 0.3;
 /** Straight run out of a port before the router may turn, metres. */
 export const TUBE_LEAD = 1;
-/** Beyond this span, or this many kinks, the solver inserts a node. */
+/** Beyond this span, or this much bending in right angles (a 90° corner is 1), the solver inserts a node. */
 export const TUBE_MAX_SPAN = 24;
 export const TUBE_MAX_KINKS = 2;
 /** Gap between the tube underside and the terrain wherever the tube is free-standing. */
