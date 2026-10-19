@@ -114,3 +114,24 @@ Every part, tube and leg is now an instance in one `BatchedMesh` per material (`
 Draw calls at 200 parts fell from 3,257–4,505 to 18–46, CPU submit from 7–10 ms to 1–2 ms, GPU from 6–10 ms to 1.3–2.5 ms. The remaining calls are the composer's passes and the terrain, rocks and sky. Triangles are unchanged, so LOD is still the lever if a reference laptop says vertices matter.
 
 Notes for the next person: geometry is shared by (bundle hash, material, mirror) and reference-counted; unused geometries stay in the buffers until space runs out, then they are dropped, the buffers repacked and only then grown. Three cannot flip the winding per instance, so a flipped part draws a mirrored copy of the geometry under a rotation-only matrix.
+
+## M3.5 — human scale (corridor section, stubs and doors, strips)
+
+Triangles per built bundle, headless (`buildBundle`), 2026-10-18. Draw calls are unchanged: every piece rides the same per-material batches.
+
+| What | Triangles |
+| --- | --- |
+| Corridor, 10 m straight (D section, slab, 5 flanges, 2 caps) | 1,320; 1,328 with the window strips |
+| Corridor, 20 m straight | 2,370 (so about 105 per metre, plus 270 per end); the old 16-segment pipe was about 32 per metre plus its flanges |
+| Corridor with one 45° bend, 6 + 5.7 m | 1,576 |
+| Hab S or M, 8 m, no stubs | 3,696 |
+| Hab, 8 m, with its 4 stubs and doors | 8,736 |
+| Node S, no stubs / with 4 stubs | 816 / 5,856 |
+| Tower, 3 floors, no stubs / with 8 stubs | 2,584 / 12,664 |
+| Dome 6 m, no stubs / with 4 stubs | 2,576 / 7,616 |
+| Airlock S (stair of 8 blocks and noses, its own exit stub) / with its PRESS stub | 7,532 / 8,792 |
+| Golden base, 14 parts and 6 tubes (31 m) | 87,848 (parts 82,420, tubes 5,428); it was 37,700 at M2 |
+
+Reading it: the corridor section costs 3× the old pipe per metre and that is fine (a few thousand triangles for a whole base). The cost is the **door**: a stub is about 90 triangles of skin and caps, but its frame is four bevelled boxes (two jambs, a lintel, the leaf), about 1,170 triangles, and every tube-capable port carries one, so a hab gains 5,000 triangles and a tower 10,000. At 200 parts that is the order of 1 M extra triangles, over the §11 budget by itself. The stair is the same story (16 bevelled boxes).
+
+Next step (not in this pass): a door frame as one lathe-free profile sweep (the frame's rectangle as a section ring, one bevel), about 150 triangles, and the stair as one stepped profile; or draw the frame and the leaf as a flat decal like the stencil. Then LOD: the far level drops stubs, strips and frames altogether.

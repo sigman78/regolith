@@ -25,7 +25,11 @@ Rules the generators follow. Deviations need a reason written in the part's sour
 | Thinness floor | Nothing thinner than 8 cm. Handrails 8 cm, cables 10 cm on 20 cm pylons, truss members 12 cm. |
 | Rounding | Capsule ends on cylinders, chamfered box corners, fillets on hatches. Dome bases have a 30 cm toroidal collar. |
 | Detail density | Large: silhouette. Medium: ribs, hatches, panels, legs. Small: stencils, handrails, lights, bolts. Each part has at most 3 small-detail kinds. |
-| Proportions | Crew are 1.8 m tall but with 1.3x helmet and hands. Rovers are 1.2x their real-world width. Everything is slightly toy-scaled against terrain. |
+| Proportions | The crew member everything is checked against is `CREW_HEIGHT` 1.8 m with `HEADROOM_MARGIN` 0.2 m over their head (no figure is drawn, see §11). Rovers are 1.2x their real-world width. Everything is slightly toy-scaled against terrain. |
+| Floor | Every pressurised part's walking floor is `FLOOR_ABOVE_BELLY` 1.0 m above its lowest hull point (round hulls and spheres: the belly; towers and domes: a 1.0 m plinth under the ground floor). With the 0.5 m leg clearance every floor is `DECK_HEIGHT` 1.5 m over the ground, so sills meet wherever the ground is level. |
+| Corridor | 2.0 m wide, 2.4 m floor to crown: a flat floor on a 0.2 m slab, straight walls, a semicircular crown. D flanges every 2 m and at both ends, a bend collar on every mitred kink. Routed at 45° per step; a right angle is two steps. |
+| Door | 1.0 × 2.0 m with a 5 cm sill, on every tube-capable `PRESS` port, on the face of a corridor stub that reaches into the hull. Graphite frame, accent leaf. |
+| Eye height | `EYE_HEIGHT` 1.5 m over the floor: hab panes, tower bands and corridor strips are centred there. Rings (ribs, bands, stripes) that cross a door's height stop 5 cm beside its stub with a flat end. |
 | Symmetry | Parts are symmetric about their axis unless a port or ladder breaks it. Decorators are placed on fixed sides (ladders downhill, stencils on the sun-facing side at noon). |
 
 ## 3. Colour
@@ -128,21 +132,21 @@ The base is written in letters. Each letter is a parametric generator with ports
 
 | Port | Mates with | Visual |
 |------|-----------|--------|
-| `PRESS` | `PRESS` (via tube or direct dock) | 1.6 m hatch ring in graphite with an orange collar; halo when hovered. |
+| `PRESS` | `PRESS` (via tube or direct dock) | A 1.0 × 2.0 m door at floor level on a short corridor stub; graphite frame, orange leaf; the halo rings the door. A connected door disappears inside the corridor skin. |
 | `STRUCT` | ground, `PAD`, or a `STRUCT` host | Flat foot; generates legs to terrain. |
 | `POWER` | `POWER` (via auto cable) | Small junction box with a green dot. |
-| `EXT` | nothing (a door to outside) | Hazard chevrons on the ground, ramp or stair. |
+| `EXT` | nothing (a door to outside) | A door on a stub and a stair down to the ground, a hazard strip on every tread. |
 
 ### 8.2 Letters
 
 | L | Part | Parameters | Ports | Auto decorators |
 |---|------|-----------|-------|-----------------|
-| **H** | Hab (horizontal cylinder, inflatable) | length 4–16 m step 2, radius S/M, windows on/off | `PRESS` ×2 ends, `PRESS` side every 4 m (alternating sides), `STRUCT` ×2 bottom | legs to ground, ladder downhill, one accent stripe, stencil number, dust on windward quarter, handrail along top if a `STRUCT` host is above |
-| **V** | Vertical hab (tower) | floors 2–5, radius M | `PRESS` ×4 at ground floor, `PRESS` ×2 per upper floor, `STRUCT` base | external stair spiral, beacon on top if tallest |
-| **N** | Node (junction) | size S/M/L, shape hex/sphere | `PRESS` ×6 (hex) or ×4 + top | docking lights per used port, blanking plate per unused port |
-| **D** | Dome | radius 3/4.5/6/8, kind opaque / greenhouse / observatory | `PRESS` ×4 at base collar, `STRUCT` ring | greenhouse: plants that grow, warm glow; observatory: telescope slit that opens at night; opaque: regolith-printed shell with printer texture |
-| **T** | Tube (corridor) | *derived*: from two `PRESS` ports; max span 24 m | — | flanges every 2 m, bend collars at kinks, support legs every 6 m, window strip if both ends have windows |
-| **A** | Airlock | size S/M | `PRESS` in, `EXT` out | ramp or 3-step stair to terrain, hazard chevrons, lamp that cycles orange (seal), yellow (pump), green (open) and rests window-warm, footprint path origin; the lock cycles on its own once a sol-hour between 08:00 and 18:00 |
+| **H** | Hab (horizontal cylinder, inflatable) | length 4–16 m step 2, radius S/M, windows on/off | `PRESS` ×2 ends, `PRESS` side every 4 m (alternating sides), all on the floor, `STRUCT` ×2 bottom | legs to ground, ladder downhill, one accent stripe, windows at eye height on both flanks (not on a door's bay), stencil beside the pane row, dust on windward quarter, handrail along top if a `STRUCT` host is above |
+| **V** | Vertical hab (tower) | floors 2–5, radius M | `PRESS` ×4 at ground floor, `PRESS` ×2 per upper floor, each on its floor, `STRUCT` base | 1 m plinth, a rib at every floor, a window band at eye height per floor, rings stop beside the doors, beacon on top if tallest |
+| **N** | Node (junction) | size S/M/L, shape hex/sphere | `PRESS` ×4 on the floor + top | a door on a stub per side port (the vault look), the top hatch keeps its ring and is never walkable |
+| **D** | Dome | radius 3/4.5/6/8, kind opaque / greenhouse / observatory | `PRESS` ×4 on the collar at floor level, `STRUCT` ring | 1 m plinth, collar stubs, rim rib and stripe stop beside the doors; greenhouse: plants that grow, warm glow; observatory: telescope slit that opens at night; opaque: regolith-printed shell with printer texture |
+| **T** | Tube (corridor) | *derived*: from two `PRESS` ports; max span 24 m | — | D section 2.0 × 2.4 m on a floor slab, flanges every 2 m, bend collars at mitred kinks, support legs every 6 m, window strips at eye height on straight runs (never on a dock bridge) |
+| **A** | Airlock | size S/M | `PRESS` in, `EXT` out | a 2.0 m door on a stub and an 8-riser stair down the one deck to the ground, a hazard strip on every tread, lamp over the lintel that cycles orange (seal), yellow (pump), green (open) and rests window-warm, footprint path origin; the lock cycles on its own once a sol-hour between 08:00 and 18:00 |
 | **G** | Garage | bays 1–3 | `EXT` ×bays (roller doors), `PRESS` back | one rover per bay, tyre tracks out of the door, tool wall visible through the open door |
 | **L** | Landing pad | radius 8/12 | — | edge lights, hazard ring, scorch mark that grows per landing, windsock, blast berm |
 | **S** | Solar array | rows 1–4 × cols 2–12, tracking on/off | `POWER` at the end post | sun tracking, parked at night, cable to nearest `POWER`, dust that a drone cleans |
@@ -157,14 +161,14 @@ The base is written in letters. Each letter is a parametric generator with ports
 
 **M1 implementation notes (static, no sim yet).** P is a raised deck: a graphite slab on short pylons rather than a levelled apron (terrain flattening needs terrain edits flowing back into the mesh, M4). Parts whose footprint lands on a slab stand on its top; slabs only resolve overlap against other slabs. `POWER` ports exist but nothing connects to them yet. Beacons, dish tracking, hazard rings and guy wires arrive with the life layer.
 
-**M3 implementation notes (A, S, X, static).** The airlock has the hab's two radii (2 / 3) so its `PRESS` end meets a hab flank port at the same height; its footprint carries almost no margin at the ends so it can touch what it docks to, and its door and ramp face +z with the `EXT` port at the ramp foot (inert until the exit task). A solar array is rows 1-4 by cols 2-12 of 2 x 1.2 m panels tilted 25 degrees toward +z, a graphite frame slab per row, one blue face and a 6 x 3 cell grid per panel, on tilted beams and one line of posts (each post is a `STRUCT` foot, so it gets a leg); `tracking` is stored but the resting shape is the same until M3 task 7. A light pole is 3 / 4 / 6 m, stands on one short foot (every part stands on something), and its `POWER` port is inert until the power stage. Window glow and lamp glow share the one night ramp for now.
+**M3 implementation notes (A, S, X, static).** The airlock has the hab's two radii (2 / 3) so its `PRESS` end meets a hab flank port at the same height; its footprint carries almost no margin at the ends so it can touch what it docks to, and its door and stair face +z with the `EXT` port at the stair foot (M3.5 replaced the ramp with the stair). A solar array is rows 1-4 by cols 2-12 of 2 x 1.2 m panels tilted 25 degrees toward +z, a graphite frame slab per row, one blue face and a 6 x 3 cell grid per panel, on tilted beams and one line of posts (each post is a `STRUCT` foot, so it gets a leg); `tracking` is stored but the resting shape is the same until M3 task 7. A light pole is 3 / 4 / 6 m, stands on one short foot (every part stands on something), and its `POWER` port is inert until the power stage. Window glow and lamp glow share the one night ramp for now.
 
 Alphabet is **frozen per milestone**; see PLAN.md for which letters ship when.
 
 ### 8.3 Grammar (composition rules)
 
-1. `PRESS` ports mate only with `PRESS`. If two are within 0.5 m and aligned within 15°, they **dock directly** (one collar). Otherwise, if the player drags between them, a **tube** is generated.
-2. A tube is a polyline on the grid of at most 3 segments with 45° kinks. Spans over 24 m or with more than 2 kinks auto-insert a **node** at the best grid point. Tubes never pass through hulls; if they must, a node is inserted to route around.
+1. `PRESS` ports mate only with `PRESS`. If two are within 1.5 m and aligned within 15° with their sills within 0.5 m, they **dock directly** (one collar). Otherwise, if the player drags between them, a **tube** is generated. Ports are sills: parts dock only when their decks meet.
+2. A tube is a polyline on the grid with 45° kinks (a right angle is two of them a step apart). Spans over 24 m or bent by more than two right angles auto-insert a **node** on a straight run. Tubes never pass through hulls; a link that cannot be routed gets no corridor and a diagnostic, never a mesh through a hull. Corridors are level on level ground; a climb over 8° is flagged.
 3. Every part with a `STRUCT` port must be grounded: on terrain (legs generated to the sampled height), on a pad, or on a host part. Nothing floats, ever.
 4. Pressurized hulls **never intersect**. When the player moves a part into another, the solver resolves by: (a) snapping to the nearest non-intersecting grid pose, or (b) if a `PRESS` port is in range, docking. The ghost preview shows the resolved pose before commit, so the player is never surprised.
 5. `POWER` ports connect automatically to the nearest reachable power network via ground cables routed on the grid around footprints. Unpowered parts still work (P1), they just show no cable; lights never depend on power. Power is purely cosmetic.
@@ -179,6 +183,7 @@ Alphabet is **frozen per milestone**; see PLAN.md for which letters ship when.
 - Never: a visible coplanar overlap. Decals sit 4 mm proud; decal materials use `polygonOffset`.
 - Never: a hull face closer than 10 cm to another hull face without a collar.
 - Never: a tube with a free end. Never: a port halo on a port that cannot be used.
+- Always: 2.0 m clear height on every walkable point (corridor crown, door, room centre). Always: every `PRESS` port on its floor, within a 5 cm sill.
 
 ## 9. Consistency and glitch-free rules (technical)
 
@@ -192,7 +197,7 @@ Alphabet is **frozen per milestone**; see PLAN.md for which letters ship when.
 | Scale drift | Every generator takes metres and the design constants from a single `design-constants.ts` (bevel, flange ratio, rib spacing). No magic numbers in part files. |
 | Determinism | Every generator is a pure function of (params, seed). Geometry cache keyed by hash. Same base, same bytes. |
 | Colour drift | Materials only from the library. Vertex tints only through two helpers: `tintUnderside` and `tintDust`. The one other per-part colour is the individual hull tint: an instance multiplier that leans the hull up to 35% of the way from Hull white to Hull shaded (about 5% darker, a touch warmer), so it is always a point on a palette segment. |
-| Stencils | Each hab carries its tag (`H-002`: letter, dash, serial mod 1000) in graphite on the flank that faces the default camera, in the rib bay furthest from the stripe, reading left to right whatever the yaw and never mirrored by a flip. Glyphs are 5 × 7 cells of 4.5 cm (22 × 32 cm), wrapped onto the hull 6 mm proud at 86° from the top (the windows sit at 52°), built from a hand-coded rectangle font, never rasterised text. Solver-made nodes have no serial and no stencil. |
+| Stencils | Each hab carries its tag (`H-002`: letter, dash, serial mod 1000) in graphite on the flank that faces the default camera, in the rib bay furthest from the stripe, reading left to right whatever the yaw and never mirrored by a flip. Glyphs are 5 × 7 cells of 4.5 cm (22 × 32 cm), wrapped onto the hull 6 mm proud just beside the window row on the equator side (below the panes on an S hull, above them on an M hull, so it always faces the camera), in a bay with no door on that flank, built from a hand-coded rectangle font, never rasterised text. Solver-made nodes have no serial and no stencil. |
 | Individuality | Derived from `(letter, serial, seed)` in `grammar/individual.ts`, never stored. Hull tint on H, V, D, N, P; a stripe variant on H (accent at the +x end, accent at the −x end, graphite at the +x end). Solver-made nodes (serial 0) and the other letters stay as authored. |
 
 ## 10. Animation principles

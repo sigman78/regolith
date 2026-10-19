@@ -122,8 +122,11 @@ interface PartDefinition<P extends ParamSchema> {
   footprint(params: P): Footprint;            // grid cells occupied, used for snapping/overlap
   ports(params: P): PortSpec[];               // local-space ports: id, type, position, normal
   ground(params: P): GroundSpec;              // which STRUCT ports need legs, pad behaviour
-  decorators(params: P, ctx: DecoratorCtx): DecoratorSpec[];
-  geometry(params: P, ctx: GeometryCtx): GeometryRecipe;   // see §5, pure description
+  floor?(params: P): number;                  // local y of the walking floor (every letter with a door)
+  floors?(params: P): number[];               // every deck when there is more than one (a tower)
+  stubDepth?(params: P, portId: string): number; // how deep a door's corridor stub reaches into the hull
+  beacon?(params: P): Vec3;                   // where the base's beacon would rest on this part
+  geometry(params: P, ctx: GeometryCtx): GeometryRecipe;   // see §5, pure description; the solver appends a stub per door
   lods?: number[];                            // screen-size thresholds
 }
 ```
@@ -140,12 +143,14 @@ document
   ├─ 1. place      : clamp to grid, snap yaw to 45°; `mirror` copied through (a flip: local z → -z before the yaw)
   ├─ 2. overlap    : footprint grid test; push to nearest free pose (expanding ring search);
   │                   the part being edited (`movingId`) is placed last and yields
+  ├─ 2b. flatten   : the ground levelled under slabs (a derived field), handed to every later stage
   ├─ 3. ground     : pose.y from terrain, legs per STRUCT port (runs before dock: ports need final heights)
   ├─ 4. dock       : opposing PRESS ports within 1.5 m, ±15°, lateral ≤ 0.5 m → a short tube bridge
   ├─ 5. tubes      : for each player link of kind 'tube': route on a 1 m lattice (A*, 8 headings,
   │                   turn penalty, hull footprints blocked); insert nodes on >24 m or >2 kinks;
   │                   derived nodes are grounded here
   ├─ 5b. keep-out  : `keepOut` mask of the 1 m grid for ambient decoration (parts incl. slab hosts, tube corridors); see SCATTER.md
+  ├─ 5c. graph     : the press graph: a node per part with a door (floor-level points, the centre on the floor), an edge per dock or tube (its floor line)
   ├─ 6. power      : union-find networks; cable routes (A* on grid, tubes passable via pylon hop)
   ├─ 7. paths      : EXT ports → origins; wear field advanced by sim traffic (sim writes, solver reads)
   ├─ 8. decorators : stencils (serial), handrails, lights, chevrons, dust side (wind dir from seed)
@@ -174,6 +179,7 @@ Letters in the registry: H, N, D (opaque dome), V (tower), P (slab), M (mast), E
 Known limits:
 
 - `ResolvedBase.graph` (nodes = PRESS parts, edges = docks and tubes, floor-level points) exists; `cables`, `paths`, `power` and `decorators` in the sketch above are still to come (M3 tasks 8 and later, M4).
+- M3.5 (human scale): every door is on its part's floor (`PartDefinition.floor`), corridors are a D section on the floor line with mitred bends, and `toResolved` appends a corridor stub with a door to every recipe (`grammar/stubs.ts`); the ball joints and the hatch rings are gone. Rings that cross a door's height are lathed in arcs around it. A corridor's end flange straddles the stub mouth; a connected door is hidden inside the corridor skin. The hab M has one deck 2 m under its axis, so its panes sit below the axis (the mezzanine is an open option).
 
 - Slabs level the ground under them (a derived field, never stored); parts on legs keep the natural terrain and get a wear ring (`world/wear.ts`, a 2-channel texture the regolith shader reads; channel G is for M4's paths). Painted terrain edits still wait for M4.
 - Handles cover the range and choice params that are a length (H length and radius, C length, P width and depth, V floors, M height, D, E and N radius). Toggles, the mast head and the launcher's elevation are edited through the picker only.
@@ -294,7 +300,7 @@ Decorators and repeated parts (solar panels, lights, crew) are `InstancedMesh` w
 | Visual | screenshot suite at 06:00 / 12:00 / 18:30 / 21:00 from 3 camera angles on a golden base | Playwright, compared with a tolerance; run on demand, not on every commit |
 | Perf | solver < 2 ms for 200 parts; geometry worker < 16 ms per hab; frame < 16 ms on the golden base | benchmark script, numbers tracked in `docs/PERF.md` (created at M1) |
 
-## 11. Performance budgets (golden base: 200 parts, 24 crew, 6 rovers, 300 panels)
+## 11. Performance budgets (golden base: 200 parts, 6 rovers, 300 panels)
 
 | Budget | Target |
 |--------|--------|
