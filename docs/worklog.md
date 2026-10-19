@@ -96,3 +96,4 @@ Format: `YYYY-MM-DD HH:MM · commit · what` (local time, UTC-7). Times are when
 - 2026-10-18 15:00 · c499119 · M3.5 stage 1: corridor profile (D section on the floor line, mitred bends with collars, closed ends, floor slab), TUBE_RADIUS and the pipe lift retired, steep suggestions ranked down
 - 2026-10-18 15:05 · 99fc7cb · M3.5 stage 1 checkpoint fix: mitre eased on short pieces (two close bends no longer fold the skin), PLAN notes (headroom, node floor decision before stage 2)
 - 2026-10-18 19:25 · d98afca · merge feat/m35-corridor: M3.5 stage 1, corridor profile on the floor line
+- 2026-10-18 19:37 · 30b4c42 · fix: router turns at most 45° per step and runs straight into a skewed lead, derived nodes only on a straight lead, no corridor for an unroutable link (user review: never a mesh through a hull)
