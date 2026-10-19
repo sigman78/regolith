@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DECK_HEIGHT, TUBE_RADIUS } from '@/geometry/design-constants';
+import { DECK_HEIGHT } from '@/geometry/design-constants';
 import { graphComponents, solve, type SolverWorld } from '@/grammar/solver';
 import { navOf, route, stepPolyline } from '@/sim/nav';
 import { addLink, addPart, createDocument } from '@/world/document';
@@ -43,7 +43,7 @@ describe('golden base on the level (M3.5 stage 0)', () => {
   it('is level: every pipe stands a radius over the deck, every walk stays on the floor', () => {
     const base = resolved();
     for (const t of base.tubes.values()) {
-      for (const p of t.path) expect(p[1]).toBeCloseTo(DECK_HEIGHT + TUBE_RADIUS, 9);
+      for (const p of t.path) expect(p[1]).toBeCloseTo(DECK_HEIGHT, 9);
     }
     for (const e of base.graph.edges) {
       for (const p of e.path) expect(p[1]).toBeCloseTo(DECK_HEIGHT, 9);

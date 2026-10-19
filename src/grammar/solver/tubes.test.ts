@@ -7,7 +7,8 @@ import {
   TUBE_GROUND_GAP,
   TUBE_MAX_SPAN,
   TUBE_PORT_EMBED,
-  TUBE_RADIUS,
+  CORRIDOR_FLOOR_THICK,
+  CORRIDOR_HALF_WIDTH,
 } from '@/geometry/design-constants';
 import {
   addLink,
@@ -105,11 +106,11 @@ function expectSoundTubes(base: ResolvedBase, world: SolverWorld): void {
         const own = part.id === t.a.part || part.id === t.b.part;
         if (own && (q.s < 1.6 || total - q.s < 1.6)) continue;
         // Clear of every hull except where it enters its own two ports.
-        expect(distToHull(part, q.x, q.z)).toBeGreaterThanOrEqual(TUBE_RADIUS - 0.05);
+        expect(distToHull(part, q.x, q.z)).toBeGreaterThanOrEqual(CORRIDOR_HALF_WIDTH - 0.05);
       }
       if (q.s > 1.6 && total - q.s > 1.6) {
         expect(q.y).toBeGreaterThanOrEqual(
-          world.heightAt(q.x, q.z) + TUBE_RADIUS + TUBE_GROUND_GAP - 0.05,
+          world.heightAt(q.x, q.z) + CORRIDOR_FLOOR_THICK + TUBE_GROUND_GAP - 0.05,
         );
       }
     }

@@ -20,7 +20,6 @@ import { footprintContains, footprintGap } from '../footprint';
 import { portKey } from './dock';
 import { getPart } from '../registry';
 import { canTakeTube, isHorizontal } from './ports';
-import { PIPE_AXIS_LIFT } from './tube-path';
 import type {
   Diagnostic,
   InvariantRule,
@@ -137,7 +136,7 @@ export function diagnose(
       }
       const d = Math.hypot(
         point[0] - port.position[0],
-        point[1] - (port.position[1] + PIPE_AXIS_LIFT),
+        point[1] - port.position[1],
         point[2] - port.position[2],
       );
       if (d > TUBE_PORT_EMBED + port.gap + 0.05) {

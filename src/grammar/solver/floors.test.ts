@@ -12,7 +12,6 @@ import {
   FLOOR_ABOVE_BELLY,
   LEG_MIN_CLEARANCE,
   TUBE_PORT_EMBED,
-  TUBE_RADIUS,
 } from '@/geometry/design-constants';
 import { addLink, addPart, createDocument, type BaseDocument } from '@/world/document';
 import { allParts, getPart } from '../registry';
@@ -143,7 +142,7 @@ describe('different letters meet on the level', () => {
     expect(base.tubes.size).toBe(0);
     expect(linked.tubes.size).toBeGreaterThan(0);
     for (const t of linked.tubes.values()) {
-      for (const p of t.path) expect(p[1]).toBeCloseTo(DECK_HEIGHT + TUBE_RADIUS, 9);
+      for (const p of t.path) expect(p[1]).toBeCloseTo(DECK_HEIGHT, 9);
     }
     for (const e of linked.graph.edges) {
       for (const p of e.path) expect(p[1]).toBeCloseTo(DECK_HEIGHT, 9);

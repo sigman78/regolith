@@ -12,7 +12,7 @@ import {
   GRID,
   KEEPOUT_PART_MARGIN,
   KEEPOUT_TUBE_MARGIN,
-  TUBE_RADIUS,
+  CORRIDOR_HALF_WIDTH,
 } from '@/geometry/design-constants';
 import { cellCenter } from '../footprint';
 import type { Grounded } from './ground';
@@ -48,7 +48,7 @@ export function keepOut(
     }
   }
 
-  const reach = TUBE_RADIUS + KEEPOUT_TUBE_MARGIN;
+  const reach = CORRIDOR_HALF_WIDTH + KEEPOUT_TUBE_MARGIN;
   const span = Math.ceil(reach / GRID);
   const step = GRID / 2;
   for (const t of tubes) {

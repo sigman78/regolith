@@ -2,16 +2,15 @@
  * Turning a centreline into a ResolvedTube: height profile over the terrain,
  * support legs every TUBE_LEG_SPACING, and the (hashable) geometry recipe.
  *
- * Invariants: the first and last points keep the port heights (plus PIPE_AXIS_LIFT) exactly; every
- * point in between is at least TUBE_RADIUS + TUBE_GROUND_GAP above the terrain;
- * each leg ends in the terrain (FOOT_SINK below it) and reaches the tube's
- * underside. Coordinates are rounded to 1 mm so hashes are stable.
+ * The path is the corridor's floor line. Invariants: the first and last points keep the port
+ * heights exactly; every point in between is at least CORRIDOR_FLOOR_THICK + TUBE_GROUND_GAP above
+ * the terrain; each leg ends in the terrain (FOOT_SINK below it) and reaches the slab's underside. Coordinates are rounded to 1 mm so hashes are stable.
  */
 import {
+  CORRIDOR_FLOOR_THICK,
   FOOT_SINK,
   TUBE_GROUND_GAP,
   TUBE_LEG_SPACING,
-  TUBE_RADIUS,
   TUBE_SAMPLE,
 } from '@/geometry/design-constants';
 import { hashValue } from '@/core/hash';
@@ -20,12 +19,6 @@ import type { PortRef } from '@/world/document';
 import type { Leg, ResolvedTube, SolverWorld } from './types';
 
 const mm = (v: number): number => Math.round(v * 1000) / 1000;
-
-/**
- * Ports sit on the floor; a round pipe stands on it, so its axis is one radius up. The walking
- * path (graph.ts) is the axis lowered by the same amount. Retires with the pipe (M3.5 stage 1).
- */
-export const PIPE_AXIS_LIFT = TUBE_RADIUS;
 
 export interface TubeInput {
   id: string;
@@ -73,7 +66,7 @@ export function profileXZ(
     lens.push(l);
     total += l;
   }
-  const floor = TUBE_RADIUS + TUBE_GROUND_GAP;
+  const floor = CORRIDOR_FLOOR_THICK + TUBE_GROUND_GAP;
   const out: Vec3[] = [];
   let s = 0;
   for (let i = 0; i + 1 < xz.length; i++) {
@@ -121,7 +114,7 @@ function tubeLegs(path: Vec3[], world: SolverWorld): Leg[] {
     const z = a[2] + (b[2] - a[2]) * t;
     legs.push({
       portId: `tube-leg-${legs.length}`,
-      top: [mm(x), mm(y - TUBE_RADIUS), mm(z)],
+      top: [mm(x), mm(y - CORRIDOR_FLOOR_THICK), mm(z)],
       bottom: [mm(x), mm(world.heightAt(x, z) - FOOT_SINK), mm(z)],
     });
   }

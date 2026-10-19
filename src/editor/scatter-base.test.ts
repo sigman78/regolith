@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { footprintContains } from '@/grammar/footprint';
 import { solve, type SolverWorld } from '@/grammar/solver';
-import { TUBE_RADIUS } from '@/geometry/design-constants';
+import { CORRIDOR_HALF_WIDTH } from '@/geometry/design-constants';
 import { addLink, addPart, createDocument } from '@/world/document';
 import { cullScatter, scatterCandidates, SCATTER_STRIDE } from '@/world/scatter';
 import { generateTerrain, heightAt } from '@/world/terrain';
@@ -53,7 +53,7 @@ describe('rocks and the base', () => {
           const len2 = dx * dx + dz * dz || 1;
           const u = Math.min(1, Math.max(0, ((x - a[0]) * dx + (z - a[2]) * dz) / len2));
           const d = Math.hypot(x - (a[0] + dx * u), z - (a[2] + dz * u));
-          expect(d - r).toBeGreaterThan(TUBE_RADIUS);
+          expect(d - r).toBeGreaterThan(CORRIDOR_HALF_WIDTH);
         }
       }
     }
