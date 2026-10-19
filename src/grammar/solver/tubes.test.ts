@@ -171,7 +171,7 @@ describe('tubes', () => {
     expect(t).toBeTruthy();
     if (!t) return;
     const a = base.parts.get('A')?.ports.find((p) => p.id === 'end+');
-    expect(t.path[0]?.[0]).toBeCloseTo((a?.position[0] ?? 0) - TUBE_PORT_EMBED - (a?.gap ?? 0), 2);
+    expect(t.path[0]?.[0]).toBeCloseTo((a?.position[0] ?? 0) - TUBE_PORT_EMBED, 2);
     expect(t.path[0]?.[2]).toBeCloseTo(0, 2);
     expect(t.path[t.path.length - 1]?.[2]).toBeCloseTo(0, 2);
     expect(bends(t.path)).toBe(0);

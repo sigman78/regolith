@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { N } from '@/grammar/parts/N';
+import { stubOps } from '@/grammar/stubs';
+import { STUB_HALF_WIDTH, STUB_TOP } from '@/grammar/stub-depth';
 import { buildBundle } from './build';
-import { NODE_RADII } from './design-constants';
+import { DOOR_FRAME_PROUD, NODE_RADII } from './design-constants';
 import { assertValidBundle } from './validate';
 
 describe('node geometry', () => {
@@ -21,17 +23,14 @@ describe('node geometry', () => {
     }
   });
 
-  it('puts the hatch and feet on the shell, and the doors on the floor in front of it', () => {
+  it('puts the hatch and feet on the shell, and the doors on the floor under the equator', () => {
     for (const size of NODE_RADII) {
       const p = N.resolve({ size });
       const floor = N.floor?.(p) ?? NaN;
       for (const port of N.ports(p)) {
         if (port.type === 'PRESS' && port.normal[1] === 0) {
-          // On the floor, in the plan position of the equator; the shell is a little behind it
-          // (stage 2's stub closes the gap).
           expect(port.position[1]).toBeCloseTo(floor, 9);
           expect(Math.hypot(port.position[0], port.position[2])).toBeCloseTo(size, 9);
-          expect(size - Math.sqrt(size * size - floor * floor)).toBeLessThan(0.4);
         } else {
           expect(Math.hypot(...port.position)).toBeCloseTo(size, 9);
         }
@@ -39,9 +38,13 @@ describe('node geometry', () => {
     }
   });
 
-  it('wears a collar at each PRESS port: graphite reaches past the shell on every axis', () => {
+  it('with its stubs on, wears a door frame at each side port and a hatch ring on top', () => {
     const size = 2;
-    const g = buildBundle(N.geometry(N.resolve({ size }), { seed: 't' })).byMaterial.graphite;
+    const p = N.resolve({ size });
+    const recipe = { ops: [...N.geometry(p, { seed: 't' }).ops, ...stubOps(N, p)] };
+    const b = buildBundle(recipe);
+    expect(() => assertValidBundle(b)).not.toThrow();
+    const g = b.byMaterial.graphite;
     const reach = [0, 0, 0, 0, 0, 0]; // +x -x +z -z +y -y
     for (let i = 0; i < (g?.positions.length ?? 0); i += 3) {
       const [x = 0, y = 0, z = 0] = [g?.positions[i], g?.positions[i + 1], g?.positions[i + 2]];
@@ -52,7 +55,18 @@ describe('node geometry', () => {
       reach[4] = Math.max(reach[4] ?? 0, y);
       reach[5] = Math.max(reach[5] ?? 0, -y);
     }
-    for (const r of reach.slice(0, 5)) expect(r).toBeGreaterThan(size);
-    expect(reach[5]).toBeLessThanOrEqual(size); // no collar under the sphere
+    for (const r of reach.slice(0, 4)) expect(r).toBeCloseTo(size + DOOR_FRAME_PROUD, 4);
+    expect(reach[4]).toBeGreaterThan(size); // the hatch ring
+    expect(reach[5]).toBeLessThanOrEqual(size); // nothing under the sphere
+    // The stub faces are flat plates tangent at the equator: the hull reaches their corners and no further.
+    const hull = b.byMaterial.hull?.positions ?? new Float32Array();
+    const floor = N.floor?.(p) ?? NaN;
+    const cornerR = Math.hypot(size, STUB_HALF_WIDTH, floor + STUB_TOP);
+    let maxR = 0;
+    for (let i = 0; i < hull.length; i += 3) {
+      maxR = Math.max(maxR, Math.hypot(hull[i] ?? 0, hull[i + 1] ?? 0, hull[i + 2] ?? 0));
+    }
+    expect(maxR).toBeLessThanOrEqual(cornerR + 1e-6);
+    expect(maxR).toBeGreaterThan(size);
   });
 });

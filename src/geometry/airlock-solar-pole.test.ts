@@ -5,10 +5,11 @@ import { buildBundle } from './build';
 import { SOLAR_ROWS } from './design-constants';
 
 describe('letter A geometry', () => {
-  it('draws a door and a ramp with chevrons and no glass', () => {
+  it('draws a door, a stair with hazard noses, and no glass', () => {
     const b = buildBundle({ ops: [{ kind: 'airlock', radius: 2, length: 2.4 }] });
     expect(b.byMaterial.warning).toBeTruthy();
     expect(b.byMaterial.graphite).toBeTruthy();
+    expect(b.byMaterial.accent).toBeTruthy();
     expect(b.byMaterial.glass).toBeUndefined();
   });
 });

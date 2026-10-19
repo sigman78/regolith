@@ -139,7 +139,7 @@ export function diagnose(
         point[1] - port.position[1],
         point[2] - port.position[2],
       );
-      if (d > TUBE_PORT_EMBED + port.gap + 0.05) {
+      if (d > TUBE_PORT_EMBED + 0.05) {
         fail(out, 'tube-free-end', tube.id, `ends ${d} m from ${ref.part}/${ref.port}`);
       }
       if (!base.usedPorts.has(portKey(ref.part, ref.port))) {

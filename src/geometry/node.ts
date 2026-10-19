@@ -1,17 +1,16 @@
 /**
- * Letter N geometry: a sphere shell with a graphite collar around each PRESS
- * port. Port layout is shared with grammar/parts/N.ts through `NODE_PRESS_DIRS` in design-constants
- * (checked in node.test.ts).
+ * Letter N geometry: a sphere shell with a graphite collar around the top hatch. The four side
+ * ports are doors on corridor stubs, which the solver adds to the recipe (grammar/stubs.ts), so
+ * the port layout lives in grammar/parts/N.ts alone.
  */
 
 import type { BundleBuilder } from './bundle';
 import {
-  HATCH_DIAMETER,
   NODE_ARC_STEPS,
   NODE_COLLAR_EMBED,
   NODE_COLLAR_FLANGE,
   NODE_COLLAR_THICK,
-  NODE_PRESS_DIRS,
+  NODE_HATCH_DIAMETER,
   NODE_SEGMENTS,
 } from './design-constants';
 import { flangeRing, lathe, placeAlong, sphereProfile } from './profiles';
@@ -25,15 +24,13 @@ export function buildNode(out: BundleBuilder, op: NodeOp): void {
 
   out.add('hull', lathe(sphereProfile(radius, NODE_ARC_STEPS), NODE_SEGMENTS));
 
-  for (const dir of NODE_PRESS_DIRS) {
-    const d = radius - NODE_COLLAR_EMBED;
-    out.add(
-      'graphite',
-      placeAlong(
-        flangeRing(HATCH_DIAMETER / 2, NODE_COLLAR_THICK, NODE_COLLAR_FLANGE, NODE_SEGMENTS),
-        [dir[0] * d, dir[1] * d, dir[2] * d],
-        dir,
-      ),
-    );
-  }
+  // The top hatch keeps its ring: a vertical hatch, never a door.
+  out.add(
+    'graphite',
+    placeAlong(
+      flangeRing(NODE_HATCH_DIAMETER / 2, NODE_COLLAR_THICK, NODE_COLLAR_FLANGE, NODE_SEGMENTS),
+      [0, radius - NODE_COLLAR_EMBED, 0],
+      [0, 1, 0],
+    ),
+  );
 }

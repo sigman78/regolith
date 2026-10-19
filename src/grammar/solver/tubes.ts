@@ -248,20 +248,17 @@ function build(ctx: Ctx, piece: Piece, depth: number, strict: boolean): boolean 
 
 function finish(ctx: Ctx, piece: Piece): void {
   const verts = corners(piece.dense.map((p): Lattice => [p[0], p[1]])).map((p): XZ => [p[0], p[1]]);
-  // Start and end sit slightly inside the hulls (embedded along the port normals).
+  // Start and end sit inside the doors' stubs (embedded along the port normals).
   const a = piece.a.port;
   const b = piece.b.port;
   const first = verts[0];
   const last = verts[verts.length - 1];
   if (first)
-    verts[0] = [
-      first[0] - a.normal[0] * (TUBE_PORT_EMBED + a.gap),
-      first[1] - a.normal[2] * (TUBE_PORT_EMBED + a.gap),
-    ];
+    verts[0] = [first[0] - a.normal[0] * TUBE_PORT_EMBED, first[1] - a.normal[2] * TUBE_PORT_EMBED];
   if (last)
     verts[verts.length - 1] = [
-      last[0] - b.normal[0] * (TUBE_PORT_EMBED + b.gap),
-      last[1] - b.normal[2] * (TUBE_PORT_EMBED + b.gap),
+      last[0] - b.normal[0] * TUBE_PORT_EMBED,
+      last[1] - b.normal[2] * TUBE_PORT_EMBED,
     ];
 
   const id = `tube:${ctx.key}:${ctx.pieceCount++}`;

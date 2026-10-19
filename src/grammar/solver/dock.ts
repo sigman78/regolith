@@ -27,8 +27,6 @@ interface PortEntry {
   port: string;
   pos: Vec3;
   normal: Vec3;
-  /** the hull is this far behind the port (ResolvedPort.gap) */
-  gap: number;
 }
 
 export const portKey = (part: PartId, port: string): string => `${part}/${port}`;
@@ -49,7 +47,6 @@ export function dock(grounded: Grounded[], world: SolverWorld, used: Set<string>
         port: p.id,
         pos: p.position,
         normal: p.normal,
-        gap: p.gap,
       };
       entries.push(e);
       const [bx, bz] = bucketOf(p.position);
@@ -126,7 +123,8 @@ function dockDistance(a: PortEntry, b: PortEntry): number | null {
 }
 
 function embed(e: PortEntry): Vec3 {
-  const depth = TUBE_PORT_EMBED + e.gap;
+  // Into the door's stub, which is deeper than this.
+  const depth = TUBE_PORT_EMBED;
   return [
     e.pos[0] - e.normal[0] * depth,
     e.pos[1] - e.normal[1] * depth,

@@ -6,6 +6,8 @@
  *   x+, x-, z+, z-, top   PRESS on the shell, normals along the axes
  *   foot-0..2             STRUCT tripod feet under the sphere (120° apart,
  *                         NODE_FOOT_RADIAL of the radius out), on the shell
+ * The floor is FLOOR_ABOVE_BELLY over the bottom of the sphere (headroom 3, 4, 5 m), so the
+ * pose lifts the feet enough to keep the belly LEG_MIN_CLEARANCE up.
  *
  * Invariants: every port lies exactly on the sphere surface; radius is one of
  * NODE_RADII; ids are stable for a given radius.
@@ -20,7 +22,7 @@ import {
 } from '@/geometry/design-constants';
 import { beaconOn } from '../lamps';
 import { readChoice } from '../params';
-import { roundGap } from '../shell-gap';
+import { sphereStub } from '../stub-depth';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
 export type NodeParams = { size: number };
@@ -37,9 +39,14 @@ const SCHEMA = {
 
 const PRESS_IDS = ['x+', 'x-', 'z+', 'z-', 'top'] as const;
 
-/** The feet sit sqrt(1 - NODE_FOOT_RADIAL^2) of the radius under the centre; the floor is above them. */
+/** Local y of the walking floor: FLOOR_ABOVE_BELLY over the belly, the bottom of the sphere. */
 function nodeFloor(p: NodeParams): number {
-  return FLOOR_ABOVE_BELLY - Math.sqrt(1 - NODE_FOOT_RADIAL ** 2) * p.size;
+  return FLOOR_ABOVE_BELLY - p.size;
+}
+
+/** The feet sit sqrt(1 - NODE_FOOT_RADIAL^2) of the radius under the centre, above the belly. */
+function footDrop(p: NodeParams): number {
+  return Math.sqrt(1 - NODE_FOOT_RADIAL ** 2) * p.size;
 }
 
 export const N: PartDefinition<NodeParams> = {
@@ -57,8 +64,8 @@ export const N: PartDefinition<NodeParams> = {
 
   floor: nodeFloor,
 
-  shellGap(p, portId) {
-    return portId === 'top' ? 0 : roundGap(p.size, nodeFloor(p));
+  stubDepth(p) {
+    return sphereStub(p.size, nodeFloor(p));
   },
 
   ports(p) {
@@ -72,7 +79,7 @@ export const N: PartDefinition<NodeParams> = {
       normal: d,
     }));
     const radial = r * NODE_FOOT_RADIAL;
-    const drop = -Math.sqrt(r * r - radial * radial);
+    const drop = -footDrop(p);
     for (let i = 0; i < 3; i++) {
       const a = Math.PI / 2 + (i * Math.PI * 2) / 3;
       const x = Math.cos(a) * radial;
@@ -87,8 +94,10 @@ export const N: PartDefinition<NodeParams> = {
     return ports;
   },
 
-  ground() {
-    return { mode: 'legs', minClearance: LEG_MIN_CLEARANCE };
+  ground(p) {
+    // The feet are above the belly: ask for enough that the belly keeps LEG_MIN_CLEARANCE, which
+    // puts the floor DECK_HEIGHT over the ground like every other letter.
+    return { mode: 'legs', minClearance: LEG_MIN_CLEARANCE + p.size - footDrop(p) };
   },
 
   handles(p) {

@@ -75,7 +75,6 @@ export type GeomOp =
   | { kind: 'airlock'; radius: number; length: number }
   | { kind: 'solar'; rows: number; cols: number; tracking?: boolean }
   | { kind: 'pole'; height: number }
-  /** A suited crew member outdoors (hull and graphite), feet at y = 0, facing +x. */
   | { kind: 'mast'; height: number; head: number }
   | { kind: 'reactor'; radius: number }
   | { kind: 'launcher'; length: number; elevation: number }
@@ -84,6 +83,8 @@ export type GeomOp =
   | { kind: 'rock'; variant: number }
   /** World-space centreline, flat x,y,z, already embedded slightly into the hulls at both ends. */
   | { kind: 'tube'; points: number[] }
+  /** A door's vestibule: the corridor section from `depth` inside the hull to the port, door on its face. */
+  | { kind: 'stub'; at: Vec3; normal: Vec3; depth: number }
   /** Unit-height leg strut, base at y = 0. Render scales it in Y to the leg length. */
   | { kind: 'leg-strut' }
   /** Footpad disc, base at y = 0. */
@@ -123,8 +124,8 @@ export interface PartDefinition<P extends ParamValues = ParamValues> {
    * ports sit on it, and the press graph walks it. One rule (FLOOR_ABOVE_BELLY over the lowest foot).
    */
   floor?(params: P): number;
-  /** Metres from a PRESS port back to the hull behind it along its normal; absent = 0 (on the hull). */
-  shellGap?(params: P, portId: string): number;
+  /** How deep the corridor stub behind this door reaches so its back sits inside the hull; absent = PORT_STUB_DEPTH. */
+  stubDepth?(params: P, portId: string): number;
   /** Local y of every walking floor, ground floor first, when a part has more than one (a tower). */
   floors?(params: P): number[];
   /** Short size note for the selection tooltip, e.g. '8 m'. */

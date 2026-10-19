@@ -1,27 +1,29 @@
 /**
- * Letter A geometry: a short hab-shaped lock with a door and a ramp on its +z flank, hazard
- * chevrons on the ramp. (The lamp above the door is an instance, see geometry/lamp.ts.)
+ * Letter A geometry: a short hab-shaped lock whose exit is a door on a corridor stub on the +z
+ * flank, with a stair down to the ground and a hazard strip on every tread. (The lamp above the
+ * door is an instance, see sim/lamps.ts; the PRESS end's stub comes from the solver like every
+ * door's.)
  *
  * Frame matches grammar/parts/A.ts: axis along +X, origin at the centre of the axis.
  */
-import { CylinderGeometry } from 'three';
+import { flankStub } from '@/grammar/stub-depth';
 import type { BundleBuilder } from './bundle';
 import {
-  AIRLOCK_CHEVRONS,
-  AIRLOCK_CHEVRON_W,
-  AIRLOCK_DOOR_H,
-  AIRLOCK_DOOR_PROUD,
-  AIRLOCK_DOOR_W,
-  AIRLOCK_RAMP_RUN,
-  AIRLOCK_RAMP_THICK,
-  AIRLOCK_RAMP_W,
+  AIRLOCK_NOSE_W,
   AIRLOCK_RIB_THICK,
+  AIRLOCK_STAIR_RISERS,
+  AIRLOCK_STAIR_RUN,
+  AIRLOCK_STAIR_W,
+  DECK_HEIGHT,
   FLANGE_RATIO,
+  FLOOR_ABOVE_BELLY,
+  FOOT_HEIGHT,
   HAB_SEGMENTS,
   LEG_MIN_CLEARANCE,
 } from './design-constants';
 import { habHullProfile, layDown } from './hab';
 import { bevelBox, lathe, ribProfile } from './profiles';
+import { buildStub } from './stub';
 
 export interface AirlockOp {
   radius: number;
@@ -39,43 +41,24 @@ export function buildAirlock(out: BundleBuilder, op: AirlockOp): void {
     );
   }
 
-  // Door: a patch of shell on the +z flank at axis height, standing a little off the hull so it
-  // follows the curve instead of cutting through it.
-  const span = AIRLOCK_DOOR_H / r;
-  const door = new CylinderGeometry(
-    r + AIRLOCK_DOOR_PROUD,
-    r + AIRLOCK_DOOR_PROUD,
-    AIRLOCK_DOOR_W,
-    10,
-    1,
-    true,
-    -span / 2,
-    span,
-  );
-  door.rotateZ(-Math.PI / 2);
-  out.add('graphite', door);
+  // The exit door: on the floor, on a stub through the +z flank, like every door in the base.
+  const floor = FLOOR_ABOVE_BELLY - r;
+  buildStub(out, { at: [0, floor, r], normal: [0, 0, 1], depth: flankStub(r, floor) });
 
-  // Ramp: its top runs from the door sill down to the ground a hab's legs would stand on.
-  const sillY = -AIRLOCK_DOOR_H / 2;
-  const footY = -r - LEG_MIN_CLEARANCE;
-  const drop = sillY - footY;
-  // The ramp foot is AIRLOCK_RAMP_RUN beyond the hull's own radius (that is where the EXT port is).
-  const z0 = Math.sqrt(r * r - sillY * sillY);
-  const run = r + AIRLOCK_RAMP_RUN - z0;
-  const slope = Math.atan2(drop, run);
-  const length3 = Math.hypot(run, drop);
-  const ramp = bevelBox(AIRLOCK_RAMP_W, AIRLOCK_RAMP_THICK, length3);
-  ramp.translate(0, -AIRLOCK_RAMP_THICK, length3 / 2);
-  ramp.rotateX(slope);
-  ramp.translate(0, sillY, z0);
-  out.add('graphite', ramp);
-
-  // Chevrons across the ramp, evenly spaced, in warning yellow.
-  for (let i = 0; i < AIRLOCK_CHEVRONS; i++) {
-    const t = (i + 1) / (AIRLOCK_CHEVRONS + 1);
-    const strip = bevelBox(AIRLOCK_RAMP_W * 0.9, 0.012, AIRLOCK_CHEVRON_W);
-    strip.rotateX(slope);
-    strip.translate(0, sillY - drop * t + 0.004, z0 + run * t);
-    out.add('warning', strip);
+  // The stair: DECK_HEIGHT down from the sill to the ground the legs stand on (where the EXT port
+  // is), AIRLOCK_STAIR_RISERS risers over AIRLOCK_STAIR_RUN, as solid blocks a tread deep. The last
+  // tread is a landing pad sunk into the ground like a footpad, with the EXT port at its far edge.
+  const ground = -r - LEG_MIN_CLEARANCE;
+  const riser = DECK_HEIGHT / AIRLOCK_STAIR_RISERS;
+  const tread = AIRLOCK_STAIR_RUN / AIRLOCK_STAIR_RISERS;
+  for (let i = 0; i < AIRLOCK_STAIR_RISERS; i++) {
+    const top = floor - riser * (i + 1);
+    const base = i + 1 < AIRLOCK_STAIR_RISERS ? ground : ground - FOOT_HEIGHT;
+    const block = bevelBox(AIRLOCK_STAIR_W, top - base, tread);
+    block.translate(0, base, r + tread * (i + 0.5));
+    out.add('graphite', block);
+    const nose = bevelBox(AIRLOCK_STAIR_W * 0.9, 0.012, AIRLOCK_NOSE_W);
+    nose.translate(0, top + 0.004, r + tread * (i + 1) - AIRLOCK_NOSE_W / 2);
+    out.add('warning', nose);
   }
 }

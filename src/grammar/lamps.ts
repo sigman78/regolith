@@ -1,12 +1,17 @@
 /**
- * Where an airlock's lamp sits, in the part's own frame: on the hull above the door, a fixed angle
- * up from the +z flank, its light face turned outward. Shared by the sim (which places lamps in the
+ * Where an airlock's lamp sits, in the part's own frame: on the face of the exit door's stub, over
+ * the lintel, its light face turned outward. Shared by the sim (which places lamps in the
  * world) and nothing else; the shape is geometry/lamp.ts.
  */
 import type { Vec3 } from '@/core/math';
 import {
-  AIRLOCK_LAMP_ANGLE_DEG,
+  AIRLOCK_LAMP_GAP,
+  AIRLOCK_LAMP_SIZE,
   BEACON_LIFT,
+  DOOR_FRAME,
+  DOOR_H,
+  DOOR_SILL,
+  FLOOR_ABOVE_BELLY,
   BEACON_RADIUS,
   MAST_BEACON_RADIUS,
   MAST_DISH_LIFT,
@@ -29,11 +34,10 @@ export interface LampFrame {
 }
 
 export function airlockLampFrame(radius: number): LampFrame {
-  const a = (AIRLOCK_LAMP_ANGLE_DEG * Math.PI) / 180;
-  const normal: Vec3 = [0, Math.sin(a), Math.cos(a)];
-  // Sunk 2 cm so the base sits in the hull.
-  const r = radius - 0.02;
-  return { at: [0, r * normal[1], r * normal[2]], normal };
+  const floor = FLOOR_ABOVE_BELLY - radius;
+  const y = floor + DOOR_SILL + DOOR_H + DOOR_FRAME + AIRLOCK_LAMP_GAP + AIRLOCK_LAMP_SIZE / 2;
+  // Sunk 2 cm so the base sits in the stub face (which is at the hull radius).
+  return { at: [0, y, radius - 0.02], normal: [0, 0, 1] };
 }
 
 /** The lamp plate under a light pole's hood, its light face turned down. */

@@ -54,8 +54,20 @@ export const STENCIL_ANGLE_DEG = 86;
 export const HAB_SIDE_PORT_SPACING = 4;
 /** STRUCT ports sit this far in from each end rib. */
 export const HAB_STRUCT_INSET = 1.2;
-/** Hatch ring diameter on every PRESS port, metres. */
-export const HATCH_DIAMETER = 1.6;
+/** Every tube-capable PRESS port is a door of this size on the face of a short corridor stub. */
+export const DOOR_W = 1;
+export const DOOR_H = 2;
+/** The door frame's jamb and lintel width; how far the frame and the leaf stand off the stub face. */
+export const DOOR_FRAME = 0.12;
+export const DOOR_FRAME_PROUD = 0.04;
+export const DOOR_LEAF_PROUD = 0.015;
+/**
+ * The stub: a vestibule in the corridor's section, at least this deep (deeper where the hull curves
+ * away behind the door, grammar/stub-depth.ts) and STUB_PROUD larger than a corridor all round, so
+ * a corridor end nests inside it with no face shared.
+ */
+export const PORT_STUB_DEPTH = 0.6;
+export const STUB_PROUD = 0.1;
 /** Footprint margin around a hull, metres per side (room for legs and flanges). */
 export const HAB_FOOTPRINT_MARGIN = 0.15;
 
@@ -106,7 +118,8 @@ export const NODE_SEGMENTS = 24;
 export const NODE_ARC_STEPS = 12;
 /** Tripod feet: radial distance from the axis as a fraction of the sphere radius. */
 export const NODE_FOOT_RADIAL = 0.6;
-/** Hatch collar band around every PRESS port. */
+/** The top hatch: its ring diameter and collar band (the side ports are doors on stubs). */
+export const NODE_HATCH_DIAMETER = 1.6;
 export const NODE_COLLAR_THICK = 0.3;
 export const NODE_COLLAR_FLANGE = 0.12;
 /** The collar sits this far inside the shell so no gap shows at its rim. */
@@ -386,20 +399,15 @@ export const AIRLOCK_LENGTH = 2.4;
 /** Sideways margin (around the ramp); the ends carry almost none so the lock can touch what it docks to. */
 export const AIRLOCK_FOOTPRINT_MARGIN = 0.3;
 export const AIRLOCK_END_MARGIN = 0.05;
-/** The door on the +z flank: width, height, how far it stands off the hull. */
-export const AIRLOCK_DOOR_W = 1;
-export const AIRLOCK_DOOR_H = 1.8;
-export const AIRLOCK_DOOR_PROUD = 0.04;
-/** Ramp from the door sill to the ground: run along +z, width, thickness. */
-export const AIRLOCK_RAMP_RUN = 2.6;
-export const AIRLOCK_RAMP_W = 1.3;
-export const AIRLOCK_RAMP_THICK = 0.14;
-/** Hazard chevrons on the ramp: strips, width and spacing. */
-export const AIRLOCK_CHEVRONS = 3;
-export const AIRLOCK_CHEVRON_W = 0.16;
-/** Lamp above the door, degrees up the hull from the +z side, and its size. */
-export const AIRLOCK_LAMP_ANGLE_DEG = 48;
+/** The stair from the door sill to the ground: run along +z, width, risers (the rise is DECK_HEIGHT). */
+export const AIRLOCK_STAIR_RUN = 2.6;
+export const AIRLOCK_STAIR_W = 1.3;
+export const AIRLOCK_STAIR_RISERS = 8;
+/** Hazard strip along the nose of every tread. */
+export const AIRLOCK_NOSE_W = 0.16;
+/** Lamp on the stub face above the door: its size and the gap over the lintel. */
 export const AIRLOCK_LAMP_SIZE = 0.22;
+export const AIRLOCK_LAMP_GAP = 0.04;
 export const AIRLOCK_RIB_THICK = 0.18;
 
 // ---- Letter S: solar array ----------------------------------------------------------

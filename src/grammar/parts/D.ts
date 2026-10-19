@@ -20,6 +20,7 @@ import {
 } from '@/geometry/design-constants';
 import type { Vec3 } from '@/core/math';
 import { beaconOn } from '../lamps';
+import { drumStub } from '../stub-depth';
 import { readChoice } from '../params';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
@@ -52,6 +53,10 @@ export const D: PartDefinition<DomeParams> = {
 
   floor() {
     return FLOOR_ABOVE_BELLY;
+  },
+
+  stubDepth(p) {
+    return drumStub(p.radius, FLOOR_ABOVE_BELLY, DOME_COLLAR_HEIGHT);
   },
 
   ports(p) {

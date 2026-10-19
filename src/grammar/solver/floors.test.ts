@@ -11,7 +11,6 @@ import {
   DOOR_SILL,
   FLOOR_ABOVE_BELLY,
   LEG_MIN_CLEARANCE,
-  TUBE_PORT_EMBED,
 } from '@/geometry/design-constants';
 import { addLink, addPart, createDocument, type BaseDocument } from '@/world/document';
 import { allParts, getPart } from '../registry';
@@ -178,49 +177,5 @@ describe('steep corridors', () => {
     const base = solve(doc, FLAT);
     expect(base.diagnostics.some((d) => d.kind === 'corridor-steep')).toBe(false);
     expect(getPart('H')?.floor).toBeDefined();
-  });
-});
-
-describe('pipes reach the hull behind a door on the floor', () => {
-  it('embeds a tube end by the gap between the door and the shell, on top of the usual embed', () => {
-    const link = (port: string, letter: Letter, params: ParamValues) =>
-      addLink(
-        docOf([
-          { id: 'a', letter, params, x: 0, z: 0 },
-          { id: 'b', letter: 'D', params: { radius: 4.5 }, x: 30, z: 0 },
-        ]),
-        { a: { part: 'a', port }, b: { part: 'b', port: 'c-2' }, kind: 'tube' },
-      );
-    const cases: [string, Letter, ParamValues][] = [
-      ['end+', 'H', { length: 8, radius: 3 }],
-      ['end+', 'H', { length: 8, radius: 2 }],
-      ['x+', 'N', { size: 3 }],
-    ];
-    for (const [port, letter, params] of cases) {
-      const base = solve(link(port, letter, params), FLAT);
-      const tube = [...base.tubes.values()].find((t) => t.kind === 'tube');
-      const p = base.parts.get('a')?.ports.find((q) => q.id === port);
-      expect(tube && p, `${letter} ${port}`).toBeTruthy();
-      if (!tube || !p) continue;
-      expect(p.gap).toBeGreaterThan(0);
-      const first = tube.path[0];
-      const along =
-        ((first?.[0] ?? 0) - p.position[0]) * p.normal[0] +
-        ((first?.[2] ?? 0) - p.position[2]) * p.normal[2];
-      expect(-along).toBeCloseTo(TUBE_PORT_EMBED + p.gap, 2);
-    }
-  });
-
-  it('has no gap where the door already sits on the hull', () => {
-    const base = solve(
-      docOf([
-        { id: 'd', letter: 'D', params: { radius: 4.5 }, x: 0, z: 0 },
-        { id: 'v', letter: 'V', params: { floors: 3 }, x: 20, z: 0 },
-      ]),
-      FLAT,
-    );
-    for (const id of ['d', 'v']) {
-      for (const port of base.parts.get(id)?.ports ?? []) expect(port.gap).toBe(0);
-    }
   });
 });

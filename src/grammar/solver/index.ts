@@ -11,6 +11,7 @@
  * Pure: the same (document, world, options) always yields the same result.
  */
 import { hashValue } from '@/core/hash';
+import { stubOps } from '../stubs';
 import type { BaseDocument } from '@/world/document';
 import { decalsFor } from '../decals';
 import { individualOf } from '../individual';
@@ -103,7 +104,9 @@ function toResolved(g: Grounded, seed: string, derived: boolean): ResolvedPart {
     derived ? 0 : draft.instance.serial,
     seed,
   );
-  const recipe = draft.def.geometry(draft.params, { seed, variant });
+  // The letter's own geometry, then a corridor stub with a door for every tube-capable port.
+  const own = draft.def.geometry(draft.params, { seed, variant });
+  const recipe = { ops: [...own.ops, ...stubOps(draft.def, draft.params)] };
   return {
     id: draft.instance.id,
     letter: draft.instance.letter,

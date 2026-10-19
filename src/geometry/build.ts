@@ -16,6 +16,7 @@ import { buildMast } from './mast';
 import { buildNode } from './node';
 import { buildSlab } from './slab';
 import { buildStencil } from './stencil';
+import { buildStub } from './stub';
 import { buildReactor } from './reactor';
 import { buildRock } from './rock';
 import { buildTower } from './tower';
@@ -73,6 +74,9 @@ export function buildBundle(recipe: GeometryRecipe): GeometryBundle {
         break;
       case 'tube':
         buildTube(out, op);
+        break;
+      case 'stub':
+        buildStub(out, op);
         break;
       case 'rock':
         buildRock(out, op);

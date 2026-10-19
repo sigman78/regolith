@@ -1,15 +1,15 @@
 /**
- * Letter A: the airlock, a short lock with a door and a ramp on its +z flank.
+ * Letter A: the airlock, a short lock with a door and a stair on its +z flank.
  *
  * Frame: axis along local +X, centred, like a hab (same radii, so its PRESS port meets a hab's at
- * the same height). The door and ramp face +z.
+ * the same height). The door and stair face +z.
  * Ports:
  *   end-     PRESS at the -x cap apex, normal -x (docks to a hab flank or a node)
- *   exit     EXT at the ramp foot, normal +z (inert until the exit task; crew leave here)
+ *   exit     EXT at the stair foot, normal +z (where M4's paths start)
  *   foot-/+  STRUCT under the hull
  *
  * Params: size (radius 2 / 3). Invariants: radius is one of AIRLOCK_RADII; every port lies inside
- * the footprint, which covers the ramp.
+ * the footprint, which covers the stair.
  */
 import {
   FLOOR_ABOVE_BELLY,
@@ -17,12 +17,12 @@ import {
   AIRLOCK_FOOTPRINT_MARGIN,
   AIRLOCK_LENGTH,
   AIRLOCK_RADII,
-  AIRLOCK_RAMP_RUN,
+  AIRLOCK_STAIR_RUN,
   HAB_CAP_RATIO,
   LEG_MIN_CLEARANCE,
 } from '@/geometry/design-constants';
 import { readChoice } from '../params';
-import { capGap } from '../shell-gap';
+import { capStub } from '../stub-depth';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
 export type AirlockParams = { radius: number };
@@ -57,14 +57,14 @@ export const A: PartDefinition<AirlockParams> = {
     return {
       kind: 'rect',
       hx: halfExtent(p) + AIRLOCK_END_MARGIN,
-      hz: p.radius + AIRLOCK_RAMP_RUN + AIRLOCK_FOOTPRINT_MARGIN,
+      hz: p.radius + AIRLOCK_STAIR_RUN + AIRLOCK_FOOTPRINT_MARGIN,
     };
   },
 
   floor: airlockFloor,
 
-  shellGap(p) {
-    return capGap(p.radius, p.radius * HAB_CAP_RATIO, airlockFloor(p));
+  stubDepth(p) {
+    return capStub(p.radius, p.radius * HAB_CAP_RATIO, airlockFloor(p));
   },
 
   ports(p) {
@@ -75,7 +75,7 @@ export const A: PartDefinition<AirlockParams> = {
       {
         id: 'exit',
         type: 'EXT',
-        position: [0, -p.radius - LEG_MIN_CLEARANCE, p.radius + AIRLOCK_RAMP_RUN],
+        position: [0, -p.radius - LEG_MIN_CLEARANCE, p.radius + AIRLOCK_STAIR_RUN],
         normal: [0, 0, 1],
       },
       { id: 'foot-', type: 'STRUCT', position: [-foot, -p.radius, 0], normal: [0, -1, 0] },

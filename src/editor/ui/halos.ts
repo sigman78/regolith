@@ -5,7 +5,7 @@
  * the routed result while you drag.
  */
 import { Vector3, type PerspectiveCamera } from 'three';
-import { CORRIDOR_HEIGHT } from '@/geometry/design-constants';
+import { DOOR_H } from '@/geometry/design-constants';
 import { canTakeTube, type ResolvedBase } from '@/grammar/solver';
 import type { Link, PartId } from '@/world/document';
 import { cmd } from '../commands';
@@ -67,7 +67,7 @@ export class Halos {
         if (!canTakeTube(port)) continue;
         if (base.usedPorts.has(`${part.id}/${port.id}`)) continue;
         this.tmp
-          .set(port.position[0], port.position[1] + CORRIDOR_HEIGHT / 2, port.position[2])
+          .set(port.position[0], port.position[1] + DOOR_H / 2, port.position[2])
           .project(this.host.camera);
         if (this.tmp.z > 1) continue;
         const x = ((this.tmp.x + 1) / 2) * w;

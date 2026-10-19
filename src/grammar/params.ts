@@ -4,7 +4,7 @@
  * (pillar P1: bad input is resolved, not rejected).
  */
 import { clamp } from '@/core/math';
-import type { ParamSpec, ParamValue } from './types';
+import type { ParamSchema, ParamSpec, ParamValue, ParamValues } from './types';
 
 export function readRange(
   spec: Extract<ParamSpec, { kind: 'range' }>,
@@ -38,4 +38,19 @@ export function readToggle(
   raw: ParamValue | undefined,
 ): boolean {
   return typeof raw === 'boolean' ? raw : spec.default;
+}
+
+/** Every combination of a schema's extremes and defaults: what the tests sweep for "every size". */
+export function paramSets(schema: ParamSchema): ParamValues[] {
+  let sets: ParamValues[] = [{}];
+  for (const [key, spec] of Object.entries(schema)) {
+    const values: (number | boolean)[] =
+      spec.kind === 'range'
+        ? [spec.min, spec.default, spec.max]
+        : spec.kind === 'choice'
+          ? [...spec.options]
+          : [false, true];
+    sets = sets.flatMap((s) => values.map((v) => ({ ...s, [key]: v })));
+  }
+  return sets;
 }

@@ -24,6 +24,7 @@ import {
 } from '@/geometry/design-constants';
 import type { Vec3 } from '@/core/math';
 import { beaconOn } from '../lamps';
+import { drumStub } from '../stub-depth';
 import { readRange } from '../params';
 import type { ParamSchema, PartDefinition, PortSpec } from '../types';
 
@@ -75,6 +76,12 @@ export const V: PartDefinition<TowerParams> = {
 
   floors(p) {
     return Array.from({ length: p.floors }, (_, k) => FLOOR_ABOVE_BELLY + k * TOWER_FLOOR_HEIGHT);
+  },
+
+  stubDepth(p, portId) {
+    // The same drum at every floor; the top floor's stub reaches into the cap.
+    const y = V.ports(p).find((q) => q.id === portId)?.position[1] ?? FLOOR_ABOVE_BELLY;
+    return drumStub(TOWER_RADIUS, y, p.floors * TOWER_FLOOR_HEIGHT, TOWER_RADIUS * TOWER_CAP_RATIO);
   },
 
   ports(p) {
